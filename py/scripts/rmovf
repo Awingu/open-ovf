@@ -136,24 +136,37 @@ def rmDeploymentOptions(ovfFile, options):
     Deployment Options Section.
     
     @param ovfFile: An OvfFile object.
-    @type ovfFile: OvfFile object.
+    @type ovfFile: OvfFile
+    
+    @param options: The options from the optparser.
+    @type options: Optparser object.    
     
     """
-    default = None
-    if options.default.lower() == "true":
-        default = True
-    if options.default.lower() == 'false':
-        default = False
-       
-    deploymentSect = ovfFile.createDeploymentOptions(options.info, 
-                                                     options.infoID, 
-                                                     options.secID)
-    if options.comment != None:
-        ovfFile.createComment(options.comment, deploymentSect)
-    ovfFile.defineDeploymentOptions(deploymentSect, options.configID, 
-                                    options.label, options.description, 
-                                    options.labelID, options.descID, 
-                                    default)
+    node = Ovf.getSections(ovfFile.envelope, 'DeploymentOptionSection')
+    if options.section:
+        ovfFile.envelope.removeChild(node[0])
+    for child in node[0].childNodes:
+        if child.nodeName == 'Info':
+            if options.info:
+                node[0].removeChild(child)
+            elif options.infoID:
+                child.removeAttribute('ovf:msgid')
+        elif child.nodeName == 'Configuration':
+            if child.getAttribute('ovf:id') == options.configID:
+                if options.config:
+                    node[0].removeChild(child)
+                elif options.default:
+                    child.removeAttribute('ovf:default')
+                else:
+                    for configChild in child.childNodes:
+                        if options.label and configChild.nodeName == 'Label':
+                            child.removeChild(configChild)
+                        elif options.labelID and configChild.nodeName == 'Label':
+                            configChild.removeAttribute('ovf:msgid')
+                        if options.description and configChild.nodeName == 'Description':
+                            child.removeChild(configChild)
+                        elif options.descID and configChild.nodeName == 'Description':
+                            configChild.removeAttribute('ovf:msgid')
  
 def rmVirtualSysCollection(ovfFile, options):
     """
@@ -596,7 +609,11 @@ commands = {
          { 'flags' : [ '-i','--configID' ],
            'parms' : { 'dest' : 'configID', 'action':'store','help' : 'Defines\
                     the unique ID for the configuration within the OVF.' },
-           'required': True}, 
+           'required': True},
+         { 'flags' : [ '--config' ], 
+           'parms' : { 'dest' : 'config','help' : "If present this flag will\
+            mean that the configuration with the given id will be removed.",
+            'action':"store_true"}}, 
          { 'flags' : [ '-m', '--info' ], 
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section.", 'action':"store_true"}},
