@@ -7,7 +7,7 @@
 # http://www.eclipse.org/legal/epl-v10.html
 #
 # Contributors:
-# Scott Moser (IBM) - initial implementation
+# Marcos Cintron (IBM) - initial implementation
 ##############################################################################
 import os
 
