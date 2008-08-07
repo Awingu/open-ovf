@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Environment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ovfenv="http://schemas.dmtf.org/ovf/environment/1"
+    xmlns="http://schemas.dmtf.org/ovf/environment/1"
+    xsi:schemaLocation="http://schemas.dmtf.org/ovf/environment/1 ../ovf-environment.xsd" ovfenv:id="example-jeos">
+
+    <!-- Information about hypervisor platform -->
+    <PlatformSection>
+        <Kind>QEMU</Kind>
+        <Version>0.9.1</Version>
+        <Vendor>QEMU</Vendor>
+        <Locale>en_US</Locale>
+    </PlatformSection>
+
+    <!--- Properties defined for this virtual machine -->
+    <PropertySection>
+        <Property ovfenv:key="config.net.method" ovfenv:value="static"/>
+        <Property ovfenv:key="config.net.hostname" ovfenv:value="myhostname"/>
+        <Property ovfenv:key="config.net.ip" ovfenv:value="10.0.2.101"/>
+        <Property ovfenv:key="config.net.netmask" ovfenv:value="255.255.255.0"/>
+        <Property ovfenv:key="config.net.gateway" ovfenv:value="10.0.2.2"/>
+        <Property ovfenv:key="config.net.dns1" ovfenv:value="10.0.2.2"/>
+        <Property ovfenv:key="config.net.search" ovfenv:value="example.com"/>
+        <Property ovfenv:key="config.sys.username" ovfenv:value="joeuser"/>
+        <Property ovfenv:key="config.sys.password" ovfenv:value="joeuser"/>
+        <Property ovfenv:key="config.sys.message" ovfenv:value="HelloW orld"/>
+    </PropertySection>
+</Environment>

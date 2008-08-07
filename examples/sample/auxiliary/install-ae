@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# This is supposed to be used by ../createimg only!
+
+BASE_DIR=`dirname $0`
+
+mkdir -p root/etc/ovf-activate
+
+cp -r ${BASE_DIR}/mini-ae/scripts.d root/etc/ovf-activate/
+cp -r ${BASE_DIR}/mini-ae/ovf-env-config root/etc/ovf-activate/
+
+cp ${BASE_DIR}/mini-ae/ovf-env-init root/etc/init.d/
+
+chroot root update-rc.d -f ovf-env-init start 39 S .

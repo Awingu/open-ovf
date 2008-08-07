@@ -1,0 +1,38 @@
+Project: Open-OVF
+
+Website: http://open-ovf.sourceforge.net
+License: EPL 
+Mailing list: open-ovf-devel@lists.sourceforge.net
+Source Code: http://gitorious.org/projects/open-ovf
+             git clone git://gitorious.org/open-ovf/mainline.git
+
+Requirements
+------------
+
+Python 2.4 (or above), python-libxml2 
+
+Install
+-------
+
+System-wide (run as root):
+  $ python setup.py install
+
+Home
+  $ python setup.pu install --home=/home/user/install_dir/
+
+More options/help:
+  $ python setup.py install --help
+
+
+Usage
+-----
+
+Use --help to check each command's options
+
+  mkovf --help
+
+Useful tips
+-----------
+
+In order to run programs directly from the source distribution:
+  $ export PYTHONPATH=`cd py && pwd`

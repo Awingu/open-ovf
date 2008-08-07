@@ -1,0 +1,56 @@
+#!/usr/bin/python
+
+import sys
+from optparse import OptionParser
+
+from ovf.commands import cli
+
+COMMON = (
+   { 'flags' : [ '--comment' ],
+     'parms' : { 'dest' : 'comment', 'help': 'Comment to add.' }
+   },
+   { 'flags' : [ '--encoding' ],
+           'parms' : { 'dest' : 'encoding',
+                      'help' : 'Defines the encoding used for the OVF.' }
+    },
+   { 'flags' : ['--secID' ],
+     'parms' : { 'dest' : 'secID','help':'OVF id of the section.'} ,
+   },
+   { 'flags' : [ '--v', '--version' ],
+     'parms' : { 'dest' : 'ovfVersion','action':"store_true",'default': False,
+                'help':'OVF specification used.'} ,
+   },
+   { 'flags' : [ '-f', '--file' ],
+     'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' },
+     'required': True
+   },
+   { 'flags' : [ '--id' ],
+     'parms' : { 'dest' : 'id','help':'ID of the section to attach to.'}
+   }
+)
+
+COMMANDS = { 
+    "init" : {
+                'func': lambda x: x,
+         'help': "Create a brand new OVF with just a root, 'Envelope', node.",
+                'args' : 
+                    (
+                        {   'flags' : [ '-d' ],
+                            'parms' : { 'dest' : 'init','action':"store_true",
+                                    'default': False },
+                            'required': False,
+                        },
+                        {   'flags' : [ '-i','--ovfID' ],
+                            'parms' : { 'dest' : 'file_id',
+          'help' : 'Defines the unique ID within the OVF.' },
+                            'required': True,
+                        },
+                    )
+            }
+}
+
+if __name__ == "__main__":
+
+    cli_parser = cli.CLI(COMMANDS, COMMON)
+
+    print cli_parser.parseArgs()

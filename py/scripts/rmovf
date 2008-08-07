@@ -1,0 +1,1082 @@
+#!/usr/bin/python
+# vi: ts=4 expandtab syntax=python
+##############################################################################
+# Copyright (c) 2008 IBM Corporation
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+# Marcos Cintron (IBM) - initial implementation
+##############################################################################
+
+import os
+import sys
+from stat import ST_SIZE
+from optparse import OptionParser
+
+from ovf.OvfFile import OvfFile
+from ovf.OvfReferencedFile import OvfReferencedFile
+from ovf import Ovf
+from ovf import validation
+
+def rmReferences(ovfFile, options):
+    """
+    This function will remove the 'References' section of the ovf.
+    Note::
+        The user will be able to remove the entire section or remove a file 
+        or remove attributes within a File.
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile
+    
+    @param options: The options from the optparser.
+    @type options: Optparser object.
+    """
+    node  = Ovf.getSections(ovfFile.envelope, 'References',None)
+    child = None
+    for child in node[0].childNodes:
+        if child.nodeName == "File":
+            if child.hasAttribute("ovf:id") and child.getAttribute("ovf:id") == options.file_id:
+                if options.section:
+                   node[0].removeChild(child)
+                   break 
+                if options.size:
+                    if(child.hasAttribute('ovf:size')):
+                        child.removeAttribute('ovf:size')
+                if options.chunksize:
+                    if child.hasAttribute('ovf:chunkSize'):
+                        child.removeAttribute('ovf:chunkSize')
+                if options.compression:
+                    if node.hasAttribute('ovf:compression'):
+                        child.removeAttribute('ovf:compression')     
+                        
+def rmDiskSection(ovfFile, options):
+    """
+    This function will remove the disk section of an OVF or remove an\
+    attribute.
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile
+    
+    @param options: The options from the optparser.
+    @type options: Optparser object.
+    """
+    node = Ovf.getSections(ovfFile.envelope, 'DiskSection')
+    if options.section:
+        ovfFile.envelope.removeChild(node[0])
+    else:
+        diskDict = [(options.capacity,'ovf:capacity'),(options.format,'ovf:format'),
+                    (options.fileRef,'ovf:fileRef'),
+                    (options.populatedSize,'ovf:populatedSize'),
+                    (options.capacityAllocUnits,'ovf:capacityAllocationUnits'),
+                    (options.parentRef,'ovf:parentRef')]
+        
+        if options.required and node[0].hasAttribute('ovf:required'):
+            node[0].removeAttribute('ovf:required')
+        for child in node[0].childNodes:
+            #remove attributes from the info or delete info
+            if child.node == 'Info':
+                if options.info:
+                    node[0].removeChild(child)
+                if options.infoID:
+                    child.removeAttribute('ovf:id')
+            if child.nodeName == 'Disk':
+                for key in diskDict:
+                    if (key[0] != None and 
+                    (child.getAttribute('ovf:diskId')==options.disk_id)):
+                        if key[0] and child.hasAttribute(key[1]):
+                            child.removeAttribute(key[1])
+
+
+def rmNetworkSection(ovfFile, options):
+    """
+    This function removes a network section.
+    
+    NOTE:: 
+        To remove an entire network use --network
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile
+    
+    @param options: The options from the optparser.
+    @type options: Optparser object.      
+    """
+    node = Ovf.getSections(ovfFile.envelope, "NetworkSection")
+    #need to get Network which is a child of node[0]
+    if options.section:
+        ovfFile.removeChild(node[0])
+    #info,infoID,networkName,description
+    for child in node[0].childNodes:
+        if child.nodeName == 'Info':
+            if options.info:
+                node[0].removeChild(child)
+            if (child.hasAttribute('ovf:msgid') and options.infoID):
+                child.removeAttribute('ovf:msgid')
+                    
+        if child.nodeName == 'Network':
+            if child.hasAttribute('ovf:id'):
+                if child.getAttribute('ovf:id') == options.networkID:
+                    if options.network:
+                        node[0].removeChild(child)
+                        break
+                    else:
+                        if (child.hasAttribute('ovf:name')and 
+                            options.networkName):
+                            child.removeAttribute('ovf:name')   
+                        for desc in child.childNodes:
+                            if desc.nodeName == 'Description':
+                                child.removeChild(desc)
+
+
+def rmDeploymentOptions(ovfFile, options):
+    """
+    This section will create the Deployment Options Section OR add a configuration to an existing
+    Deployment Options Section.
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile object.
+    
+    """
+    default = None
+    if options.default.lower() == "true":
+        default = True
+    if options.default.lower() == 'false':
+        default = False
+       
+    deploymentSect = ovfFile.createDeploymentOptions(options.info, 
+                                                     options.infoID, 
+                                                     options.secID)
+    if options.comment != None:
+        ovfFile.createComment(options.comment, deploymentSect)
+    ovfFile.defineDeploymentOptions(deploymentSect, options.configID, 
+                                    options.label, options.description, 
+                                    options.labelID, options.descID, 
+                                    default)
+ 
+def rmVirtualSysCollection(ovfFile, options):
+    """
+    This will create a Virtual system Colection or append a new Virtual System Collection
+    to an already existing one.
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile object. 
+
+    """       
+    if options.id != None:
+        vscNode = findNode(ovfFile, 'VirtualSystemCollection', options.id, False,
+                           options.comment)
+        ovfFile.createVirtualSystemCollection(options.vscID, options.info,
+                                              options.infoID, vscNode)
+    else:
+        ovfFile.createVirtualSystemCollection(options.vscID, options.info,
+                                              options.infoID)
+    
+def rmVirtualSystem(ovfFile, options):
+    """
+    This function will create a Virtual System. If the vid is not
+    specified the new element will be appended to the Envelope. The 
+    vid can only be the ID for an existing Virtual System Collection. 
+    
+     @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile object. 
+    """ 
+    if options.id != None:
+        vscNode = findNode(ovfFile, "VirtualSystemCollection",
+                           options.id, False, options.comment)
+        ovfFile.createVirtualSystemSection(options.vsID, options.info, vscNode,
+                                           options.infoID)
+    else:
+        ovfFile.createVirtualSystemSection(options.vsID, options.info, None,
+                                         options.infoID)
+
+def rmVirtualHardware(ovfFile, options):
+    """
+    This method will create a Virtual Hardware section. 
+    """
+     
+        
+    vscNode = findNode(ovfFile, "VirtualSystem", options.id, False,
+                       options.comment)
+    virtualHardware = ovfFile.createVirtualHardwareSection(vscNode,
+                                                           options.secID, 
+                                                           options.info, 
+                                                           options.infoID, 
+                                                           options.transport)
+    systemType = ovfFile.createSystemType(virtualHardware)
+ 
+    ovfFile.defineSystemType(systemType, options.caption, options.description, 
+                             options.instanceID, options.sysID, options.type)
+
+def rmResources(ovfFile, options):
+    """
+    
+    """  
+    
+    vhwNode = None  
+    vhwNode = findNode(ovfFile,"VirtualHardwareSection",options.id,False,
+                       options.comment)  
+    if vhwNode == None:
+         vhwNode = findNode(ovfFile, "VirtualSystemCollection", options.id,
+                       False, options.comment)    
+        
+    elif vhwNode == None:
+        raise NotImplementedError, "The section with id, "+options.id+", was not found."
+        
+    if options.comment != None:
+        ovfFile.createComment(options.comment, vhwNode)
+    if options.automaticAllocation == True:
+        options.automaticAllocation = 'true'
+    if options.automaticAllocation == False:
+        options.automaticAllocation = 'false'
+    refDefDict = {
+             "Address": options.address,"AddressOnParent":options.addressOnParent,
+             "AllocationUnits":options.allocUnits,
+             "AutomaticAllocation":options.automaticAllocation ,
+             "AutomaticDeallocation":options.autoDealloc,"Caption":options.caption,
+             "Connection": options.connection,"ConsumerVisibility":options.consVis,
+             "Description" : options.description,"ElementName":options.elementName,
+             "HostResource":options.hostResource ,
+             "InstanceID": options.resourceID ,   "Limit":options.limit ,
+             "MappingBehavior":options.mapBehavior, "OtherResourceType":options.otherResourceType,
+             "Parent":options.parent ,
+              "PoolID":options.poolID, "Reservation":options.reservation,"ResourceSubType":options.resourceSubtype,
+             "ResourceType":options.resourceType,"VirtualQuantity":options.virtualQuantity,"Weight":options.weight
+         }
+    ovfFile.defineResourceAllocation(vhwNode, refDefDict, 
+                                     options.config, options.bound, 
+                                     options.required)
+           
+def rmResourceAlloc(ovfFile, options):
+    """
+    This function will help create the Resource Allocation Section. 
+    """  
+    vscNode = findNode(ovfFile, "VirtualSystemCollection", options.id,
+                       False, options.comment)    
+    ovfFile.createResourceAllocation(vscNode, options.info, options.infoID,
+                                     options.config, options.bound, 
+                                     options.secID)
+    
+def rmAnnotationSection(ovfFile, options):
+    """
+    This function will create an annotation for a Virtual System or Virtual System Collection.
+    """           
+    vscNode = findNode(ovfFile, 'VirtualSystem', options.id, True,
+                        options.comment)
+    ovfFile.createAnnotationSection(options.annotation, options.info, vscNode,
+                                    options.infoID)                  
+
+def rmProductSection(ovfFile, options): 
+    """
+    This function creates the product section. 
+    """        
+    node = findNode(ovfFile, "VirtualSystem", options.id, True,
+                    options.comment)  
+    ovfFile.createProductSection(node, options.info, options.product, 
+                                 options.productVersion,options.infoID, 
+                                 options.classDesc,options.instance,
+                             options.vendor, options.fullVersion, 
+                             options.prodURL, options.vendorURL, 
+                             options.appURL, options.secID)
+    
+def rmIconType(ovfFile, options):
+    """
+    For the product section this function will create an Icon node. 
+    """ 
+    # TODO: fix findNode to support id=None, or create a new function.
+    prodNode = findNode(ovfFile, 'ProductSection', None, False, None, 
+                        True, options.classDesc, options.instance)
+   
+    if prodNode == None and (options.instance != None 
+                             or options.classDesc != None):
+        errMsg = "The Product Section with class description was not found."
+        raise NotImplementedError, errMsg
+    ovfFile.createIconType(prodNode, options.fileRef, options.height, 
+                           options.width, options.mimeType)
+    
+def rmCategory(ovfFile, options):
+    """
+    For the product section this function will create a category node.
+    """
+    errMsg = "The Product Section with class description was not found."
+    
+    prodNode = findNode(ovfFile, 'ProductSection', None, False, None, 
+                        True, options.classDesc, options.instance)
+                    
+    if prodNode == None and (options.instance != None 
+                             or options.classDesc != None):
+        raise NotImplementedError, errMsg
+    ovfFile.createCategory(prodNode, options.category)
+    
+def rmPropertyProductSection(ovfFile, options):
+    """
+    For the product section this function will create a property section.
+    """   
+      
+    prodNode = findNode(ovfFile, 'ProductSection', options.id, False, None, 
+                        True, options.classDesc, options.instance)
+                    
+    if prodNode == None and (options.instance != None 
+                             or options.classDesc!=None):
+        errMsg = "The Product Section with" + options.classDesc +\
+            " and " + options.instance + " was not found."   
+        raise NotImplementedError, errMsg
+    
+    prop = ovfFile.createPropertyProductSection(prodNode, options.key, 
+                                                options.type,options.value,
+                                                options.userConfig,
+                                                options.required,
+                                                options.secID)
+    
+    
+    if options.description != None:
+        ovfFile.createDescriptionChild(prop, options.description, 
+                                       options.descID)
+    if options.label != None:
+        ovfFile.createLabelChild(prop, options.label, options.labelID)       
+      
+def rmEulaSection(ovfFile, options): 
+    """
+    This function will create the EULA section. 
+    """ 
+    node = findNode(ovfFile, None, options.id, True, options.comment)
+    eula = ovfFile.createEULASection(options.info, node, options.infoID,  
+                                     options.secID)
+    ovfFile.defineLicenseSection(eula, options.agreement, options.licenseID)
+    
+    
+def rmStartup(ovfFile, options):
+    """
+    This function will create the startup section for a Virtual System Collection
+    """     
+    vscNode = findNode(ovfFile, None, options.id, True, options.comment)
+    startupNode = ovfFile.createStartupSection(vscNode, options.info, 
+                                               options.infoID,options.secID)
+    ovfFile.defineStartUpSection(startupNode, options.entityName, 
+                                 options.order, options.startDelay,
+                                 options.waitForGuest, options.startAction, 
+                                 options.stopDelay, options.stopAction)
+
+def rmOSsection(ovfFile, options):
+    """
+    This function creates the Operating System for a Virtual System.
+    """       
+    vsNode = findNode(ovfFile, "VirtualSystem", options.id, False, 
+                      options.comment)
+    ovfFile.createOSsection(vsNode, options.secID, options.info, 
+                            options.infoID, options.description,
+                            options.descriptionID)
+    
+def rmInstallSection(ovfFile, options):
+    """
+    This method creates the install section used to describe a virtual system in a virtual system collection.  
+    """  
+    vsNode = findNode(ovfFile, "VirtualSystem", options.id, False,
+                      options.comment)
+    ovfFile.createInstallSection(vsNode, options.info, options.infoID, 
+                                 options.initBoot, options.bootStopdelay,
+                                 options.secID)
+    
+def findNode(ovfFile, tagName, id, vsORvsc=False, comment=None,
+             prodSec=False, classDesc=None,
+             instance=None):
+    """
+    This function will return the node with the given id.
+    """
+    vsc = "VirtualSystemCollection"
+    vs = "VirtualSystem"
+    node = None
+    nodeFound = False
+    
+    if vsORvsc:
+        
+        for child in ovfFile.document.getElementsByTagName(vsc):
+            if child.getAttribute('ovf:id') == id:
+                node = child
+                nodeFound = True
+        if not nodeFound:
+            #find a virtual system collection with ID
+            for child in ovfFile.document.getElementsByTagName(vs):
+                if child.getAttribute('ovf:id') == id:
+                    node = child
+                    nodeFound = True
+    else:
+        
+        for child in ovfFile.document.getElementsByTagName(tagName):
+            if id != None:
+                if child.getAttribute('ovf:id') == id:
+                    node = child
+                    nodeFound = True
+            if prodSec:
+                node = child
+                nodeFound = True
+                if classDesc != None:
+                    if child.getAttribute("ovf:class") == classDesc:
+                        node = child
+                        nodeFound = True
+                if instance != None:
+                    if child.getAttribute("ovf:instance")== instance:
+                        node = child
+                        nodeFound = True
+    if not nodeFound:
+        if id != None:
+            errmsg = "The "+tagName+" with id "+id+" was not found."
+        else:
+            errmsg = "ID to attach the section to was not provided."
+        raise NotImplementedError, errmsg
+                    
+    if comment != None:
+        ovfFile.createComment(comment, node)
+    return node
+    
+def checkRequiredArgs(cmd, options):
+    """
+    """
+    ret = []
+
+    for opt in commands[cmd]['args']+common:
+        # If not required, there is nothing to check
+        if not opt.get('required', False):
+            continue
+
+        dest = opt['parms']['dest']
+        value = getattr(options, dest)
+        # If Required, then check it was set
+        if not value:
+            # For now, returning the first flag only.
+            flag = opt['flags'][0]
+            ret.append(flag)
+
+    return ret
+      
+def main():
+    usage = "usage: %prog command -f <Ovf file path> [options]"
+    command = None
+    
+    parser = OptionParser(usage)
+    for longOpt in commands.keys():
+        parser.add_option("--" + longOpt, help = commands[longOpt]['help'],
+             action="store_true")
+
+    #do the help stuff up here....
+    if len(sys.argv) > 1:
+        for longOpt in commands:
+            if sys.argv[1] == "--" + longOpt or sys.argv[1] == longOpt:
+                command = longOpt
+                break
+
+    if command == None or sys.argv[1] == "--help" or sys.argv[1] == "-h":
+        parser.parse_args(['--help'])
+        exit(command != None)
+
+    parser = OptionParser(usage)
+    
+    for opt in commands[longOpt]['args']+common:
+        parser.add_option(*opt['flags'], **opt['parms'])
+   
+    (options, args) = parser.parse_args(sys.argv[2:])
+
+    missing = checkRequiredArgs(command, options)
+    if missing:
+        errMsg =  "%s are required" % ", ".join(missing)
+        parser.error(errMsg)
+ 
+    if options.ovfFile:
+        try:
+            ovfFile = OvfFile(options.ovfFile)
+        except:
+            ovfFile = OvfFile()
+            #i want the object OvfFile not the 
+            #name of the file... Bad naming here
+            
+            ovfFile.path = options.ovfFile
+            ovfFileCreated = True
+    else:
+        raise NotImplementedError, "Please pass the path to an OVF file with\
+         the flag -f."
+    if options.ovfVersion:
+        print "OVF spec version: ", getVersion(ovfFile)
+    
+    
+    commands[command]['func'](ovfFile, options)
+    
+commands = {
+   "efile" : { 
+      'func':rmReferences,
+      'help' : "Removes an efile sectoin",
+      'args' : (
+         { 'flags' : [ '-i','--ovfID' ],
+           'parms' : { 'dest' : 'file_id',
+                      'help' : 'Defines the unique ID within the OVF.' },
+           'required': True 
+         }, 
+         { 'flags' : [ '-n', '--href' ], 
+           'parms' : { 'dest' : 'href','help':'Remove the href for this file.'\
+                      ,'action':"store_true"}
+         },
+         { 'flags' : [ '-s', '--size' ], 
+           'parms' : { 'dest' : 'size',"help":"Remove the size attribute from\
+            the file",'action':"store_true"}},
+
+         { 'flags' : [ '-c', '--compression' ], 
+           'parms' : { 'dest' : 'compression','help': "Remove the compression\
+            attribute from the file.",'action':"store_true"}},
+            
+         { 'flags' : [ '-C', '--chunksize' ], 
+           'parms' : { 'dest' : 'chunksize','help':"Remove the chunksize\
+            attribute from the file.",'action':"store_true"}}
+      )
+   },
+   "disk" : { 
+      'func':rmDiskSection,
+      'help' : 'Removes a disk section.',
+      'args' : (
+         { 'flags' : [ '-i','--diskID' ],
+           'parms' : { 'dest' : 'disk_id','help': 'The id for the disk.'},
+           'required':True },
+         { 'flags' : [ '-c', '--capacity' ], 
+           'parms' : { 'dest' : 'capacity','help' : 'The capacity of the given\
+                    disk.','action':"store_true" }},
+         { 'flags' : [ '-F','--format' ], 
+           'parms' : { 'dest' : 'format','help' : "Disk format.",'action':"store_true" }},
+         { 'flags' : [ '-r', '--fileRef' ], 
+           'parms' : { 'dest' : 'fileRef','help' : "File reference." ,'action':"store_true"}},
+         { 'flags' : [ '-s', '--size' ], 
+           'parms' : { 'dest' : 'populatedSize','help': "Populated Size.",'action':"store_true" }},
+         { 'flags' : [ '-u', '--capacityAlloc' ], 
+           'parms' : { 'dest' : 'capacityAllocUnits','help' : "Capacity\
+                    allocation Units.",'action':"store_true" }},
+         { 'flags' : [ '-p', '--parentRef' ], 
+           'parms' : { 'dest' : 'parentRef','help' : "Parent ref. In order to\
+                    specify this the parent must have already been\
+                    specified.",'action':"store_true" }},
+        { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.",'action':"store_true" }},
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information.",'action':"store_true" }},
+        { 'flags' : [ '-q','--required'], 
+           'parms' : { 'dest' : 'required','help' : "Defines if the section\
+                    is required or not. Boolean values only. ",'action':"store_true" },
+                    
+        }
+      )
+   },
+  "net" : {
+      'func':rmNetworkSection, 
+      'help' : 'Remove a Network Section.',
+      'args' : (
+         { 'flags' : [ '-i','--netID' ],
+           'parms' : { 'dest' : 'networkID', 'action':'store','help' :
+                    'Defines the unique ID for the network within the OVF.' },
+           'required':True},
+         { 'flags' : ['--network' ], 
+           'parms' : { 'dest' : 'network','help': "Remove the network with \
+                   the id provided.", 'action':"store_true"}},  
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.", 'action':"store_true" }},
+         { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information." , 'action':"store_true"}},
+         { 'flags' : [ '-e', '--networkName' ], 
+           'parms' : { 'dest' : 'networkName',"help":"The name of the network\
+                    being created.", 'action':"store_true"}},
+         { 'flags' : [ '-d', '--description' ], 
+           'parms' : { 'dest' : 'description','help': "Describe the network\
+                    being created.", 'action':"store_true"}},       
+      )
+   },
+   "deploy" : {
+      'func':rmDeploymentOptions, 
+      'help' : 'Remove a Deploymen Options Section.',
+      'args' : (
+         { 'flags' : [ '-i','--configID' ],
+           'parms' : { 'dest' : 'configID', 'action':'store','help' : 'Defines\
+                    the unique ID for the configuration within the OVF.' },
+           'required': True}, 
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.", 'action':"store_true"}},
+         { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information." , 'action':"store_true"}},
+         { 'flags' : [ '-l', '--label' ], 
+           'parms' : { 'dest' : 'label',"help":"The label used to describe\
+                    the configuration.", 'action':"store_true"}},
+         { 'flags' : [ '-b', '--labelID' ], 
+           'parms' : { 'dest' : 'labelID','help': "The ID for the label\
+                    created.", 'action':"store_true"}},
+         { 'flags' : [ '-d', '--description' ], 
+           'parms' : { 'dest' : 'description','help': "The description for the\
+                    given configuration.", 'action':"store_true"}},
+         { 'flags' : [ '-c', '--descID' ], 
+           'parms' : { 'dest' : 'descID','help': "The ID for the description\
+                    of the configuration created.", 'action':"store_true"}},
+         { 'flags' : [ '-r', '--default' ], 
+           'parms' : { 'dest' : 'default','help': "Specifies if the\
+                    configuration is a default one. This is a Boolean\
+                    (True,False)", 'action':"store_true"}},
+      )
+   },
+   "vsc" : { 
+      'func':rmVirtualSysCollection,
+      'help' : 'Remove a Virtual System Collection',
+      'args' : (
+         { 'flags' : [ '-i','--vscID' ],
+           'parms' : { 'dest' : 'vscID', 'action':'store','help' : 'Defines\
+                    the unique ID for the Virtual System Collection within\
+                    the OVF.'},'required':True}, 
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.", 'action':"store_true"}},
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information.", 'action':"store_true"}},
+      )
+   },
+   "vs" : { 
+      'func':rmVirtualSystem,
+      'help' : 'Remove a Virtual System.',
+      'args' : (
+         { 'flags' : [ '-i','--vsID' ],
+           'parms' : { 'dest' : 'vsID', 'action':'store','help' : 'Defines the\
+                    unique ID for the Virtual System within the OVF.'},
+           'required': True}, 
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.", 'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information.", 'action':"store_true"} },      
+      )
+   },
+   "virthw" : { 
+      'func':rmVirtualHardware,
+      'help' : 'Remove a Virtual Hardware Section.',
+      'args' : (
+                
+         { 'flags' : [ '--instanceID' ],
+           'parms' : { 'dest' : 'instanceID', 'action':'store','help' : 
+                      'Defines the ID of the instance of the System.' },
+           'required':True },      
+         { 'flags' : [ '-s','--sysID' ],
+           'parms' : { 'dest' : 'sysID', 'action':'store','help' : 
+                      'Defines the ID for the System. It should be the same ID\
+                       as the Virtual System the section is in.',
+                        'action':"store_true" } }, 
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "The information to describe\
+                    the section.", 'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
+                    information.", 'action':"store_true"} },
+        { 'flags' : [ '-t','--transport'], 
+           'parms' : { 'dest' : 'transport','help' : "Transport that specifies\
+                    how properties are passed to the virtual machine."
+                    , 'action':"store_true"} },
+        { 'flags' : [ '-d', '--description' ], 
+           'parms' : { 'dest' : 'description','help': "The description for the\
+                    given configuration.", 'action':"store_true"} },
+         { 'flags' : [ '-c', '--caption' ], 
+           'parms' : { 'dest' : 'caption','help': "Caption used to describe\
+                    the Virtual Hardwre.", 'action':"store_true"} },
+        { 'flags' : [ '-p', '--type' ], 
+           'parms' : { 'dest' : 'type','help': "The type of the Virtual System\
+                    being described.", 'action':"store_true"} },
+      )
+   },
+   "resource" : { 
+      'func':rmResources,
+      'help' : 'Remove resources.',
+      'args' : (
+         { 'flags' : [ '--virtHwID'], 
+           'parms' : { 'dest' : 'virtHwID','help' : "Specifies the type for\
+                    the virtual hardware to attach the resources to."} },
+         { 'flags' : [ '--elementName'], 
+           'parms' : { 'dest' : 'elementName','help' : "If flag is present\
+           remove this element.", 'action':"store_true"} },
+         { 'flags' : [ '-k','--resourceType'], 
+           'parms' : { 'dest' : 'resourceType','help' : "If the flag is present\
+           it will remove the resource type.", 'action':"store_true"} },
+         { 'flags' : [ '-i' ,'--resourceID'],
+           'parms' : { 'dest' : 'resourceID','help': 'Remove id for the\
+                    resource.', 'action':"store_true"} },
+         { 'flags' : [ '-d', '--description' ], 
+           'parms' : { 'dest' : 'description','help' : 'Remove the\
+                    human-readable description of the meaning of the\
+                     information.', 'action':"store_true"} },
+         { 'flags' : [ '-a','--address' ], 
+           'parms' : { 'dest' : 'address','help' : "Remove the address for an\
+                    Ethernet adapter, this will be the MAC address."
+                    , 'action':"store_true"} },
+         { 'flags' : [ '-p', '--addressOnParent' ], 
+           'parms' : { 'dest' : 'addressOnParent','help' : "Remove the address\
+                    on parent, which is the location on the controller."
+                    , 'action':"store_true"} },
+         { 'flags' : [ '-u', '--allocUnits' ], 
+           'parms' : { 'dest' : 'allocUnits','help': "Remove the units of\
+                    allocation used. Example: 'MegaBytes'"
+                    ,'action':"store_true"} },
+         { 'flags' : [ '-t', '--automaticAllocation' ], 
+           'parms' : { 'action':"store_true",'dest' : 'automaticAllocation',
+                    'help' : "Remove automatic Deallocation"
+                    , 'action':"store_true"} },
+         { 'flags' : [ '-o', '--autoDealloc' ], 
+           'parms' : { 'dest' : 'autoDealloc','help' : "Remove deallocate."
+                      , 'action':"store_true"} },
+        { 'flags' : [ '-c', '--caption' ], 
+           'parms' : { 'dest' : 'caption','help' : "Remove caption."
+                      , 'action':"store_true"} },
+        { 'flags' : [ '-n','--connection'], 
+           'parms' : { 'dest' : 'connection','help' : "Remove connection."} },
+        { 'flags' : [ '-v','--consVis'], 
+           'parms' : { 'dest' : 'consVis','help' :"Remove consumer visibility."
+                      ,'action':"store_true"} },
+        { 'flags' : [ '-r','--hostResource'], 
+           'parms' : { 'dest' : 'hostResource','help' : "Remove the host\
+                       resource.", 'action':"store_true"} },
+        { 'flags' : [ '-l','--limit'], 
+           'parms' : { 'dest' : 'limit','help' : "Remove the limit."
+                    , 'action':"store_true"} },
+        { 'flags' : [ '-m','--mapBehavior'], 
+           'parms' : { 'dest' : 'mapBehavior','help' : "Removf map behavior."
+                      , 'action':"store_true"} },
+         { 'flags' : [ '-e','--otherResourceType'], 
+           'parms' : { 'dest' : 'otherResourceType','help' : "Remove other\
+                       resource type.",'action':"store_true"} },
+        { 'flags' : [ '-j','--parent'], 
+           'parms' : { 'dest' : 'parent','help' : "Remove parent."
+                      , 'action':"store_true"} },
+        { 'flags' : [ '-w','--poolID'], 
+           'parms' : { 'dest' : 'poolID','help' : "Remove the pool id."
+                      , 'action':"store_true"} },
+        { 'flags' : [ '-z','--reservation'], 
+           'parms' : { 'dest' : 'reservation','help' : "Remove the\
+                        reservation.",'action':"store_true"} },
+        { 'flags' : [ '-b','--resourceSubtype'], 
+           'parms' : { 'dest' : 'resourceSubtype','help' : "Remove the \
+                       resource sub type."
+                    ,'action':"store_true"}},
+        { 'flags' : [ '-g','--virtualQuantity'], 
+           'parms' : { 'dest' : 'virtualQuantity','help' : "Remove the virtual quantity"
+                      , 'action':"store_true"}},
+         { 'flags' : [ '-s','--weight'], 
+           'parms' : { 'dest' : 'weight','help' : "Remove the weight"
+                      , 'action':"store_true"} },
+        { 'flags' : [ '-y','--required'], 
+           'parms' : { 'action':"store_true",'dest' : 'required','help' 
+                    : "Remove if it is required.", 'action':"store_true"} },
+        { 'flags' : ['--config'], 
+           'parms' : { 'dest' : 'config','help' : "Remove the comma-separated\
+                    list of configuration names.", 'action':"store_true"} },
+        { 'flags' : [ '-x','--bound'], 
+           'parms' : { 'dest' : 'bound','help' : "Remove ranges of the Item\
+                    element. The ONLY valid values are \
+                      'min','max','normal'.",'action':"store_true"} },
+      )
+   },
+   "resAlloc" : {
+      'func':rmResourceAlloc, 
+      'help' : "Remove a Resource Allocation Section. ",
+      'args' : (
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "Remove the information to \
+                    describe the section.",'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "Remove the id of the\
+                    section's information.",'action':"store_true"}},
+        { 'flags' : ['-c','--config'], 
+           'parms' : { 'dest' : 'config','help' : "Remove the comma-separated\
+                        list of configuration names.",'action':"store_true"} },
+        { 'flags' : [ '-x','--bound'], 
+           'parms' : { 'dest' : 'bound','help' : "Remove ranges of the Item\
+                    element. The ONLY valid values are \
+                      'min','max','normal'.",'action':"store_true"} }, 
+      ),
+   },
+   "annotate" : { 
+      'func':rmAnnotationSection,
+      'help' : "Remove Annotation Section.",
+      'args' : (
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "Remove the information to\
+                    describe the section.",'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "Remove the id of the\
+                    section's information.",'action':"store_true"}},
+        { 'flags' : ['-a','--annotation'], 
+           'parms' : { 'dest' : 'annotation','help' : "Remove the\
+                    annotation.",'action':"store_true"} },
+         
+      ),
+   },
+   "product" : {
+      'func':rmProductSection, 
+      'help' : "Remove the Product Section.",
+      'args' : (
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "Remove the information to \
+                    describe the section.",'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "Remov the id of the \
+                    section's information.",'action':"store_true"}},
+        { 'flags' : ['-p','--product'], 
+           'parms' : { 'dest' : 'product','help' : "Remove where the product \
+                    being described in the section.",'action':"store_true"} },
+        { 'flags' : ['-v','--productVersion'], 
+           'parms' : { 'dest' : 'productVersion','help' : "Remove the version \
+                    of the product.",'action':"store_true"} }, 
+        { 'flags' : ['-c','--classDesc'], 
+           'parms' : { 'dest' : 'classDesc','help' : "Remove the class \
+                    description.",'action':"store_true"} }, 
+        { 'flags' : ['-n','--instance'], 
+           'parms' : { 'dest' : 'instance','help' : "Remove the instance of \
+                   the product section. Example: com.xen.tools.1.",
+                   'action':"store_true"} }, 
+        { 'flags' : ['-d','--vendor'], 
+           'parms' : { 'dest' : 'vendor',
+                      'help' : "Remove the vendor for the product.",
+                      'action':"store_true"} }, 
+        { 'flags' : ['-o','--fullVersion'], 
+           'parms' : { 'dest' : 'fullVersion',
+                      'help' : "Remove the full version of the product.",
+                      'action':"store_true"} },
+        { 'flags' : ['-r','--prodURL'], 
+           'parms' : { 'dest' : 'prodURL',
+                      'help' : "Remove the URL for the product.",
+                      'action':"store_true"} }, 
+        { 'flags' : ['-u','--vendorURL'], 
+           'parms' : { 'dest' : 'vendorURL',
+                      'help' : "Remove the URL for the vendor.",
+                      'action':"store_true"} },  
+         { 'flags' : ['-a','--appURL'], 
+           'parms' : { 'dest' : 'appURL',
+                      'help' : "Remove the URL for the application.",
+                      'action':"store_true"} },  
+           
+           
+      ),
+   },
+   "property" : { 
+      'func':rmPropertyProductSection,
+      'help' : "Remove a Property for the Product Section. ",
+      'args' : (
+        { 'flags' : [ '-r', '--req' ], 
+           'parms' : { 'action':"store_true",'dest' : 'required',
+                      'help' : "Remove if the section is required.",
+                      'action':"store_true"} },
+        { 'flags' : ['-s','--classDesc'], 
+           'parms' : { 'dest' : 'classDesc','help' : "Used to specify product \
+                    section"},'rquired':True},
+        { 'flags' : ['-n','--instance'], 
+           'parms' : { 'dest' : 'instance','help' : "Used to specify product \
+                    section"},'required':True }, 
+        { 'flags' : [ '-t','--type'], 
+           'parms' : { 'dest' : 'type','help' : "Remove the type.",
+                      'action':"store_true"}},
+        { 'flags' : ['-v','--value'], 
+           'parms' : { 'dest' : 'value','help' : "Remove the value for the \
+                   section.",'action':"store_true"} },
+        { 'flags' : [ '-c','--userConfig'], 
+           'parms' : {'action':"store_true", 'dest' : 'userConfig',
+                    'help' : "Remove boolean value that specifies if this \
+                    section is user configurable.",'action':"store_true"} }, 
+        { 'flags' : [ '-l', '--label' ], 
+           'parms' : { 'dest' : 'label',"help":"Remove the label used to \
+                   describe the configuration.",'action':"store_true"}},
+        { 'flags' : [ '-b', '--labelID' ], 
+           'parms' : { 'dest' : 'labelID','help': "REmove the ID for the \
+                   label created.",'action':"store_true"}},
+        { 'flags' : [ '-d', '--description' ], 
+           'parms' : { 'dest' : 'description','help': "Remove the description \
+                   for the given configuration.",'action':"store_true"}},
+        { 'flags' : [ '-e', '--descID' ], 
+           'parms' : { 'dest' : 'descID','help': "Remove the ID for the \
+                   description of the configuration created.",
+                   'action':"store_true"}},
+            { 'flags' : [ '-k', '--key' ], 
+           'parms' : { 'dest' : 'key','help': "Remove the key.",
+                      'action':"store_true"}},
+      ),
+   },
+   "category" : {
+      'func':rmCategory, 
+      'help' : 'Remove the categroy that helps define a product\
+       section.',
+      'args' : (
+        { 'flags' : ['-s','--classDesc'], 
+           'parms' : { 'dest' : 'classDesc','help' : "Must be provided to\
+            identify Product Section. Unique identifier for the software\
+            product using the reverse domain name convention. Example:\
+            com.xen.tools. If more than one product section is present then\
+            classDesc and instance must be defined."},'required': True }, 
+        { 'flags' : ['-n','--instance'], 
+           'parms' : { 'dest' : 'instance','help' : "Must be provided to\
+            identify Product Section. The instance of the product section.\
+             Example: com.xen.tools.1."},'required':True }, 
+        { 'flags' : ['-c','--category' ],
+           'parms' : { 'dest' : 'category', 'action':'store',
+                      'help' : 'Remove description of the category.',
+                      'action':"store_true"}}, 
+        
+      )
+   },
+   "icon" : { 
+      'func':rmIconType,
+      'help' : 'Remove the icon that helps define a product\
+       section.',
+      'args' : (
+        { 'flags' : ['-n','--fileRef'], 
+           'parms' : { 'dest' : 'fileRef','help' : "Remove the file reference \
+                for the given icon.",'action':"store_true"} }, 
+        { 'flags' : ['--height'], 
+           'parms' : { 'dest' : 'height','help' : "Remove the heigh of the \
+                   image.",'action':"store_true"}}, 
+        { 'flags' : ['-w','--width' ],
+           'parms' : { 'dest' : 'width','help' : 'Remove the width\
+                    of the image.','action':"store_true"}}, 
+        { 'flags' : ['-t','--mimeType' ],
+           'parms' : { 'dest' : 'mimeType','help' : 'Remove the mimeType of \
+                   the image.','action':"store_true"}}, 
+         { 'flags' : ['-s','--classDesc'], 
+           'parms' : { 'dest' : 'classDesc','help' : "Must be provided to\
+            identify Product Section. Unique identifier for the software\
+             product using the reverse domain name convention.\
+             Example: com.xen.tools. If more than one product section is\
+             present then classDesc and instance must be defined."},
+           'required': True }, 
+        { 'flags' : ['--instance'], 
+           'parms' : { 'dest' : 'instance','help' : "Must be provided to\
+            identify Product Section. The instance of the product section.\
+             Example: com.xen.tools.1."},'required':True }, 
+      )
+   },
+    "license" : { 
+      'func':rmEulaSection,
+      'help' : "Remove the legal temrs for using a particular entity. ",
+      'args' : (
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info',
+                    'help' : "Remove the information to describe the section."}
+                    ,'action':"store_true" },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID',
+                      'help' : "Remove the id of the section's information.",
+                      'action':"store_true"}},
+        { 'flags' : ['-a','--agreement'], 
+           'parms' : { 'dest' : 'agreement',
+                      'help' : "Remove the terms of the license.",
+                      'action':"store_true"} },
+        { 'flags' : [ '-i','--licenseID'], 
+           'parms' : { 'dest' : 'licenseID',
+                      'help' : "Remove the unique ID for the given license \
+                      agreement.",'action':"store_true"} }, 
+      ),
+   },
+   "startup" : { 
+      'func':rmStartup,
+      'help' : "Remove the startup section for either a Virtual System or a\
+               Virtual System Collection. ",
+      'args' : (
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "Remove the information to \
+                   describe the section.",'action':"store_true"} },
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "Remove the id of the section's\
+                    information.",'action':"store_true"}},
+        { 'flags' : ['-n','--entityName'], 
+           'parms' : { 'dest' : 'entityName','help' : "Remove the entity name \
+                   within a collection.",'action':"store_true"} },
+        { 'flags' : [ '-o','--order'], 
+           'parms' : { 'dest' : 'order','help' : "Remove the oreder.",
+                      'action':"store_true"} }, 
+       { 'flags' : ['-s','--startDelay'], 
+           'parms' : { 'dest' : 'startDelay','help' : "remove the start delay",
+                      'action':"store_true"} }, 
+       { 'flags' : ['-w','--waitForGuest'], 
+           'parms' : { 'action': 'store_true','dest' : 'waitForGuest',
+                    'help' : "Remove wait for guest.",'action':"store_true"}},   
+       { 'flags' : [ '-t', '--startAction' ], 
+           'parms' : { 'dest' : 'startAction',
+                      'help' : "Remove the start action.",
+                      'action':"store_true"}},
+       { 'flags' : [ '-p', '--stopDelay' ], 
+           'parms' : { 'dest' : 'stopDelay','help' : "Remove the stop delay.",
+                      'action':"store_true"} },
+       { 'flags' : [ '-a', '--stopAction' ], 
+           'parms' : { 'dest' : 'stopAction','help' : "Remove the stop aciton."
+                      ,'action':"store_true"} },
+      ),
+   },
+   "os" : { 
+      'func':rmOSsection,
+      'help' : 'Remove the operating systems section for a Virtual System.',
+      'args' : (
+         { 'flags' : [ '-i','--descriptionID' ],
+           'parms' : { 'dest' : 'descriptionID', 'action':'store',
+                      'help' : 'Remove the id for the description.',
+                      'action':"store_true"}}, 
+         { 'flags' : [ '-d','--description' ],
+           'parms' : { 'dest' : 'description', 'action':'store',
+                      'help' : 'Remove the description of the operating \
+                      system.','action':"store_true"}},
+         { 'flags' : [ '-n','--name' ],
+           'parms' : { 'dest' : 'name', 'action':'store',
+                      'help' : 'Remove the unique name for the section.',
+                      'action':"store_true"}}, 
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info',
+                      'help' : "Remove the information to describe the \
+                      section.",'action':"store_true"}},
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID',
+                      'help' : "Remove the id of the section's information.",
+                      'action':"store_true"}},
+      )
+   },
+    "install" : { 
+      'func':rmInstallSection,
+      'help' : 'Removes the install section used to describe a virtual system\
+               in a virtual system collection.',
+      'args' : (
+         { 'flags' : [ '-i','--initBoot' ],
+           'parms' : { 'dest' : 'initBoot', 'action':'store_true',
+                      'help' : 'Remove the init boot.','action':"store_true"}}, 
+         { 'flags' : [ '-b','--bootStopdelay' ],
+           'parms' : { 'dest' : 'bootStopdelay', 'action':'store',
+                      'help' : 'Remove the boot stop delay.',
+                      'action':"store_true"}},  
+         { 'flags' : [ '-m', '--info' ], 
+           'parms' : { 'dest' : 'info','help' : "Remove the information to \
+                   describe the section."}},
+        { 'flags' : [ '-y','--infoID'], 
+           'parms' : { 'dest' : 'infoID','help' : "Remove the id of the section's\
+                information.",'action':"store_true"}},
+      )
+   },
+
+}
+common = (
+   { 'flags' : [ '--section' ],
+     'parms' : { 'dest' : 'section', 'help': 'Remove entire section.',
+                'action':"store_true" } 
+   },
+   { 'flags' : ['--id','--secID' ],
+     'parms' : { 'dest' : 'secID','help':'OVF id of the section.'} ,
+   }, 
+   { 'flags' : [ '--v', '--version' ],
+     'parms' : { 'dest' : 'ovfVersion','action':"store_true",'default': False,
+                'help':'OVF specification used.'} ,
+   },
+   { 'flags' : [ '-f', '--file' ],
+     'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' },
+     'required': True 
+   },
+)
+
+if __name__ == "__main__":
+    main()
+

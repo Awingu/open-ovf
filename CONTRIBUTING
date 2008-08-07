@@ -1,0 +1,57 @@
+Contributing to Open-ovf
+========================
+
+License
+-------
+
+The project is licensed under EPL v1.0, so any contribution will be made
+under this license. Make sure you read the LICENSE file, in case you have
+doubts about the license.
+
+
+Code/Patches
+------------
+
+1) Always run the test suite before sending out patches. Please ensure all
+tests still pass and you didn't introduce any new bug.
+
+The scripts available in examples are also good for testing, and should be
+used to perform complete tests. Later the test suite will include
+complete tests as well.
+
+2) Use pylint to check the coding style and possible errors. Please
+do not add code that makes pylint complain. A 10/10 rating is the goal.
+Check the Coding style section below to see how to use pylint.
+
+3) Use epydoc syntax to document new classes/methods/functions/etc.
+Check http://epydoc.sourceforge.net/ for help.
+
+You can use "epydoc --check <package/file.py>" to verify what is not
+documented yet.
+
+4) Patches should be in unified diff format (preferably using git).
+
+5) Make sure your patch applies correctly in the git tree in the day
+you're sending the patch out. Use a local personal branch to develop
+your feature and keep that in sync with the main tree (check
+"git rebase").
+
+6) Patches should be sent to open-ovf-devel@lists.sourceforge.net
+
+
+Coding style
+------------
+
+The coding style used in open-ovf is mostly what is defined on
+http://www.python.org/dev/peps/pep-0008/, except for the naming
+convention, that follows CapitalizedWords/camelCase.
+
+There is a pylintrc config file (extras/pylintrc), that can be used
+to tell pylint to accept CapitalizedWords names.
+
+You can save pylintrc as ~/.pylintrc and that will be used
+by default, or you can call pylint like this:
+
+  pylint --rcfile=<path_to_open-ovf>/extras/pylintrc <module/file>
+
+

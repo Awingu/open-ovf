@@ -1,0 +1,55 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          ovf-env-config
+# Required-Start:    mountall.sh
+# Required-Stop:     
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: OVF environment config
+### END INIT INFO
+
+# Author: Murillo Fernandes Bernardes <mfb@linux.vnet.ibm.com>
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+DESC="OVF environment configuration"
+NAME=ovf-env-init
+DAEMON=/etc/ovf-activate/ovf-env-config
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Load the VERBOSE setting and other rcS variables
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	$DAEMON
+	return 0
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	[ "$VERBOSE" != no ] && log_end_msg 0
+	;;
+  stop)
+	;;
+  restart|force-reload)
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:

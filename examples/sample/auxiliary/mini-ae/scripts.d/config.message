@@ -1,0 +1,22 @@
+#!/bin/sh
+# <Property ovfenv:key="config.sys.message" ovfenv:value="HelloW orld"/>
+
+cat_html_message() {
+	local msg="${1}"
+	cat <<EOF
+<HTML>
+<HEAD>
+</HEAD>
+<BODY>
+${msg}
+</BODY>
+</HTML>
+EOF
+}
+config() {
+	local message=""
+	ovf_get_key_value config.sys.message;     message=${_RET}
+	cat_html_message "$message" > /var/www/index.html
+}
+
+config "$@"

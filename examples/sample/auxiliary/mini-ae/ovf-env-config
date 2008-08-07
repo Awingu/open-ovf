@@ -1,0 +1,34 @@
+#!/bin/sh
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+unset MOUNT_DIR OVF_ENV_XML  TMPD
+SCRIPTS_DIR=/etc/ovf-activate/scripts.d/
+ovf_get_key_value() {
+   _RET=$(sed -n -e "/$1/s/.*value=\"\([^\"]*\)\".*$/\1/p") < "${OVF_ENV_XML}"
+}
+
+error() { echo "$@" >&2; }
+fail() { error "$@" ; exit 1; }
+cleanup() {
+   [ -z "${MOUNT_DIR}" ] || umount ${MOUNT_DIR}
+   rm -Rf "${TMPD}"
+}
+
+TMPD=$(mktemp -d) || fail "failed to mktemp"
+mount /dev/cdrom "${TMPD}" 2>/dev/null && MOUNT_DIR=${TMPD} || exit 0
+
+OVF_ENV_XML=${MOUNT_DIR}/ovf-env.xml
+
+if [ ! -f "${OVF_ENV_XML}" ]; then 
+    cleanup
+    exit 0
+fi
+
+for x in $SCRIPTS_DIR/*; do
+	[ -f "$x" ] || continue
+	echo "${x##*/}"
+	. ${x} || { error "WARNING: ${x} failed"; }
+done
+
+cleanup

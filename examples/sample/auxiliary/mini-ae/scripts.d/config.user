@@ -1,0 +1,32 @@
+#!/bin/sh
+
+encrypt_pass() {
+	local salt="" encrypted="" pass="${1}"
+	# very bad, using static salt
+	salt='$1$abcd1234$'
+   	_RET=$(perl -e "print(crypt(\$ARGV[0],'$salt'))" "${pass}" );
+}
+do_useradd() {
+	local user=${1} pass=${2} id=${3} cpass=""
+	encrypt_pass "$pass"
+	cpass=${_RET}
+
+	if x=$(awk -F: "\$3 == \"\" { print $1 }" < /etc/passwd) && 
+	   [ -n "${x}" ]; then
+		userdel "${x}"
+	fi
+
+	useradd --uid "${id}" --groups admin --create-home \
+		--password "${cpass}" "${user}"
+}
+config() {
+        # <Property ovfenv:key="config.sys.username" ovfenv:value="joeuser"/>
+        # <Property ovfenv:key="config.sys.password" ovfenv:value="joeuser"/>
+	local username="" password="" cpass=""
+	ovf_get_key_value config.sys.username; username=${_RET};
+	ovf_get_key_value config.sys.password; password=${_RET};
+
+	do_useradd "${username}" "${password}" 9999
+
+}
+config "$@"

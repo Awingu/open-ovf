@@ -1,0 +1,63 @@
+#!/bin/sh
+# <Property ovfenv:key="config.net.method" ovfenv:value="static"/>
+# <Property ovfenv:key="config.net.hostname" ovfenv:value="myhostname"/>
+# <Property ovfenv:key="config.net.ip" ovfenv:value="10.0.2.101"/>
+# <Property ovfenv:key="config.net.gateway" ovfenv:value="10.0.2.1"/>
+# <Property ovfenv:key="config.net.dns1" ovfenv:value="10.0.2.2"/>
+# <Property ovfenv:key="config.net.search" ovfenv:value="example.com"/>
+
+cat_dhcp_interface() {
+	cat <<EOF
+auto lo eth0
+iface lo inet loopback
+iface eth0 inet dhcp
+EOF
+}
+cat_static_interface() {
+	local ip=${1} nm=${2} gw=${3}
+	cat <<EOF
+auto lo eth0
+iface lo inet loopback
+iface eth0 inet static
+   address ${ip}
+   netmask ${nm}
+   gw ${gw}
+EOF
+}
+cat_hosts() {
+	local host=${1} 
+        cat <<EOF
+127.0.0.1 localhost
+127.0.1.1 ${host}
+EOF
+}
+cat_resolvconf() {
+	local nslist=${1} searchlist=${2} t=""
+	for t in $nslist; do echo "nameserver $t"; done
+	[ -n "${searchlist}" ] && echo "search ${searchlist}"
+}
+config() {
+	local method hostname dns1 search ip gateway netmask
+	ovf_get_key_value config.net.method;   method=${_RET};
+	ovf_get_key_value config.net.hostname; hostname=${_RET};
+	ovf_get_key_value config.net.dns1;     dns1=${_RET}
+	ovf_get_key_value config.net.search;   search=${_RET}
+	ovf_get_key_value config.net.ip;       ip=${_RET}
+	ovf_get_key_value config.net.gateway;  gateway=${_RET}
+	ovf_get_key_value config.net.netmask;  netmask=${_RET}
+
+	if [ "${method}" = "dhcp" ]; then
+		cat_dhcp_interface > /etc/network/interfaces
+	else
+		cat_static_interface "$ip" "$netmask" "$gateway" \
+			> /etc/network/interfaces
+		
+		cat_resolvconf "$dns1" "$search" > /etc/resolv.conf
+	fi
+
+	cat_hosts "$hostname" > /etc/hosts
+
+	echo "$hostname" > /etc/hostname
+	hostname "$hostname"
+}
+config "$@"

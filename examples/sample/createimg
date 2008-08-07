@@ -1,0 +1,42 @@
+#!/bin/bash
+
+TEMP_DIR=""
+EXTRA_PKGS="openssh-server openssh-client apache2"
+
+SUITE="hardy"
+VM_TYPE="qemu"
+
+USER="user1"
+PASSWD="user1"
+
+#
+BASE_DIR=`readlink -f $(dirname $0)`
+
+extra_args=`for i in $EXTRA_PKGS; do echo "--addpkg $i"; done`
+
+exec_script=${BASE_DIR}/auxiliary/install-ae
+DESTINATION="${BASE_DIR}/auxiliary/ubuntu-hardy"
+
+cleanup() {
+	[ -z "${TEMP_DIR}" -o ! -d "${TEMP_DIR}" ] || rm -Rf "${TEMP_DIR}"
+}
+error() { echo "$@" >&2; }
+fail() { error "$@"; exit 1; }
+
+trap cleanup EXIT
+
+TEMP_DIR=$(mktemp -d ${TMPDIR:-/tmp}/${0##*/}.XXXXXX) ||
+   fail "failed to make temp dir"
+
+partfile=${TEMP_DIR}/partfile
+cat >"${partfile}" <<EOF
+root 1000
+---
+swap 256
+EOF
+#
+ubuntu-vm-builder ${VM_TYPE} ${SUITE} ${extra_args} \
+		--user ${USER} --pass ${PASSWD} \
+		--exec ${exec_script} --dest ${DESTINATION} \
+		--part "${partfile}"
+

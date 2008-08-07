@@ -1,0 +1,135 @@
+#!/bin/sh -e
+[ "$1" = "-h" -o "$1" = "--help" ] && {
+   echo "Usage: ${0##*/} dir [output]"
+   echo "   writes sample ovf to file. file defaults to 'out.ovf'"
+   exit 0
+}
+error() { echo "$@" >&2; }
+fail() { error "$@"; exit 1; }
+
+domkovf() {
+   local out=""
+   [ -n "$DEBUG" ] && error "mkovf $@"
+   out=$(${MKOVF} "$@" 2>&1) || {
+      error "failed: ${MKOVF} $@"
+      error "${out}"
+      return 1
+   }
+}
+
+if [ -z "${MKOVF}" ]; then
+   { MKOVF=$(which mkovf.py) || MKOVF=$(which mkovf); } 2>/dev/null ||
+      fail "cannot find mkovf. export MKOVF or add 'mkovf.py' to PATH"
+fi
+mkovf=domkovf
+
+outd=${1%/}
+f=${2:-${outd}/httpd.ovf}
+[ -d "${outd}" ] || { echo "${outd} not a dir"; exit 1; }
+rm -f "${f}"
+
+disks=$(ls ${outd}/*.qcow2 2>/dev/null) ||
+   fail "failed to find disks in ${outd}/*.qcow2"
+
+n=1;
+for d in ${disks}; do
+   size=$(ls -l "${d}" | awk '{print $5}')
+   capacity=$(qemu-img info "${d}" | awk '$1 == "virtual" { print $4 }') &&
+      capacity=${capacity#(} || capacity="1049624576"
+   id=qemu-disk${n}
+   $mkovf --efile -f "$f" -i "${id}" -n "${d##*/}" -s "$size"
+   n=$(($n+1))
+   $mkovf --disk -f "$f" -i "disk${n}" --capacity ${capacity} \
+      --fileRef ${d##*/} --format "http://qemu/qcow2"
+done
+
+$mkovf --net -f "$f" -i Red \
+   --info "Logical networks used in the package" --networkName "VM Network" \
+   -d "The network that this service will be available on" 
+
+$mkovf --vs -f "$f"  -i MyService \
+   -m "Sample single-VM Virtual appliance" 
+
+$mkovf --product -f "$f" \
+   --info "Product information for the service" \
+   --comment "Overall information about the product" \
+   --product "My Service" --productVersion 1.0 --fullVersion 1.0.0 \
+   --classDesc org.qemu --id MyService --instance 1
+
+$mkovf --property -f "$f" --classDesc org.qemu --instance 1 \
+   --key hostname --type string \
+   --description "Specifies the hostname for the appliance" 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key ip --type string --instance 1 \
+   --description "Specifies the IP address for the appliance" 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key subnet --type string --instance 1 \
+   --description "Specifies the subnet to use on the deployed network" 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key gateway --type string --instance 1 \
+   --description "Specifies the gateway on the deployed network" 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key dns --type string --instance 1 \
+   --description "A comma separated list of DNS servers on the deployed network" 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key search --type string --instance 1 \
+   --description "Search string." 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key username --type string --instance 1 \
+   --description "Specify the username for this host." 
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key password --type string --instance 1 \
+   --description "Specigy the password."
+
+$mkovf --property -f "$f" --classDesc org.qemu \
+   --key message  --type string --instance 1 \
+   --description "Message string."
+
+
+
+
+
+
+$mkovf --virthw -f "$f" --id MyService --type qemu \
+   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic"
+ 
+$mkovf --resource -f "$f" --caption "1 virtual CPU" \
+   --description "Number of virtual CPUs" \
+   --resourceID 1 --resourceType 3 --virtualQuantity 1 \
+   --elementName "virtual CPU"
+
+$mkovf --resource -f "$f" --allocUnits MegaBytes \
+   --caption "256 MB of memory" --description "Memory Size" \
+   --resourceID 2 --resourceType 4 --virtualQuantity 256 \
+   --elementName "Memory"
+
+$mkovf --resource -f "$f" --automaticAllocation True \
+   --caption "Ethernet adapter on 'VM Network'" \
+   --connection "VM Network" --resourceID 3 --resourceType 10 \
+   --description "Ethernet Adapter" \
+   --elementName "Network Adapter"
+
+$mkovf --resource -f "$f" \
+   --caption "SCSI Controller 0 - LSI Logic" --resourceID 4 \
+   --resourceSubtype LsiLogic --resourceType 6 \
+   --description "SCSI controller" \
+   --elementName "SCSI Adapter"
+
+n=1;
+for d in ${disks}; do
+$mkovf --resource -f "$f" --caption "Harddisk ${n}" \
+   --hostResource "ovf://disk/disk${n}" --resourceID $(($n+4)) --parent 4 \
+   --resourceType 17 --description "Hard Disk ${n}" \
+   --elementName "Disk Drive"
+   n=$(($n+1))
+done
+
+echo "wrote to ${f}"
+

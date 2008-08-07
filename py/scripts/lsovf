@@ -1,0 +1,646 @@
+#!/usr/bin/python
+# vi: ts=4 expandtab syntax=python
+##############################################################################
+# Copyright (c) 2008 IBM Corporation
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+# Marcos Cintron (IBM) - initial implementation
+##############################################################################
+
+import sys
+from optparse import OptionParser
+
+from ovf.OvfFile import OvfFile
+from ovf.Ovf	import Ovf
+
+def getVersion(ovfFile, options=None):
+    """
+    This returns the version used to build the OVF.
+    
+    @param ovfFile: An OvfFile object.
+    @type ovfFile: OvfFile
+    """
+    return Ovf.getOvfVersion()
+
+def getEfile(ovfFile, options):
+    """
+    This function will return a list of dictionaries for a file in the
+    references' Section.
+    """
+    fields = [ "ovf:id", "ovf:size" ]
+    if options.verbose:
+        fields = fields + [ "ovf:href", "ovf:chunkSize", "ovf:compression" ]
+     
+    for node in ovfFile.document.getElementsByTagName('File'):
+        if options.id == None or options.id == node.getAttribute('ovf:id'):
+            print ' '.join(map(node.getAttribute, fields))
+
+def getDisk(ovfFile, options):
+    fields = [ "ovf:fileRef", "ovf:diskId" ]
+    if options.verbose:
+        fields = fields + [ "ovf:capacity", "ovf:capacityAllocationUnits", 
+                         " ovf:format", "ovf:populatedSize", "ovf:parentRef"]
+     
+    for node in ovfFile.document.getElementsByTagName('Disk'):
+        if options.id == None or options.id == node.getAttribute('ovf:diskId'):
+            print ' '.join(map(node.getAttribute, fields))
+    
+def getNetwork(ovfFile, options):
+    """
+    This function will print to stdout the network section.
+    """
+    desc = []
+    fields = [ "ovf:id", "ovf:name" ]
+    #if verbose check to see if there is an id provided then get the 
+    #description along with name an id.
+    if options.verbose:     
+        for nodeNet in ovfFile.document.getElementsByTagName('Network'):
+            if (options.id == None or 
+                options.id == nodeNet.getAttribute('ovf:id')):
+                print ' '.join(map(nodeNet.getAttribute, fields)),
+                print (nodeNet.getElementsByTagName('Description')[0]
+                      .firstChild.data)
+    else:           
+        for node in ovfFile.document.getElementsByTagName('Network'):  
+            if( options.id ==None or 
+                options.id == node.getAttribute('ovf:id')):    
+                print ' '.join(map(node.getAttribute, fields))
+            
+def getDeploy(ovfFile, options):
+    """
+    This function will print the deployment section.
+    """  
+    desc = []
+    fields = [ "ovf:id", "ovf:default" ]
+    
+    if options.verbose:     
+        for node in ovfFile.document.getElementsByTagName('Configuration'):
+            if (options.id == None or 
+                options.id == node.getAttribute('ovf:id')):
+                print ' '.join(map(node.getAttribute, fields)),
+                print node.getElementsByTagName('Label')[0].firstChild.data,
+                print (node.getElementsByTagName('Description')[0]
+                          .firstChild.data)
+    else:           
+        for node in ovfFile.document.getElementsByTagName('Configuration'):  
+            if options.id == None or options.id == node.getAttribute('ovf:id'):
+                print ' '.join(map(node.getAttribute, fields))
+
+def getVSC(ovfFile, options):
+    """
+    This function will show a virtual system collection.
+    """
+    print 'still need to implement this'
+    
+def getVS(ovfFile, options): 
+    """
+    This function will show a virtual system.
+    """  
+    print 'still need to implement this'
+def getHW(ovfFile, options):
+    """
+    This function will list the virtual hardware.
+    """
+    desc = []
+    transport = 'ovf:transport'
+    idFound = False
+    if options.verbose: 
+        #find the Content node that is of type VirtualSystem. Then check it's 
+        #id to see if it matches the id
+        #passed into the function    
+        for node in ovfFile.document.getElementsByTagName('Content'):
+            if node.getAttribute('xsi:type') == 'ovf:VirtualSystem_Type':
+                if (options.id == None or 
+                    options.id == node.getAttribute('ovf:id')):
+                    idFound = True
+                    for childs in node.childNodes:
+                        if childs.nodeName == 'Section':
+                            if (childs.getAttribute('xsi:type') 
+                               == 'ovf:VirtualHardwareSection_Type'):
+                                print childs.getAttribute(transport),
+                            #call another method that will get the System vssd
+                                _getSystem(childs)
+                            #call another method that will get the Item rasd
+                                _getRes(ovfFile, options)
+                               
+    else:  
+        for node in ovfFile.document.getElementsByTagName('Content'):
+            if node.getAttribute('xsi:type') == 'ovf:VirtualSystem_Type':
+                if( options.id == None or 
+                    options.id == node.getAttribute('ovf:id')):
+                    idFound = True
+                    for childs in node.childNodes:
+                        if childs.nodeName == 'Section':
+                            if( childs.getAttribute('xsi:type')
+                                == 'ovf:VirtualHardwareSection_Type'):
+                                print childs.getAttribute(transport)
+                                
+    if not idFound:
+        raise NotImplementedError, "The VirtualSystem ID provided does not\
+         match any ID's in the current OVF."
+                
+def _getSystem(childs, options=None):
+    printed = False
+    presentElements = []
+    #find the System child node. then figure out what vssd: is present, as a 
+    #child of System, and store it 
+    #then get the data from that vssd: child and print it
+    for node in childs.childNodes:
+        if node.nodeName == 'System':
+            for sysNode in node.childNodes:
+                if sysNode.localName != None:
+                    presentElements.append(str(sysNode.localName))
+            if not printed:        
+                for i in range(len(presentElements)-1):
+                    printed = True
+                    print (' ', node.getElementsByTagName('vssd:'+
+                                                        presentElements[i])[0]
+                                                        .firstChild.data),
+               
+def _getRes(ovfFile, options):
+    """
+    This method will get Resources. 
+    """
+    
+    for node in ovfFile.document.getElementsByTagName('Item'):
+        foundID = False
+        if options.id == None:
+            for sysNode in node.childNodes:
+                if sysNode.localName != None:
+                    if not foundID:
+                        if node.parentNode.hasAttribute('ovf:id') and printID:
+                            print node.parentNode.getAttribute('ovf:id'),
+                            foundID = True
+                        else:
+                            foundID = True 
+                            print (node.parentNode.parentNode
+                                   .getAttribute('ovf:id')) 
+                    print ' ', sysNode.firstChild.data,
+            print
+        elif (node.parentNode.getAttribute('ovf:id') == id or 
+              node.parentNode.parentNode.getAttribute('ovf:id') == id):
+            for sysNode in node.childNodes:
+                if sysNode.localName != None:
+                    if not foundID and printID:
+                        print id, 
+                        foundID = True
+                    print ' ', sysNode.firstChild.data,
+            print
+            
+def _findResAlloc(ovfFile, options):
+    """
+    This will find the resource.
+    """                  
+    nodeID = options.id
+    ovfRes = 'ovf:ResourceAllocationSection_Type'
+    #need to figure out given a parent's id find the resources for that parent
+    #the problem is where there are multiple levels of nodes
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if node.getAttribute('xsi:type') == ovfRes:
+            if nodeID != None:
+                if node.getAttribute('ovf:id') == nodeID:
+                    print id,
+                    print node.getAttribute('ovf:bound'),
+                    print node.getAttribute('ovf:configuration'),
+            else:
+                nodeID = node.parentNode.getAttribute('ovf:id'),
+                print node.getAttribute('ovf:bound'),
+                print node.getAttribute('ovf:configuration'),
+    return nodeID
+def getInstall(ovfFile, options):
+    """
+    This function will get the install section of a virtual system. 
+    """
+    fields = ['ovf:id']
+    if options.verbose:
+        fields.append('ovf:initialBoot')
+        fields.append('ovf:initialBootStopDelay')
+        for node in ovfFile.document.getElementsByTagName('Section'):
+            if node.getAttribute('xsi:type') == "ovf:InstallSection_Type":
+                
+                if node.hasAttribute('ovf:id'):
+                    id =  node.getAttribute('ovf:id'),
+                    print id
+                else:
+                    print node.parentNode.getAttribute('ovf:id'),
+                print ' '.join(map(node.getAttribute, fields)),
+                
+    else:
+        for node in ovfFile.document.getElementsByTagName('Section'):
+            if node.getAttribute('xsi:type') == "ovf:InstallSection_Type":
+                if node.getAttribute('ovf:id') == None:
+                    print node.parent.getAttribute('ovf:id')
+                else:
+                    print node.getAttribute('ovf:id')
+
+def getAnnotation(ovfFile, options):
+    """
+    This function will get the annotation of an OVF. 
+    """
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == 'ovf:AnnotationSection_Type':
+                if options.id == node.getAttribute('ovf:id'):
+                    print id,
+                    for annot in node.childNodes:
+                        if annot.localName == 'Annotation':
+                            print annot.firstChild.data
+        else:
+            if node.getAttribute('xsi:type') == 'ovf:AnnotationSection_Type':
+                print node.parentNode.getAttribute('ovf:id'),
+                for annot in node.childNodes:
+                    if annot.localName == 'Annotation':
+                        print annot.firstChild.data
+                
+def getProdSection(ovfFile, options):
+    """
+    The function will get the product section in the OVF.
+    """
+    field = ['ovf:class', 'ovf:instance']
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == 'ovf:ProductSection_Type':
+                if (options.id == node.getAttribute("ovf:id") or 
+                    options.id == node.parentNode.getAttribute("ovf:id")):
+                    if child.localName != None and child.firstChild != None:
+                        print child.firstChild.data,
+                        if child.localName == 'Icon':
+                            print child.getAttribute('ovf:fileRef'),
+                            print child.getAttribute('ovf:height'),
+                            print child.getAttribute('ovf:mimeType'),
+                            print child.getAttribute('ovf:width'),
+                        if child.localName == 'Property':
+                            print child.getAttribute('ovf:key'),
+                            print child.getAttribute('ovf:required'),
+                            print child.getAttribute('ovf:userConfigurable'),
+                            print child.getAttribute('ovf:value'),
+                            for subChild in child.childNodes:
+                                if subChild.localName:
+                                    print subChild.firstChild.data,
+        else:
+            if node.getAttribute('xsi:type') == 'ovf:ProductSection_Type':
+                for child in node.childNodes:
+                    if child.localName != None and child.firstChild != None:
+                        print child.firstChild.data,
+                    if child.localName == 'Icon':
+                        print child.getAttribute('ovf:fileRef'),
+                        print child.getAttribute('ovf:height'),
+                        print child.getAttribute('ovf:mimeType'),
+                        print child.getAttribute('ovf:width'),
+                    if child.localName == 'Property':
+                        print child.getAttribute('ovf:key'),
+                        print child.getAttribute('ovf:required'),
+                        print child.getAttribute('ovf:userConfigurable'),
+                        print child.getAttribute('ovf:value'),
+                        for subChild in child.childNodes:
+                            if subChild.localName:
+                                print subChild.firstChild.data,
+                        
+def getLicense(ovfFile, options):
+    """
+    This function will get the license section in an OVF.
+    """                       
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == 'ovf:EulaSection_Type': 
+                if (options.id == node.getAttribute("ovf:id") or 
+                    options.id == node.parentNode.getAttribute("ovf:id")):
+                    for child in node.childNodes:
+                        if child.localName == 'License':
+                            print id,
+                            print child.firstChild.data 
+        else:
+            if node.getAttribute('xsi:type') == 'ovf:EulaSection_Type':
+                print node.parentNode.getAttribute("ovf:id"),
+                for child in node.childNodes:
+                    if child.localName == 'License':
+                        print child.firstChild.data,
+                print       
+
+def getStartUp(ovfFile, options):
+    """
+    This function will get the startup section within an OVF.
+    """  
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == 'ovf:StartupSection_Type':
+                if (options.id == node.getAttribute('ovf:id') or 
+                    options.id == node.parentNode.getAttribute('ovf:id')):
+                    for child in node.childNodes:
+                        if child.localName:
+                            print child.getAttribute('ovf:id')
+                            print child.getAttribute('ovf:order'),
+                            print child.getAttribute('ovf:startAction'),
+                            print child.getAttribute('ovf:startDelay'),  
+                            print child.getAttribute('ovf:stopAction'), 
+                            print child.getAttribute('ovf:stopDelay'), 
+                            print child.getAttribute('ovf:waitingForGuest'),
+                            print
+        else:
+            if node.getAttribute('xsi:type') == 'ovf:StartupSection_Type':
+                for child in node.childNodes:
+                    if child.localName == "Item":
+                        print child.getAttribute('ovf:id'),
+                        print child.getAttribute('ovf:order'),
+                        print child.getAttribute('ovf:startAction'),
+                        print child.getAttribute('ovf:startDelay'),  
+                        print child.getAttribute('ovf:stopAction'), 
+                        print child.getAttribute('ovf:stopDelay'), 
+                        print child.getAttribute('ovf:waitingForGuest'),
+                        print 
+
+def getCompat(ovfFile, options):
+    """
+    This function will get the compatibility section within an OVF. 
+    """
+    ovfComp = 'ovf:CpuCompatibilitySection_Type'
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == ovfComp:
+                if (options.id == node.getAttribute('ovf:id') or 
+                    options.id == node.parentNode.getAttribute('ovf:id')):
+                    for child in node.childNodes:
+                        if child.localName == 'Level':
+                            print child.getAttribute('ovf:eax'),
+                            print child.getAttribute('ovf:ebx'), 
+                            print child.getAttribute('ovf:ecx'), 
+                            print child.getAttribute('ovf:edx'),
+                            print child.getAttribute('ovf:level'), 
+        else:
+            if node.getAttribute('xsi:type') == ovfComp:
+                for child in node.childNodes:
+                    if child.localName == 'Level':
+                        print child.getAttribute('ovf:eax'),
+                        print child.getAttribute('ovf:ebx'), 
+                        print child.getAttribute('ovf:ecx'), 
+                        print child.getAttribute('ovf:edx'),
+                        print child.getAttribute('ovf:level'),
+                            
+def getOS(ovfFile, options):
+    """
+    This function gets the OS described within an OVF.
+    """   
+    ovfOS = 'ovf:OperatingSystemSection_Type'
+    for node in ovfFile.document.getElementsByTagName('Section'):
+        if options.id != None:
+            if node.getAttribute('xsi:type') == ovfOS:
+                if( options.id == node.getAttribute('ovf:id') or 
+                    options.id == node.parentNode.getAttribute('ovf:id')):
+                    for child in node.childNodes:
+                        if child.localName == 'Description':
+                            print child.firstChild.data
+        else:
+            if node.getAttribute('xsi:type') == ovfOS:
+                for child in node.childNodes:
+                    if child.localName == 'Description':
+                        print child.firstChild.data  
+                  
+def main():
+    usage = "usage: %prog command [options]"
+    command = None
+    parser = OptionParser(usage)
+    for long in commands.keys():
+        parser.add_option("--" + long, help=commands[long]['help'],
+             action="store_true")
+
+    #do the help stuff up here....
+    if len(sys.argv) > 1:
+        for long in commands:
+            if sys.argv[1] == "--" + long or sys.argv[1] == long:
+                command = long
+                break
+    
+    if command == None or sys.argv[1] == "--help" or sys.argv[1] == "-h":
+        parser.parse_args(['--help'])
+        exit(command != None)
+
+    parser = OptionParser(usage)
+    for opt in commands[long]['args']+common:
+        parser.add_option(*opt['flags'], **opt['parms'])
+   
+    (options, args) = parser.parse_args(sys.argv[2:])
+    ovfFile = None
+    if options.ovfFile:
+        try:
+            ovfFile = OvfFile(options.ovfFile)
+        except:
+            print "Failed to open " + options.ovfFile
+            exit(1)
+   
+    if options.ovfVersion:
+        print "OVF spec version: ", getVersion(ovfFile)
+       
+    if options.vv:
+        options.verbose = True
+    commands[command]['func'](ovfFile, options)
+  
+        
+    if command == 'lang':
+        print ovfFile.envelope.getAttribute('xml:lang')
+       
+commands = {
+   "efile" : { 
+      'func' : getEfile,
+      'help' : "List an efile from references section",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+         
+      )
+   },
+   "disk" : { 
+      'func': getDisk,
+      'help' : 'List the disks from the Disk Section.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+         
+      )
+   },
+  "net" : { 
+       'func': getNetwork,
+       'help' : 'List the networks from the network Section.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+         
+      )
+   },
+   "deploy" : { 
+       'func': getDeploy,
+      'help' : 'List the Deploymen Options Section.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+         
+      )
+   },
+   "vsc" : {
+      'func': getVSC,
+      'help' : 'List a Virtual System Collection',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "vs" : { 
+      'func': getVS,
+      'help' : 'Lists a Virtual System.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "virthw" : { 
+      'func': getHW,
+      'help' : 'List a Virtual Hardware Section.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "resource" : {
+      'func': _getRes, 
+      'help' : 'Define resources.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "resAlloc" : {
+      'func' : _findResAlloc, 
+      'help' : "List the Resource Allocation Sections. ",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "annotate" : { 
+      'func': getAnnotation,
+      'help' : "List Annotation Section.",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "product" : {
+      'func': getProdSection, 
+      'help' : "List the Product Section.",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "license" : {
+      'func': getLicense, 
+      'help' : "List the legal temrs for using a particular entity. ",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "startup" : { 
+      'func': getStartUp,
+      'help' : "List the startup section for either a Virtual System or a\
+               Virtual System Collection. ",
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+     "compat" : { 
+      'func': getCompat,
+      'help' : 'List CPU Compatibility Section which specifies requirements on\
+        the virtualized CPU. It is only valid in a Virtual System Section.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+   "os" : { 
+      'func': getOS,
+      'help' : 'List the operating systems section for a Virtual System.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv','help' : 'Very verbose. Only show some\
+            parts of the section.','action': 'store_true','default':False } }, 
+      )
+   },
+    "install" : { 
+       'func': getInstall,
+      'help' : 'List the install section used to describe a virtual system in\
+       a virtual system collection.',
+      'args' : (
+         { 'flags' : [ '--vv' ],
+           'parms' : { 'dest' : 'vv',
+                      'help' : 'Very verbose. Only show some parts of the\
+                       section.','action': 'store_true','default':False } }, 
+      )
+   },
+    
+    "lang" : { 
+      'help' : "List the language of the OVF.",
+      'args' : (
+         { 'flags' : [ '-l', '--language'],
+           'parms' : { 'dest' : 'language','action':"store",
+                      'help': "Define the language." }
+         },
+      ),
+   },
+}
+common = (
+   
+         
+   { 'flags' : [ '--v', '--version' ],
+     'parms' : { 'dest' : 'ovfVersion','action':"store_true",'default': False,
+                'help':'OVF specification used.'} ,
+   },
+   { 'flags' : [ '-f', '--file' ],
+     'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' } 
+   },
+   { 'flags' : [ '--id' ],
+     'parms' : { 'dest' : 'id',
+                'help':'ID of the section to attach to, if any.'} 
+   },
+   { 'flags' : [ '--verbose' ],
+     'parms' : {'action':'store_true', 'dest' : 'verbose',
+                'help':'Display with verbose.' } 
+   },
+  
+)
+
+if __name__ == "__main__":
+    main()
+
