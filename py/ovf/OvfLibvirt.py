@@ -12,6 +12,7 @@
 """OvfLibvirt"""
 
 from xml.dom.minidom import Document
+import os.path
 import sched
 import time
 
@@ -50,19 +51,27 @@ def libvirtDocument(domain, *sections):
     @param domain: L{Domain Element<domainElement>}
     @type domain: DOM Element
     
-    @param sections: sequence of Libvirt sections
-    @type sections: variable length DOM Element tuple
+    @param sections: tuple of Libvirt sections
+    @type sections: DOM Element tuple
         
     @return: XML DOM Document
     @rtype: DOM Document
     """
     document = Document()
-    for section in sections:
-        old = domain.getElementsByTagName(section.tagName)
-        if old == []:
-            domain.appendChild(section)
+    index = 0
+    while(index < len(sections)):
+        section = sections[index]
+        if isinstance(section, ()):
+            temp = libvirtDocument(domain, section)
+            domain = temp.documentElement
         else:
-            domain.replaceChild(section, old[0])
+            old = domain.getElementsByTagName(section.tagName)
+            if old == []:
+                domain.appendChild(section)
+            else:
+                domain.replaceChild(section, old[0])
+        index += 1
+
     document.appendChild(domain)
     return document
 
@@ -195,11 +204,11 @@ def bootElement(bootDict):
         - machine(optional): VM type, e.g. pc
         - type: hvm or linux
     
-    @return: DOM element list
-    @rtype: list
+    @return: Ovf boot element tuple
+    @rtype: DOM Element tuple
     """
     document = Document()
-    bootList = []
+    bootList = ()
     
     # Bootloader
     if bootDict.has_key('bootloader'):
@@ -209,14 +218,15 @@ def bootElement(bootDict):
             bootloader = document.createElement('bootloader')
             bootloaderText = document.createTextNode(bootDict['bootloader'])
             bootloader.appendChild(bootloaderText)
-            bootList.append(bootloader)
+            bootList += (bootloader,)
             
             if bootDict.has_key('arguments'):
                 arguments = document.createElement('bootloader_args')
                 argumentsText = \
                     document.createTextNode(bootDict['bootloader_args'])
                 arguments.appendChild(argumentsText)
-                bootList.append(arguments)
+                bootList += (arguments,)
+
     elif(bootDict.has_key('devices') ^
          bootDict.has_key('kernel')):
         os = document.createElement('os')
@@ -258,7 +268,9 @@ def bootElement(bootDict):
                 cmdlineText = document.createTextNode(bootDict['cmdline'])
                 cmdline.appendChild(cmdlineText)
                 os.appendChild(cmdline)
-        bootList.append(os)
+
+        bootList += (os,)
+
     else:
         raise TypeError
     
@@ -374,16 +386,17 @@ def devicesElement(*devices):
     -L{<Input<inputElement>}
     -L{<Graphics<graphicsElement>}
 
-    @param devices: sequence of device elements
-    @type devices: variable length DOM Element tuple
+    @param devices: tuple of Libvirt devices
+    @type devices: DOM Element tuple
 
     @return: <devices> element
     @rtype: DOM Element
     """
     document = Document()
-    elem = document.createElement('devices')
-    addDevice(elem, devices)
-    return elem
+    deviceElem = document.createElement('devices')
+    addDevice(deviceElem, devices)
+
+    return deviceElem
 
 def addDevice(deviceElem, *devices):
     """
@@ -393,15 +406,18 @@ def addDevice(deviceElem, *devices):
     @param deviceElem: <devices> element
     @type deviceElem: DOM Element
 
-    @param devices: sequence of device elements
-    @type devices: DOM Element tuple
-
-    @return: <devices> element
-    @rtype: DOM Element
+    @param devices: list of device elements
+    @type devices: DOM Element list
     """
-    for each in devices:
-        deviceElem.appendChild(each)
-    return deviceElem
+    index = 0
+    while(index < len(devices)):
+        each = devices[index]
+        if isinstance(each, tuple):
+            for child in each:
+                addDevice(deviceElem, child)
+        else:
+            deviceElem.appendChild(each)
+        index += 1
 
 def emulatorElement(path):
     """
@@ -747,40 +763,32 @@ def parallalElement(deviceType, path, port):
     deviceElem.appendChild(portElem)
     return deviceElem
 
-def getOvfSystemType(ovf, ovfId):
+def getOvfSystemType(virtualSys):
     """
     Retrieves a list of system types for the virtual machine from the 
     Ovf file.
 
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-    
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    @param virtualSys: Ovf VirtualSystem Node
+    @type virtualSys: DOM Element
 
     @return: list of OVF system types
     @rtype: list
     """
     systemTypes = []
-    vs = Ovf.getSections(ovf, 'VirtualSystem', ovfId)
-    if vs != []:
-        sys = vs[0].getElementsByTagName('vssd:VirtualSystemType')
-        if sys != []:
-            for each in sys:
-                systemTypes.append(each.firstChild.data)
+    sys = virtualSys.getElementsByTagName('vssd:VirtualSystemType')
+    if sys != []:
+        for each in sys:
+            systemTypes.append(each.firstChild.data)
     
     return systemTypes
 
-def getOvfMemory(ovf, ovfId, configId=None):
+def getOvfMemory(virtualHardware, configId=None):
     """
     Retrieves the maximum amount of memory (kB) to be allocated for the 
-    virtual machine from the Ovf file. 
+    virtual machine from the Ovf file.
 
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-    
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    @param virtualHardware: Ovf VirtualSystem Node
+    @type virtualHardware: DOM Element
     
     @param configId: configuration name
     @type configId: String
@@ -788,54 +796,43 @@ def getOvfMemory(ovf, ovfId, configId=None):
     @return: memory in kB
     @rtype: String
     """
+    memory = ''
+    
     # TODO: needs to use bound:max, if it exists
-    if Ovf.isVirtualSystem(ovf, ovfId):
-        ovfSectionName = 'VirtualHardwareSection'
-    elif Ovf.isVirtualSystemCollection(ovf, ovfId):
-        ovfSectionName = 'ResourceAllocationSection'
-    else:
-        raise ValueError("No Entities exist in OVF.")    
-    
-    ovfNode = Ovf.getSections(ovf, ovfSectionName, ovfId)
-    if ovfNode != []:
-        rasd = Ovf.getDict(ovfNode, ovfId, configId)['children']
-        for resource in rasd:
-            if resource['ResourceType'] == '4':
-                memoryQuantity = resource['VirtualQuantity']
-                memoryUnits = resource['AllocationUnits']
-    else:
-        raise ValueError(ovfSectionName + ": Section not found")
-    
-    # Calculate PUnit numerical factor
-    memoryUnits.replace('^','**')
-    
-    # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
-    memoryUnits = memoryUnits.split(' ', 1)
-    quantifier = memoryUnits[0]
-    if quantifier == 'byte':
-        memoryUnits[0] = 1
-    elif quantifier == 'bit':
-        memoryUnits[0] = 0.125
-    else:
-        raise ValueError("Incompatible PUnit quantifier for memory.")
-    
-    memoryUnits = ' '.join(memoryUnits)
-    memoryFactor = eval(memoryUnits)
-    
-    memoryValue = str(int(memoryQuantity) * memoryFactor)
-    
-    return memoryElement(memoryValue)
+    rasd = Ovf.getDict(virtualHardware, configId)['children']
+    for resource in rasd:
+        if(resource.has_key('rasd:ResourceType') and
+           resource['rasd:ResourceType'] == '4'):
+            memoryQuantity = resource['rasd:VirtualQuantity']
+            memoryUnits = resource['rasd:AllocationUnits']
 
-def getOvfCurrentMemory(ovf, ovfId=None, configId=None):
+            # Calculate PUnit numerical factor
+            memoryUnits = memoryUnits.replace('^','**')
+
+            # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+            memoryUnits = memoryUnits.split(' ', 1)
+            quantifier = memoryUnits[0]
+            if quantifier == 'byte':
+                memoryUnits[0] = '1'
+            elif quantifier == 'bit':
+                memoryUnits[0] = '0.125'
+            else:
+                raise ValueError("Incompatible PUnit quantifier for memory.")
+
+            memoryUnits = ' '.join(memoryUnits)
+            memoryFactor = eval(memoryUnits)
+
+            memory = str(int(memoryQuantity) * memoryFactor)
+    
+    return memory
+
+def getOvfCurrentMemory(virtualHardware, configId=None):
     """
     Retrieves the amount of memory (kB) to be allocated for the virtual machine 
     from the Ovf file.
 
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-    
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    @param virtualHardware: Ovf VirtualSystem Node
+    @type virtualHardware: DOM Element
     
     @param configId: configuration name
     @type configId: String
@@ -843,54 +840,43 @@ def getOvfCurrentMemory(ovf, ovfId=None, configId=None):
     @return: memory in kB
     @rtype: String
     """
+    memory = ''
+    
     # TODO: needs to use bound:normal, if it is present
-    if Ovf.isVirtualSystem(ovf, ovfId):
-        ovfSectionName = 'VirtualHardwareSection'
-    elif Ovf.isVirtualSystemCollection(ovf, ovfId):
-        ovfSectionName = 'ResourceAllocationSection'
-    else:
-        raise ValueError("No Entities exist in OVF.")    
+    rasd = Ovf.getDict(virtualHardware, configId)['children']
+    for resource in rasd:
+        if(resource.has_key('rasd:ResourceType') and
+           resource['rasd:ResourceType'] == '4'):
+            memoryQuantity = resource['rasd:VirtualQuantity']
+            memoryUnits = resource['rasd:AllocationUnits']
     
-    ovfNode = Ovf.getSections(ovf, ovfSectionName, ovfId)
-    if ovfNode != []:
-        rasd = Ovf.getDict(ovfNode, ovfId, configId)['children']
-        for resource in rasd:
-            if resource['ResourceType'] == '4':
-                memoryQuantity = resource['VirtualQuantity']
-                memoryUnits = resource['AllocationUnits']
-    else:
-        raise ValueError(ovfSectionName + ": Section not found")
+            # Calculate PUnit numerical factor
+            memoryUnits = memoryUnits.replace('^','**')
+
+            # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+            memoryUnits = memoryUnits.split(' ', 1)
+            quantifier = memoryUnits[0]
+            if quantifier == 'byte':
+                memoryUnits[0] = '1'
+            elif quantifier == 'bit':
+                memoryUnits[0] = '0.125'
+            else:
+                raise ValueError("Incompatible PUnit quantifier for memory.")
+
+            memoryUnits = ' '.join(memoryUnits)
+            memoryFactor = eval(memoryUnits)
+
+            memory = str(int(memoryQuantity) * memoryFactor)
+
+    return memory
     
-    # Calculate PUnit numerical factor
-    memoryUnits.replace('^','**')
-    
-    # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
-    memoryUnits = memoryUnits.split(' ', 1)
-    quantifier = memoryUnits[0]
-    if quantifier == 'byte':
-        memoryUnits[0] = 1
-    elif quantifier == 'bit':
-        memoryUnits[0] = 0.125
-    else:
-        raise ValueError("Incompatible PUnit quantifier for memory.")
-    
-    memoryUnits = ' '.join(memoryUnits)
-    memoryFactor = eval(memoryUnits)
-    
-    memoryValue = str(int(memoryQuantity) * memoryFactor)
-    
-    return currentMemoryElement(memoryValue)
-    
-def getOvfVcpu(ovf, ovfId=None, configId=None):
+def getOvfVcpu(virtualHardware, configId=None):
     """
     Retrieves the number of virtual CPUs to be allocated for the virtual 
-    machine from the Ovf file. 
+    machine from the Ovf file.
 
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-    
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    @param virtualHardware: Ovf VirtualSystem Node
+    @type virtualHardware: DOM Element
     
     @param configId: configuration name
     @type configId: String
@@ -898,139 +884,115 @@ def getOvfVcpu(ovf, ovfId=None, configId=None):
     @return: quantity of virtual cpu's
     @rtype: String
     """
-    if Ovf.isVirtualSystem(ovf, ovfId):
-        ovfSectionName = 'VirtualHardwareSection'
-    elif Ovf.isVirtualSystemCollection(ovf, ovfId):
-        ovfSectionName = 'ResourceAllocationSection'
-    else:
-        raise ValueError("No Entities exist in OVF.") 
-    
-    ovfNode = Ovf.getSections(ovf, ovfSectionName, ovfId)
-    rasd = Ovf.getDict(ovfNode, ovfId, configId)['children']
+    vcpu = ''
+    rasd = Ovf.getDict(virtualHardware, configId)['children']
     for resource in rasd:
-        if resource['ResourceType'] == '3':
-            vcpu = resource['VirtualQuantity']
+        if(resource.has_key('rasd:ResourceType') and
+           resource['rasd:ResourceType'] == '3'):
+            vcpu = resource['rasd:VirtualQuantity']
 
     return vcpu
 
-def getOvfDevices(ovf, ovfId=None, configId=None):
+def getOvfDisks(ovf, virtualHardware, configId=None):
     """
-    Retrieves device information for the virtual machine from the Ovf file. 
+    Retrieves disk device information for the virtual machine from the Ovf file.
 
     @param ovf: Ovf file
     @type ovf: DOM Document
     
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    @param virtualHardware: Ovf VirtualSystem Node
+    @type virtualHardware: DOM Element
     
     @param configId: configuration name
     @type configId: String
 
-    @return: L{Devices Element<devicesElement>}
-    @rtype: DOM Element
-    """
-    devices = []
-    
-    devices.extend(getOvfDiskList(ovf, ovfId, configId))
-    devices.extend(getOvfNetworkList(ovf, ovfId, configId))
-    
-    return devices
-
-def getOvfDiskList(ovf, ovfId=None, configId=None):
-    """
-    Retrieves disk device information for the virtual machine from the Ovf file. 
-
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-    
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
-    
-    @param configId: configuration name
-    @type configId: String
-
-    @return: list of dictionaries, see L{Disk Elements<diskElement>}
+    @return: list of dictionaries, see L{Disk Element<diskElement>}
     @rtype: list
-    
-    @todo: stubbed function, needs work
     """
-    diskList = []
-#    logicalNames = ['hda', 'hdb', 'hdd']
-#    
-#    if Ovf.isVirtualSystem(ovf, ovfId):
-#        ovfSectionName = 'VirtualHardwareSection'
-#    elif Ovf.isVirtualSystemCollection(ovf, ovfId):
-#        ovfSectionName = 'ResourceAllocationSection'
-#    else:
-#        raise ValueError("No Entities exist in OVF.")
-#    
-#    ovfNode = Ovf.getSections(ovf, ovfSectionName, ovfId)
-#    rasd = Ovf.getDict(ovfNode, ovfId, configId)['children']
-#    
-#    ovfDisks = []
-#    
-#    for resource in rasd:
-#        if resource['ResourceType'] == '14':
-#            ovfDisks.append(('fd', resource))
-#        elif resource['ResourceType'] == '15':
-#            ovfDisks.append(('cdrom', resource))
-#        elif resource['ResourceType'] == '17':
-#            ovfDisks.append(('disk', resource))
-#    
-#    for each in ovfDisks:
-#        disk = each[1]
-#        
-#        #disk device
-#        device = each[0]
-#
-#        #source file
-#        hostResource = disk['HostResource']
-#        resourceId = hostResource.rsplit('/', 1).pop()
-#        if hostResource.startswith('ovf://file/'):
-#            refs = Ovf.getDict(Ovf.getSections(ovf, 'References'), 
-#                               configId)
-#            if refs.has_key(resourceId):
-#                sourceFile = refs[resourceId]['href']
-#            else:
-#                raise ValueError
-#
-#        elif hostResource.startswith('ovf://disk/'):
-#            diskList = Ovf.getDict(Ovf.getSections(ovf, 'References'), 
-#                                   configId)
-#            if diskList.has_key(resourceId):
-#                sourceFile = diskList[resourceId]['fileRef']
-#            else:
-#                raise ValueError
-#        else:
-#            raise ValueError(resourceId)
-#        
-#        #target bus
-#        parentType = rasd[disk['Parent']]['ResourceType']
-#        if(parentType == '5'):
-#            bus = 'ide'
-#        elif(parentType == '6'):
-#            bus = 'scsi'
-#        else:
-#            raise ValueError
-#        
-#        #target device
-#        if(device == 'cdrom'):
-#            disk = diskElement('file', device, sourceFile, bus, 'hdc', True)
-#        else:
-#            disk = diskElement('file', device, sourceFile, bus, logicalNames.pop(0))
-#        diskElementList.append(disk)
-#
-    return diskList
-
-def getOvfNetworkList(ovf, ovfId=None, configId=None):
-    """
-    Retrieves network interface information for the virtual machine from the Ovf file. 
-
-    @param ovf: Ovf file
-    @type ovf: DOM Document
+    disks = ()
+    logicalNames = ['hda', 'hdb', 'hdd']
     
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
+    rasd = Ovf.getDict(virtualHardware, configId)['children']
+    
+    ovfDiskList = []
+    for resource in rasd:
+        if resource['name'] == 'Item':
+            if resource['rasd:ResourceType'] == '14':
+                ovfDiskList.append(('fd', resource))
+            elif resource['rasd:ResourceType'] == '15':
+                ovfDiskList.append(('cdrom', resource))
+            elif resource['rasd:ResourceType'] == '17':
+                ovfDiskList.append(('disk', resource))
+
+    for each in ovfDiskList:
+
+        #resource dictionary
+        ovfDisk = each[1]
+
+        #disk device: hd, fd, or cdrom
+        device = each[0]
+
+        #source file
+        source = None
+        hostResource = ovfDisk['rasd:HostResource']
+        resourceId = hostResource.rsplit('/', 1).pop()
+        if hostResource.startswith('ovf://disk/'):
+            diskList = Ovf.getDict(Ovf.getSections(ovf, 'DiskSection')[0],
+                                   configId)['children']
+
+            for child in diskList:
+                if child['ovf:diskId'] == resourceId:
+                    hostResource = 'ovf://file/' + child['ovf:fileRef']
+                    resourceId = hostResource.rsplit('/', 1).pop()
+
+        if hostResource.startswith('ovf://file/'):
+            refList = Ovf.getDict(Ovf.getSections(ovf, 'References')[0],
+                               configId)['children']
+
+            for child in refList:
+                if child['ovf:id'] == resourceId:
+                    source = os.path.abspath(child['ovf:href'])
+
+        if source == None:
+            raise ValueError(hostResource)
+
+        #target bus
+        parentId = int(ovfDisk['rasd:Parent'])
+        parentType = rasd[parentId]['rasd:ResourceType']
+        if(parentType == '5'):
+            bus = 'ide'
+        elif(parentType == '6'):
+            bus = 'scsi'
+        else:
+            raise ValueError
+
+        #default not read-only
+        ro = False
+
+        #target device
+        if(device == 'cdrom'):
+            ro = True
+            dev = 'hdc'
+        else:
+            dev = logicalNames.pop(0)
+
+        libvirtDisk = dict(diskType='file',
+                           diskDevice=device,
+                           sourceFile=source,
+                           targetBus=bus,
+                           targetDev=dev,
+                           readonly=ro)
+
+        disks += (libvirtDisk,)
+
+    return disks
+
+def getOvfNetworks(virtualHardware, configId=None):
+    """
+    Retrieves network interface information for the virtual machine from the Ovf file.
+    
+    @param virtualHardware: Ovf VirtualSystem Node
+    @type virtualHardware: DOM Element
     
     @param configId: configuration name
     @type configId: String
@@ -1040,15 +1002,17 @@ def getOvfNetworkList(ovf, ovfId=None, configId=None):
     
     @todo: stubbed function, needs work
     """
-    netList = []
+    netList = ()
 #    return [networkElement('network', 'test')]
     return netList
 
-def getOvfDomain(ovf, ovfId, configId=None):
+def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     """
     Returns a libvirt domain object for a specific virtual system, 
     based on the id and configuration, from the ovf.
     
+    @param ovf: Ovf file
+    @type ovf: DOM Document
     
     @param ovfId: VirtualSystem(Collection) identifier
     @type ovfId: String
@@ -1056,54 +1020,68 @@ def getOvfDomain(ovf, ovfId, configId=None):
     @param configId: configuration name
     @type configId: String
     
-    @todo: needs work, very basic, lots of assumptions
+    @todo: needs work, very basic, assumes hypervisor type
     """
-    #metadata
-    name = nameElement(ovfId)
+    # Get VirtualHardwareSection
+    virtualHardwareSection = Ovf.getSections(virtualSys,
+                                             'VirtualHardwareSection')
     
-    #resources
-    memory = getOvfMemory(ovf, ovfId, configId)
-    vcpu = getOvfVcpu(ovf, ovfId, configId)
-    
-    #boot
-    bootDict = dict(type='hvm',
-                loader='/usr/lib/xen/boot/hvmloader',
-                devices=['hd'])
-    
-    boot = bootElement(bootDict)
-    
-    #time
-    clock = clockElement('utc')
-    
-    #features
-    features = featuresElement(acpi=True)
-    
-    #life cycle
-    onPowerOff = onPowerOffElement('destroy')
-    onReboot = onRebootElement('restart')
-    onCrash = onCrashElement('destroy')
-    
-    #devices
-    devices = getOvfDevices(ovf, ovfId, configId)
-    
-    #network
-    #networkType = 'bridge'
-    #networkSource = 'br1'
-    #network = networkElement(networkType, networkSource)
-    #devices = addDevice(deviceSection, networkSection)
-    
-    #devices - graphics
-    graphics = graphicsElement('vnc', 'localhost', '5911')
-    devices = addDevice(devices, graphics)
-    
-    #domain
-    domain = domainElement('xen')
-    
-    #document
-    document = libvirtDocument(domain, name, memory, vcpu, boot, clock, 
-                               features, onPowerOff, onReboot, onCrash, devices)
+    if virtualHardwareSection == []:
+        raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
+                                  "VirtualHardwareSection in VirtualSystem.")
+    else:
+        virtualHardware = virtualHardwareSection[0]
 
-    return Ovf.xmlString(document)
+        #metadata
+        name = nameElement(ovfId)
+
+        #resources
+        memory = memoryElement(getOvfMemory(virtualHardware, configId))
+        vcpu = vcpuElement(getOvfVcpu(virtualHardware, configId))
+
+        #boot
+        bootDict = dict(type='hvm',
+                    loader='/usr/lib/xen/boot/hvmloader',
+                    devices=['hd'])
+
+        boot = bootElement(bootDict)[0]
+
+        #time
+        clock = clockElement('utc')
+
+        #features
+        features = featuresElement(acpi=True)
+
+        #life cycle
+        onPowerOff = onPowerOffElement('destroy')
+        onReboot = onRebootElement('restart')
+        onCrash = onCrashElement('destroy')
+
+        #disks
+        diskDict = getOvfDisks(ovf, virtualHardware, configId)[0]
+        disk = diskElement(diskDict)
+
+        #network
+        #networkType = 'bridge'
+        #networkSource = 'br1'
+        #network = networkElement(networkType, networkSource)
+        #devices = addDevice(deviceSection, networkSection)
+
+        #devices - graphics
+        graphics = graphicsElement('vnc', 'localhost', '5911')
+
+        #devices
+        devices = devicesElement(disk, graphics)
+
+        #domain
+        domain = domainElement('kqemu')
+
+        #document
+        document = libvirtDocument(domain, name, memory, vcpu,
+                                   boot, clock, features, onPowerOff,
+                                   onReboot, onCrash, devices)
+    
+        return Ovf.xmlString(document)
 
 def getOvfLibvirt(ovf, configId=None):
     """
@@ -1126,8 +1104,9 @@ def getOvfLibvirt(ovf, configId=None):
         configId = Ovf.getDefaultConfiguration(ovf)
     
     # For each system, create libvirt domain description
-    for ovfId in Ovf.getSections(ovf, 'VirtualSystems'):
-        domains[id] = getOvfDomain(ovf, ovfId, configId)
+    for system in Ovf.getSections(ovf, 'VirtualSystem'):
+        ovfId = system.getAttribute('ovf:id')
+        domains[ovfId] = getOvfDomain(ovf, system, ovfId, configId)
         
     return domains
 
@@ -1143,9 +1122,9 @@ def getOvfStartup(ovf):
     @return: startup dictionary of domains
     """
     startupDict = dict(boot='',
-                       systems=dict())
+                       entities=dict())
     
-    systems = startupDict['systems']
+    systems = startupDict['entities']
     
     # Create a list of all startup sections
     startupSections = Ovf.getSections(ovf, 'StartupSection')
@@ -1170,8 +1149,9 @@ def getOvfStartup(ovf):
                 virtualSys['ovf:startDelay'] = '0'
             
             parentId = section.parentNode.getAttribute('ovf:id')
-            systems[parentId] = dict(systems=dict())
-            systems[parentId]['systems'][sysId] = virtualSys
+            systems[parentId] = dict(systems=[])
+            systems[parentId]['systems'].append(sysId)
+            systems[sysId] = virtualSys
                 
     # Create a default entry for each system not in a startup section
     for each in Ovf.getSections(ovf, 'VirtualSystem'):
@@ -1186,15 +1166,15 @@ def getOvfStartup(ovf):
             parent = each.parentNode
             parentId = parent.getAttribute('ovf:id')
             if systems.has_key(parentId):
-                systems[parentId]['systems'][sysId] = {'ovf:order':'0',
-                                                       'ovf:startDelay':'0'}
+                systems[parentId]['systems'].append(sysId)
+                systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
                 
             while(not systems.has_key(parentId)):
-                systems[parentId] = {'systems':dict(),
+                systems[parentId] = {'systems':[],
                                      'ovf:order':'0', 
                                      'ovf:startDelay':'0'}
-                systems[parentId]['systems'][sysId] = {'ovf:order':'0',
-                                                       'ovf:startDelay':'0'}
+                systems[parentId]['systems'].append(sysId)
+                systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
                 
                 # Increment, if not at root
                 if parent.parentNode.tagName == 'Envelope':
@@ -1232,18 +1212,17 @@ def getSchedule(conn, startup, domains):
     # Add actions to scheduler
     while(queue != []):
         sysId = queue.pop(0)
-        system = startup['systems'][sysId]
+        system = startup['entities'][sysId]
         
         index += int(system['ovf:order'])
         delay += int(system['ovf:startDelay'])
         
-        for sys in system['systems'].keys():
-            if startup['systems'].has_key(sys):
-                queue.append(sys)
-            else:
-                sysIndex = index + int(system['ovf:order'])
-                sysDelay = delay + int(system['ovf:startDelay'])
-                schedule.enter(sysDelay, sysIndex,
-                               conn.createLinux,(domains[sysId]))
+        if not system.has_key('systems'):
+            sysIndex = index + int(system['ovf:order'])
+            sysDelay = delay + int(system['ovf:startDelay'])
+            schedule.enter(sysDelay, sysIndex,
+                           conn.createLinux, (domains[sysId], 0))
+        else:
+            queue.extend(system['systems'])
     
     return schedule
