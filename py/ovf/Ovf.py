@@ -216,9 +216,8 @@ def ovfString(sectDict):
     
     if sectDict.has_key('children'):
         printList.remove('children')
-        for ovfId in sectDict['children']:
-            ret += ovfString(sectDict[ovfId]) + "\n"
-            printList.remove(ovfId)
+        for child in sectDict['children']:
+            ret += ovfString(child) + "\n"
     
     for key in printList:
         if type(sectDict[key]) == type(dict()):
