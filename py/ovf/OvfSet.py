@@ -37,8 +37,14 @@ class OvfSet:
 
     def __init__(self, path=None, mode="r"):
         """
-        initialize object from path in read/write mode
-
+        Initialize object from path in read/write mode
+        
+        Note::
+            Default mode is r for read.
+        
+        @raise TypeError: The error gets thrown if the prameter mode has a 
+        value other than I{r} or I{w}.
+        
         @type  path: String
         @param path: a path to initialize object from
         @type  mode: String
@@ -63,7 +69,17 @@ class OvfSet:
     def initializeFromPath(self, path, mode="r"):
         """
         initialize object from the file or path given in path
-    
+        
+        @raise IOError: The cases are as follow
+                - I{B{Case 1:}} The path provided in the parameters is not
+                valid.
+                - I{B{Case 2:}} The mode parameter has a value of r and the path
+                already exist.
+                - I{B{Case 3:}} Unsafe Tar file
+                - I{B{Case 4:}} The tar file cannot be found. 
+                
+                
+        
         @type  path: String
         @param path: a path to a file to open
         @type  mode: string
@@ -174,7 +190,7 @@ class OvfSet:
 
     def getName(self):
         """
-        get the OvfSet's name (file name of .ovf file without .ovf)
+        Get the OvfSet's name (file name of .ovf file without .ovf)
         @rtype: String
         @return: the name
         """
@@ -182,7 +198,7 @@ class OvfSet:
 
     def setName(self, name):
         """
-        set the OvfSet's name (file name of .ovf file without .ovf)
+        Set the OvfSet's name (file name of .ovf file without .ovf)
         @type  name: String
         @param name: the new name
         @raise TypeError: on non-string input 
@@ -194,8 +210,11 @@ class OvfSet:
 
     def write(self, path=None, format=None):
         """
-        write the object to disk
-
+        Write the object to disk
+        
+        @raise ValueError: The error is thrown if the format parameter is not
+        a Dir or Tar.
+        
         @type  path: String
         @param path: path to save the file to.  Default is self.archivePath
         @type  format: String
@@ -221,7 +240,7 @@ class OvfSet:
 
     def writeAsTar(self, path=None):
         """
-        write a tar archive to path given
+        Write a tar archive to path given
         @type path: String
         @param path: path to the archive to write to
         """
@@ -254,7 +273,7 @@ class OvfSet:
             
     def writeAsDir(self, path=None):
         """
-        write a directory archive to path given
+        Write a directory archive to path given.
         @type path: String
         @param path: path to the directory to write to
         @raise IOError: file or directory does not exist
