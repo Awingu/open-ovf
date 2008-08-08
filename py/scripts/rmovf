@@ -563,7 +563,7 @@ commands = {
          { 'flags' : [ '-p', '--parentRef' ], 
            'parms' : { 'dest' : 'parentRef','help' : "Parent ref. In order to"+
                     "specify this the parent must have already been"+
-                    +" specified.",'action':"store_true" }},
+                    " specified.",'action':"store_true" }},
         { 'flags' : [ '-m', '--info' ], 
            'parms' : { 'dest' : 'info','help' : "The information to describe"+
                     "the section.",'action':"store_true" }},
@@ -644,8 +644,8 @@ commands = {
       'args' : (
          { 'flags' : [ '-i','--vscID' ],
            'parms' : { 'dest' : 'vscID', 'action':'store','help' : 'Defines'+
-                    +' the unique ID for the Virtual System Collection within'
-                    +' the OVF.'},'required':True},
+                    ' the unique ID for the Virtual System Collection within'+
+                    ' the OVF.'},'required':True},
          { 'flags' : [ '-m', '--info' ], 
            'parms' : { 'dest' : 'info','help' : "The information to describe"+
                     "the section.", 'action':"store_true"}},
@@ -1058,8 +1058,8 @@ commands = {
    },
     "install" : { 
       'func':rmInstallSection,
-      'help' : 'Removes the install section used to describe a virtual system"
-               +" in a virtual system collection.',
+      'help' : 'Removes the install section used to describe a virtual system'
+               +' in a virtual system collection.',
       'args' : (
          { 'flags' : [ '-i','--initBoot' ],
            'parms' : { 'dest' : 'initBoot', 'action':'store_true',
