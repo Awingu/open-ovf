@@ -9,7 +9,7 @@
 # Contributors:
 # Scott Moser (IBM) - initial implementation
 ##############################################################################
-__all__ = ["Ovf", 
+__all__ = ["Ovf",
            "OvfCertificate",
            "OvfFile",
            "OvfLibvirt",

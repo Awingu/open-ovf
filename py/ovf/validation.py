@@ -27,9 +27,9 @@ class ErrorHandler:
     def error(self, msg, data=None):
         """Method used to store error messages
 
-        @type msg: string 
+        @type msg: string
         @param msg: Error message to store.
-        @type data: None 
+        @type data: None
         @param data: Ignored parameter.
         """
         self.error_list.append(msg)
@@ -37,9 +37,9 @@ class ErrorHandler:
     def warning(self, msg, data=None):
         """Method used to store warning messages
 
-        @type msg: string 
+        @type msg: string
         @param msg: Warning message to store.
-        @type data: None 
+        @type data: None
         @param data: Ignored parameter.
         """
         self.warning_list.append(msg)
@@ -52,8 +52,8 @@ def validateOVF(schema_file, ovf_file, handler=None):
     @param  schema_file: OVF Schema path.
     @type   ovf_file: string
     @param  ovf_file: OVF file path.
-    @type   handler: L{ErrorHandler} 
-    @param  handler: object used to return validation 
+    @type   handler: L{ErrorHandler}
+    @param  handler: object used to return validation
             error and warning messages.
     @rtype:     int
     @return:    Error Code. 0 (zero) is OK.
@@ -69,11 +69,11 @@ def validateOVF(schema_file, ovf_file, handler=None):
         handler = ErrorHandler()
 
     validator.setValidityErrorHandler(handler.error, handler.warning)
- 
+
     # Test valid document
     ret = validator.schemaValidateFile(ovf_file, 0)
 
     del ctxt_schema
-    del validator 
+    del validator
 
     return ret

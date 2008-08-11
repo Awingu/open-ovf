@@ -10,7 +10,7 @@
 # Contributors:
 # Marcos Cintron (IBM) - initial implementation
 ##############################################################################
-import unittest 
+import unittest
 
 import OvfTestCase
 import OvfSetTestCase
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     test.append(unittest.TestLoader().loadTestsFromModule(OvfManifestTestCase))
     test.append(unittest.TestLoader().loadTestsFromModule(OvfCertificateTestCase))
     runner = unittest.TextTestRunner(verbosity=2)
-    
+
     testSuite = unittest.TestSuite()
     for each in test:
         testSuite.addTest(each)

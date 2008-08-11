@@ -30,7 +30,7 @@ class OvfCertificate:
         """
         if path != None:
             getCertificateFromFile(path)
-            
+
     def generatePrivateKey(self, bits):
         """
         Generate private key to be used to sign certificate and digest.
@@ -59,7 +59,7 @@ class OvfCertificate:
         if os.path.isfile(inputString):
             certificateBuffer = open(inputString, "r").read()
         else:
-            certificateBuffer = inputString    
+            certificateBuffer = inputString
         #self.certificate = crypto.load_certificate(crypto.FILETYPE_PEM,certificateBuffer)
 
     def getCertificate(self):
@@ -71,11 +71,11 @@ class OvfCertificate:
         @return: certificate
         """
         #return crypto.dump_certificate(crypto.FILETYPE_PEM,self.certificate)
-        
+
     def loadPrivateKey(self, buf, passphrase):
         """
         load a private key, setting the privateKey to be used in signing
-        
+
         @type buf        : String
         @param buf       : a String including the private key
         @type passphrase : String
@@ -85,7 +85,7 @@ class OvfCertificate:
         @return: success or failure of private key load
         """
         #self.privateKey = crypto.load_privatekey(crypto.FILETYPE_PEM,buf,passphrase)
-        
+
     def signDigest(self, sha1digest):
         """
         sign the sha1digest given
@@ -97,7 +97,7 @@ class OvfCertificate:
             (SHA1(package.mf)= ...)
         """
         #TODO:
-    
+
     def writeCertificate(self, path=None):
         """
         Write the certificate to a file, named <basename>.cert
@@ -137,7 +137,7 @@ def getSignedDigestFromFile(path, passphrase):
             raise TypeError('Type Error: Invalid type, must be of *.cert filetype')
     else:
         raise IOError('I/O Error: file could not be opened')
-    
+
 def getCertificateFromFile(path):
     """
     Pull the certificate portion of an OVF .cert file
@@ -160,7 +160,7 @@ def getCertificateFromFile(path):
             raise TypeError('Type Error: Invalid type, must be of *.cert filetype')
     else:
         raise IOError('I/O Error: file could not be opened')
-    
+
 def publicKeyFromCertificate(path):
     """
     Given the certificate (as returned by getCertificateFromFile), return the

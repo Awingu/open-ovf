@@ -24,7 +24,7 @@ def chEfile(ovfFile, options):
     """
     #i don't need to use getReferences. that doesn't give me any new information. I need to do options then whatever is in there
     #use it to modify the file to.
-    ovfAttr = "ovf:" 
+    ovfAttr = "ovf:"
     efileDictofDict = Ovf.getReferences(ovfFile.envelope)
     if options.file_id != None:
         #get the specific node to append to
@@ -39,12 +39,12 @@ def chEfile(ovfFile, options):
             fileNode.setAttribute(ovfAttr+'chunkSize', options.chunkSize)
     else:
         raise NotImplementedError, "An id must be provided with flag -i or --ovfID."
-   
+
 def chDisk(ovfFile, options):
     """
     This function will change individual disks.
     """
-    ovfAttr = "ovf:" 
+    ovfAttr = "ovf:"
     diskDictofDict = Ovf.getDisk(ovfFile.envelope)
     if options.disk_id != None:
         diskNode = diskDictofDict[options.disk_id]['diskNode']
@@ -53,30 +53,30 @@ def chDisk(ovfFile, options):
             diskNode.setAttribute(ovfAttr+'capacity', options.capacity)
         if options.fileRef != None:
             diskNode.setAttribute(ovfAttr+'fileRef', options.fileRef)
-            
+
         if options.populatedSize != None:
             diskNode.setAttribute(ovfAttr+'populatedSize', options.populatedSize)
         if options.capacityAllocUnits != None:
             diskNode.setAttribute(ovfAttr+'capacityAllocationUnits', options.capacityAllocUnits)
         if options.parentRef != None:
-            diskNode.setAttribute(ovfAttr+'parentRef', options.parentRef)      
-   
+            diskNode.setAttribute(ovfAttr+'parentRef', options.parentRef)
+
 def chNetwork(ovfFile, options):
     """
-    This function will change individual networks. 
+    This function will change individual networks.
     """
     netDictofDict = Ovf.getNetwork(ovfFile.envelope)
-    
+
     if options.networkID != None:
         network = netDictofDict[options.networkID]
         network['DescriptionNode'].firstChild.data = options.description
         if network['ElementNameData'] != None:
             network['ElementNameNode'].firstChild.data = options.networkName
-   
+
 def chDeploymentOptions(ovfFile, options):
     """
     This function changes the deployment options.
-    """   
+    """
 def chVirtualSysCollection(ovfFile, options):
     """
     This function will change the virtual system collection attributes.
@@ -84,7 +84,7 @@ def chVirtualSysCollection(ovfFile, options):
 def chVirtualSystem(ovfFile, options):
     """
     This function will change the virtual system attributes.
-    """    
+    """
 def chVirtualHardware(ovfFile, options):
     """
     This function will change the virtual hardware section.
@@ -92,19 +92,19 @@ def chVirtualHardware(ovfFile, options):
 def chResources(ovfFile, options):
     """
     This function will change the resources.
-    """  
+    """
 def chResourceAlloc(ovfFile, options):
     """
-    This function will change the resource allocations attributes. 
+    This function will change the resource allocations attributes.
     """
 def chAnnotationSection(ovfFile, options):
     """
     This function will change the annotation section.
     """
-    
+
 def chProductSection(ovfFile, options):
     """
-    This function will change the product section. 
+    This function will change the product section.
     """
 def chPropertyProductSection(ovfFile, options):
     """
@@ -113,23 +113,23 @@ def chPropertyProductSection(ovfFile, options):
 def chCategory(ovfFile, options):
     """
     This will change the category child within a product section.
-    """   
+    """
 def chIconType(ovfFile, options):
     """
-    This function will change the attributes of an icon element within the 
-    product section. 
-    """    
+    This function will change the attributes of an icon element within the
+    product section.
+    """
 def chEulaSection(ovfFile, options):
     """
-    This function  will change the EULA section. 
-    """   
+    This function  will change the EULA section.
+    """
 def chStartup(ovfFile, options):
     """
-    This function will change the startup section. 
+    This function will change the startup section.
     """
 def chOSsection(ovfFile, options):
     """
-    This function will change the OS section. 
+    This function will change the OS section.
     """
 def chInstallSection(ovfFile, options):
     """
@@ -138,11 +138,11 @@ def chInstallSection(ovfFile, options):
 def chLanguage(ovfFile, options):
     """
     This function changes the language in the ovf envelope
-    """ 
+    """
 def main():
     usage = "usage: %prog command [options]"
     command = None
-    
+
     parser = OptionParser(usage)
     for long in commands.keys():
         parser.add_option("--" + long, help = commands[long]['help'],
@@ -160,32 +160,32 @@ def main():
         exit(command != None)
 
     parser = OptionParser(usage)
-    
+
     for opt in commands[long]['args']+common:
         parser.add_option(*opt['flags'], **opt['parms'])
-   
+
     (options, args) = parser.parse_args(sys.argv[2:])
-   
+
     if options.ovfFile:
         try:
             ovfFile = OvfFile(options.ovfFile)
         except:
             ovfFile = OvfFile()
-            #i want the object OvfFile not the 
+            #i want the object OvfFile not the
             #name of the file... Bad naming here
             initOVF(ovfFile)
             ovfFile.path = options.ovfFile
             ovfFileCreated = True
-   
+
     if options.ovfVersion:
         print "OVF spec version: ", getVersion(ovfFile)
-    
-    
+
+
     commands[command]['func'](ovfFile, options)
-    
+
 commands = {
-    
-   "efile" : { 
+
+   "efile" : {
       'func':chEfile,
       'help' : "Modify an efile sectoin",
       'flagMap':({'id':'file_id','href':'href','compression':'compression',
@@ -193,534 +193,534 @@ commands = {
       'args' : (
          { 'flags' : [ '-i','--ovfID' ],
            'parms' : { 'dest' : 'file_id',
-                      'help' : 'Required unique ID within the OVF.' } }, 
-         { 'flags' : [ '-n', '--href' ], 
+                      'help' : 'Required unique ID within the OVF.' } },
+         { 'flags' : [ '-n', '--href' ],
            'parms' : { 'dest' : 'href','help':'Set the href attribute. \
                    If no URI schema is given the href must resolve to a \
                    file relative to the location of the OVF descriptor itself.\
                    Two different files shall not have identical href\
                    attributes.' }},
-         { 'flags' : [ '-s', '--size' ], 
+         { 'flags' : [ '-s', '--size' ],
            'parms' : { 'dest' : 'size',"help":"The size of the file. If none\
                        is given the size will be acquired for that file."  }},
 
-         { 'flags' : [ '-c', '--compression' ], 
+         { 'flags' : [ '-c', '--compression' ],
            'parms' : { 'dest' : 'compression','help': "Defines the compression\
                     of the file if any. If none is given the compression shall\
                            be determined. Specifying 'identity', states that no\
                             compression is used. If the href is an HTTP or\
                             HTTPS, URI, then the compression may be specified\
                             by the HTTP server." }},
-            
-         { 'flags' : [ '-C', '--chunksize' ], 
+
+         { 'flags' : [ '-C', '--chunksize' ],
            'parms' : { 'dest' : 'chunkSize','help':"Defines the chunkSize for\
                     the file if any." }}
       )
    },
-   "disk" : { 
+   "disk" : {
       'func':chDisk,
       'help' : 'Creates a disk section.',
       'args' : (
          { 'flags' : [ '-i' ],
            'parms' : { 'dest' : 'disk_id','help': 'The id for the disk.'} },
-         { 'flags' : [ '-c', '--capacity' ], 
+         { 'flags' : [ '-c', '--capacity' ],
            'parms' : { 'dest' : 'capacity','help' : 'The capacity of the given\
                     disk.' }},
-         { 'flags' : [ '-F','--format' ], 
+         { 'flags' : [ '-F','--format' ],
            'parms' : { 'dest' : 'format','help' : "Disk format." }},
-         { 'flags' : [ '-r', '--fileRef' ], 
+         { 'flags' : [ '-r', '--fileRef' ],
            'parms' : { 'dest' : 'fileRef','help' : "File reference." }},
-         { 'flags' : [ '-s', '--size' ], 
+         { 'flags' : [ '-s', '--size' ],
            'parms' : { 'dest' : 'populatedSize','help': "Populated Size." }},
-         { 'flags' : [ '-u', '--capacityAlloc' ], 
+         { 'flags' : [ '-u', '--capacityAlloc' ],
            'parms' : { 'dest' : 'capacityAllocUnits','help' : "Capacity\
                     allocation Units." }},
-         { 'flags' : [ '-p', '--parentRef' ], 
+         { 'flags' : [ '-p', '--parentRef' ],
            'parms' : { 'dest' : 'parentRef','help' : "Parent ref. In order to\
                     specify this the parent must have already been\
                     specified." }},
-        { 'flags' : [ '-m', '--info' ], 
+        { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section." }},
-        { 'flags' : [ '-y'], 
+        { 'flags' : [ '-y'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information." }},
-        { 'flags' : [ '-q'], 
+        { 'flags' : [ '-q'],
            'parms' : { 'dest' : 'required','help' : "Defines if the section\
                     is required or not. Boolean values only. " },
         }
       )
    },
   "net" : {
-      'func':chNetwork, 
+      'func':chNetwork,
       'help' : 'creates a Network Section.',
       'args' : (
          { 'flags' : [ '-i','--netID' ],
            'parms' : { 'dest' : 'networkID', 'action':'store','help' :
-                    'Defines the unique ID for the network within the OVF.' }}, 
-         { 'flags' : [ '-m', '--info' ], 
+                    'Defines the unique ID for the network within the OVF.' }},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section." }},
-         { 'flags' : [ '-y','--infoID'], 
+         { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information." }},
-         { 'flags' : [ '-e', '--networkName' ], 
+         { 'flags' : [ '-e', '--networkName' ],
            'parms' : { 'dest' : 'networkName',"help":"The name of the network\
                     being created." }},
-         { 'flags' : [ '-d', '--description' ], 
+         { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help': "Describe the network\
-                    being created."}},       
+                    being created."}},
       )
    },
    "deploy" : {
-      'func':chDeploymentOptions, 
+      'func':chDeploymentOptions,
       'help' : 'Creates a Deploymen Options Section.',
       'args' : (
          { 'flags' : [ '-i','--configID' ],
            'parms' : { 'dest' : 'configID', 'action':'store','help' : 'Defines\
-                    the unique ID for the configuration within the OVF.' }}, 
-         { 'flags' : [ '-m', '--info' ], 
+                    the unique ID for the configuration within the OVF.' }},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."}},
-         { 'flags' : [ '-y','--infoID'], 
+         { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information." }},
-         { 'flags' : [ '-l', '--label' ], 
+         { 'flags' : [ '-l', '--label' ],
            'parms' : { 'dest' : 'label',"help":"The label used to describe\
                     the configuration."}},
-         { 'flags' : [ '-b', '--labelID' ], 
+         { 'flags' : [ '-b', '--labelID' ],
            'parms' : { 'dest' : 'labelID','help': "The ID for the label\
                     created."}},
-         { 'flags' : [ '-d', '--description' ], 
+         { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help': "The description for the\
                     given configuration."}},
-         { 'flags' : [ '-c', '--descID' ], 
+         { 'flags' : [ '-c', '--descID' ],
            'parms' : { 'dest' : 'descID','help': "The ID for the description\
                     of the configuration created."}},
-         { 'flags' : [ '-r', '--default' ], 
+         { 'flags' : [ '-r', '--default' ],
            'parms' : { 'dest' : 'default','help': "Specifies if the\
                     configuration is a default one. This is a Boolean\
                     (True,False)"}},
       )
    },
-   "vsc" : { 
+   "vsc" : {
       'func':chVirtualSysCollection,
       'help' : 'Creates a Virtual System Collection',
       'args' : (
          { 'flags' : [ '-i','--vscID' ],
            'parms' : { 'dest' : 'vscID', 'action':'store','help' : 'Defines\
                     the unique ID for the Virtual System Collection within\
-                    the OVF.'}}, 
-         { 'flags' : [ '-m', '--info' ], 
+                    the OVF.'}},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."}},
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."}},
       )
    },
-   "vs" : { 
+   "vs" : {
       'func':chVirtualSystem,
       'help' : 'Creates a Virtual System.',
       'args' : (
          { 'flags' : [ '-i','--vsID' ],
            'parms' : { 'dest' : 'vsID', 'action':'store','help' : 'Defines the\
-                    unique ID for the Virtual System within the OVF.'}}, 
-         { 'flags' : [ '-m', '--info' ], 
+                    unique ID for the Virtual System within the OVF.'}},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
-                    information."} },      
+                    information."} },
       )
    },
-   "virthw" : { 
+   "virthw" : {
       'func':chVirtualHardware,
       'help' : 'Creates a Virtual Hardware Section.',
       'args' : (
-                
+
          { 'flags' : [ '--instanceID' ],
-           'parms' : { 'dest' : 'instanceID', 'action':'store','help' : 
-                      'Defines the ID of the instance of the System.' } },      
+           'parms' : { 'dest' : 'instanceID', 'action':'store','help' :
+                      'Defines the ID of the instance of the System.' } },
          { 'flags' : [ '-s','--sysID' ],
-           'parms' : { 'dest' : 'sysID', 'action':'store','help' : 
+           'parms' : { 'dest' : 'sysID', 'action':'store','help' :
                       'Defines the ID for the System. It should be the same ID\
-                       as the Virtual System the section is in.' } }, 
-         { 'flags' : [ '-m', '--info' ], 
+                       as the Virtual System the section is in.' } },
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."} },
-        { 'flags' : [ '-t','--transport'], 
+        { 'flags' : [ '-t','--transport'],
            'parms' : { 'dest' : 'transport','help' : "Transport that specifies\
                     how properties are passed to the virtual machine."} },
-        { 'flags' : [ '-d', '--description' ], 
+        { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help': "The description for the\
                     given configuration."} },
-         { 'flags' : [ '-c', '--caption' ], 
+         { 'flags' : [ '-c', '--caption' ],
            'parms' : { 'dest' : 'caption','help': "Caption used to describe\
                     the Virtual Hardwre."} },
-        { 'flags' : [ '-p', '--type' ], 
+        { 'flags' : [ '-p', '--type' ],
            'parms' : { 'dest' : 'type','help': "The type of the Virtual System\
                     being described."} },
       )
    },
-   "resource" : { 
+   "resource" : {
       'func':chResources,
       'help' : 'Define resources.',
       'args' : (
-         { 'flags' : [ '--virtHwType'], 
+         { 'flags' : [ '--virtHwType'],
            'parms' : { 'dest' : 'virtHwType','help' : "Specifies the type for\
                     the virtual hardware to attach the resources to."} },
-         { 'flags' : [ '--elementName'], 
+         { 'flags' : [ '--elementName'],
            'parms' : { 'dest' : 'elementName','help' : "A human-readable\
             description of the content. For example, '256MB memory'."} },
-         { 'flags' : [ '-k','--resourceType'], 
+         { 'flags' : [ '-k','--resourceType'],
            'parms' : { 'dest' : 'resourceType','help' : "Specifies the kind of\
                     device that is being described."} },
          { 'flags' : [ '-i' ,'--resourceID'],
            'parms' : { 'dest' : 'resourceID','help': 'The id for the\
                     resource.'} },
-         { 'flags' : [ '-d', '--description' ], 
+         { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help' : 'A human-readable\
                     description of the meaning of the information.'} },
-         { 'flags' : [ '-a','--address' ], 
+         { 'flags' : [ '-a','--address' ],
            'parms' : { 'dest' : 'address','help' : "Address for an Ethernet\
                     adapter, this will be the MAC address."} },
-         { 'flags' : [ '-p', '--addressOnParent' ], 
+         { 'flags' : [ '-p', '--addressOnParent' ],
            'parms' : { 'dest' : 'addressOnParent','help' : "For a device, this\
                     specifies its location on the controller."} },
-         { 'flags' : [ '-u', '--allocUnits' ], 
+         { 'flags' : [ '-u', '--allocUnits' ],
            'parms' : { 'dest' : 'allocUnits','help': "Specifies the units of\
                     allocation used. Example: 'MegaBytes'"} },
-         { 'flags' : [ '-t', '--automaticAllocation' ], 
+         { 'flags' : [ '-t', '--automaticAllocation' ],
            'parms' : { 'action':"store_true",'dest' : 'automaticAllocation',
                     'help' : "For devices that are connectable, this\
                     specifies whether the device should\
             be connected at power on."} },
-         { 'flags' : [ '-o', '--autoDealloc' ], 
+         { 'flags' : [ '-o', '--autoDealloc' ],
            'parms' : { 'dest' : 'autoDealloc','help' : "Auto deallocate.\
                     Boolean (True | False)"} },
-        { 'flags' : [ '-c', '--caption' ], 
+        { 'flags' : [ '-c', '--caption' ],
            'parms' : { 'dest' : 'caption','help' : "A human-readable\
                     description of the content."} },
-        { 'flags' : [ '-n','--connection'], 
+        { 'flags' : [ '-n','--connection'],
            'parms' : { 'dest' : 'connection','help' : "For an Ethernet adapter\
                    ,this specifies the abstract network connection for the\
                     virtual machine.The network connection MUST be listed in\
                     the NetworkSection at the outermost envelope level."} },
-        { 'flags' : [ '-v','--consVis'], 
+        { 'flags' : [ '-v','--consVis'],
            'parms' : { 'dest' : 'consVis','help' : "Integer of consumer\
                     visibility."} },
-        { 'flags' : [ '-r','--hostResource'], 
+        { 'flags' : [ '-r','--hostResource'],
            'parms' : { 'dest' : 'hostResource','help' : "Abstractly specifies\
                     how a device shall be connecting to a resource on the\
                     deployment platform. Allowed options are either 'true' \
                              OR 'false'."} },
-        { 'flags' : [ '-l','--limit'], 
+        { 'flags' : [ '-l','--limit'],
            'parms' : { 'dest' : 'limit','help' : "Specifies the maximum\
                     quantity  or resources  that will be granted."} },
-        { 'flags' : [ '-m','--mapBehavior'], 
+        { 'flags' : [ '-m','--mapBehavior'],
            'parms' : { 'dest' : 'mapBehavior','help' : "Map behavior."} },
-         { 'flags' : [ '-e','--otherResourceType'], 
+         { 'flags' : [ '-e','--otherResourceType'],
            'parms' : { 'dest' : 'otherResourceType','help' : "Specifies the\
                     kind of device that is being described."} },
-        { 'flags' : [ '-j','--parent'], 
+        { 'flags' : [ '-j','--parent'],
            'parms' : { 'dest' : 'parent','help' : "The instanceId of the\
                     parent controller."} },
-        { 'flags' : [ '-w','--poolID'], 
+        { 'flags' : [ '-w','--poolID'],
            'parms' : { 'dest' : 'poolID','help' : "The instanceId of the\
                     parent controller."} },
-        { 'flags' : [ '-z','--reservation'], 
+        { 'flags' : [ '-z','--reservation'],
            'parms' : { 'dest' : 'reservation','help' : "Specifies the minimum\
                     quantity of resources guranteed to be available."} },
-        { 'flags' : [ '-b','--resourceSubtype'], 
+        { 'flags' : [ '-b','--resourceSubtype'],
            'parms' : { 'dest' : 'resourceSubtype','help' : "Specifies the kind\
                     of device that is being described."} },
-        { 'flags' : [ '-g','--virtualQuantity'], 
+        { 'flags' : [ '-g','--virtualQuantity'],
            'parms' : { 'dest' : 'virtualQuantity','help' : "Specifies the\
                     quantity of resources presented."} },
-         { 'flags' : [ '-s','--weight'], 
+         { 'flags' : [ '-s','--weight'],
            'parms' : { 'dest' : 'weight','help' : "Specifies the relative\
                     priority for this allocation in relation to other\
                     allocations."} },
-        { 'flags' : [ '-y','--required'], 
-           'parms' : { 'action':"store_true",'dest' : 'required','help' 
+        { 'flags' : [ '-y','--required'],
+           'parms' : { 'action':"store_true",'dest' : 'required','help'
                     : "Specifies if the section is required. Boolean\
                     (True | False)."} },
-        { 'flags' : ['--config'], 
+        { 'flags' : ['--config'],
            'parms' : { 'dest' : 'config','help' : "A comma-separated list of\
                     configuration names."} },
-        { 'flags' : [ '-x','--bound'], 
+        { 'flags' : [ '-x','--bound'],
            'parms' : { 'dest' : 'bound','help' : "Specify ranges of the Item\
                     element. The ONLY valid values are \
                       'min','max','normal'."} },
       )
    },
    "resAlloc" : {
-      'func':chResourceAlloc, 
+      'func':chResourceAlloc,
       'help' : "Creates a Resource Allocation Section. ",
       'args' : (
-         { 'flags' : [ '-m', '--info' ], 
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."}},
-        { 'flags' : ['-c','--config'], 
+        { 'flags' : ['-c','--config'],
            'parms' : { 'dest' : 'config','help' : "A comma-separated list of\
                     configuration names."} },
-        { 'flags' : [ '-x','--bound'], 
+        { 'flags' : [ '-x','--bound'],
            'parms' : { 'dest' : 'bound','help' : "Specify ranges of the Item\
                     element. The ONLY valid values are \
-                      'min','max','normal'."} }, 
+                      'min','max','normal'."} },
       ),
    },
-   "annotate" : { 
+   "annotate" : {
       'func':chAnnotationSection,
       'help' : "Creates Annotation Section.",
       'args' : (
-         { 'flags' : [ '-m', '--info' ], 
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."}},
-        { 'flags' : ['-a','--annotation'], 
+        { 'flags' : ['-a','--annotation'],
            'parms' : { 'dest' : 'annotation','help' : "The text for the\
                     annotation."} },
-         
+
       ),
    },
    "product" : {
-      'func':chProductSection, 
+      'func':chProductSection,
       'help' : "Creates the Product Section.",
       'args' : (
-         { 'flags' : [ '-m', '--info' ], 
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."}},
-        { 'flags' : ['-p','--product'], 
+        { 'flags' : ['-p','--product'],
            'parms' : { 'dest' : 'product','help' : "This is the product being\
                     described in the section."} },
-        { 'flags' : ['-v','--productVersion'], 
+        { 'flags' : ['-v','--productVersion'],
            'parms' : { 'dest' : 'productVersion','help' : "The version of the\
-                    product."} }, 
-        { 'flags' : ['-c','--classDesc'], 
+                    product."} },
+        { 'flags' : ['-c','--classDesc'],
            'parms' : { 'dest' : 'classDesc','help' : "Unique identifier for\
                     the software product using the reverse domain name\
                     convention. Example: com.xen.tools. If more than one\
                     product section is present then classDesc and instance\
-                    must be defined."} }, 
-        { 'flags' : ['-n','--instance'], 
+                    must be defined."} },
+        { 'flags' : ['-n','--instance'],
            'parms' : { 'dest' : 'instance','help' : "The instance of the\
-                    product section. Example: com.xen.tools.1."} }, 
-        { 'flags' : ['-d','--vendor'], 
+                    product section. Example: com.xen.tools.1."} },
+        { 'flags' : ['-d','--vendor'],
            'parms' : { 'dest' : 'vendor',
-                      'help' : "The vendor for the product."} }, 
-        { 'flags' : ['-o','--fullVersion'], 
+                      'help' : "The vendor for the product."} },
+        { 'flags' : ['-o','--fullVersion'],
            'parms' : { 'dest' : 'fullVersion',
                       'help' : "The full version of the product."} },
-        { 'flags' : ['-r','--prodURL'], 
+        { 'flags' : ['-r','--prodURL'],
            'parms' : { 'dest' : 'prodURL',
-                      'help' : "The URL for the product."} }, 
-        { 'flags' : ['-u','--vendorURL'], 
+                      'help' : "The URL for the product."} },
+        { 'flags' : ['-u','--vendorURL'],
            'parms' : { 'dest' : 'vendorURL',
-                      'help' : "The URL for the vendor."} },  
-         { 'flags' : ['-a','--appURL'], 
+                      'help' : "The URL for the vendor."} },
+         { 'flags' : ['-a','--appURL'],
            'parms' : { 'dest' : 'appURL',
-                      'help' : "The URL for the application."} },  
-           
-           
+                      'help' : "The URL for the application."} },
+
+
       ),
    },
-   "property" : { 
+   "property" : {
       'func':chPropertyProductSection,
       'help' : "Creates a Property for the Product Section. ",
       'args' : (
-        { 'flags' : [ '-r', '--req' ], 
+        { 'flags' : [ '-r', '--req' ],
            'parms' : { 'action':"store_true",'dest' : 'required',
                       'help' : "Specify if the section is required."} },
-        { 'flags' : ['-s','--classDesc'], 
+        { 'flags' : ['-s','--classDesc'],
            'parms' : { 'dest' : 'classDesc','help' : "Must be provided to\
                     identify Product Section. Unique identifier for the\
                     software product using the reverse domain name convention.\
                     Example: com.xen.tools. If more than one product section\
                     is present then classDesc and instance must be defined."}},
-        { 'flags' : ['-n','--instance'], 
+        { 'flags' : ['-n','--instance'],
            'parms' : { 'dest' : 'instance','help' : "Must be provided to\
                     identify Product Section. The instance of the product\
-                    section. Example: com.xen.tools.1."} }, 
-        { 'flags' : [ '-t','--type'], 
+                    section. Example: com.xen.tools.1."} },
+        { 'flags' : [ '-t','--type'],
            'parms' : { 'dest' : 'type','help' : "For the property of the\
                     product this specifies the type for the section."}},
-        { 'flags' : ['-v','--value'], 
+        { 'flags' : ['-v','--value'],
            'parms' : { 'dest' : 'value','help' : "For the property of the\
                     product this specifies the value for the section."} },
-        { 'flags' : [ '-c','--userConfig'], 
+        { 'flags' : [ '-c','--userConfig'],
            'parms' : {'action':"store_true", 'dest' : 'userConfig',
                     'help' : "For the property of the product this is a\
                     boolean value that specifies if this section is user\
-                    configurable."} }, 
-        { 'flags' : [ '-l', '--label' ], 
+                    configurable."} },
+        { 'flags' : [ '-l', '--label' ],
            'parms' : { 'dest' : 'label',"help":"For the property of the\
                     product this specifies the label used to describe the\
                     configuration."}},
-        { 'flags' : [ '-b', '--labelID' ], 
+        { 'flags' : [ '-b', '--labelID' ],
            'parms' : { 'dest' : 'labelID','help': "For the property of the\
             product this specifies the ID for the label created."}},
-        { 'flags' : [ '-d', '--description' ], 
+        { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help': "For the property of the\
             product this specifies the description for the given\
              configuration."}},
-        { 'flags' : [ '-e', '--descID' ], 
+        { 'flags' : [ '-e', '--descID' ],
            'parms' : { 'dest' : 'descID','help': "For the property of the\
             product this specifies the ID for the description of the\
              configuration created."}},
-            { 'flags' : [ '-k', '--key' ], 
+            { 'flags' : [ '-k', '--key' ],
            'parms' : { 'dest' : 'key','help': "For the property of the product\
             this specifies the key."}},
       ),
    },
    "category" : {
-      'func':chCategory, 
+      'func':chCategory,
       'help' : 'Creates Creates the categroy that helps define a product\
        section.',
       'args' : (
-        { 'flags' : ['-s','--classDesc'], 
+        { 'flags' : ['-s','--classDesc'],
            'parms' : { 'dest' : 'classDesc','help' : "Must be provided to\
             identify Product Section. Unique identifier for the software\
             product using the reverse domain name convention. Example:\
             com.xen.tools. If more than one product section is present then\
-            classDesc and instance must be defined."} }, 
-        { 'flags' : ['-n','--instance'], 
+            classDesc and instance must be defined."} },
+        { 'flags' : ['-n','--instance'],
            'parms' : { 'dest' : 'instance','help' : "Must be provided to\
             identify Product Section. The instance of the product section.\
-             Example: com.xen.tools.1."} }, 
+             Example: com.xen.tools.1."} },
         { 'flags' : ['-c','--category' ],
            'parms' : { 'dest' : 'category', 'action':'store',
-                      'help' : 'Description of the category.'}}, 
-        
+                      'help' : 'Description of the category.'}},
+
       )
    },
-   "icon" : { 
+   "icon" : {
       'func':chIconType,
       'help' : 'Creates Creates the categroy that helps define a product\
        section.',
       'args' : (
-        { 'flags' : ['-n','--fileRef'], 
+        { 'flags' : ['-n','--fileRef'],
            'parms' : { 'dest' : 'fileRef','help' : "The file reference for the\
-            given icon."} }, 
-        { 'flags' : ['--height'], 
-           'parms' : { 'dest' : 'height','help' : "The heigh of the image."}}, 
+            given icon."} },
+        { 'flags' : ['--height'],
+           'parms' : { 'dest' : 'height','help' : "The heigh of the image."}},
         { 'flags' : ['-w','--width' ],
            'parms' : { 'dest' : 'width', 'action':'store','help' : 'The width\
-            of the image.'}}, 
+            of the image.'}},
         { 'flags' : ['-t','--mimeType' ],
            'parms' : { 'dest' : 'mimeType', 'action':'store','help' : 'The\
-            mimeType of the image.'}}, 
-         { 'flags' : ['-s','--classDesc'], 
+            mimeType of the image.'}},
+         { 'flags' : ['-s','--classDesc'],
            'parms' : { 'dest' : 'classDesc','help' : "Must be provided to\
             identify Product Section. Unique identifier for the software\
              product using the reverse domain name convention.\
              Example: com.xen.tools. If more than one product section is\
-             present then classDesc and instance must be defined."} }, 
-        { 'flags' : ['--instance'], 
+             present then classDesc and instance must be defined."} },
+        { 'flags' : ['--instance'],
            'parms' : { 'dest' : 'instance','help' : "Must be provided to\
             identify Product Section. The instance of the product section.\
-             Example: com.xen.tools.1."} }, 
+             Example: com.xen.tools.1."} },
       )
    },
-    "license" : { 
+    "license" : {
       'func':chEulaSection,
       'help' : "Create the legal temrs for using a particular entity. ",
       'args' : (
-         { 'flags' : [ '-m', '--info' ], 
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info',
                     'help' : "The information to describe the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID',
                       'help' : "The id of the section's information."}},
-        { 'flags' : ['-a','--agreement'], 
+        { 'flags' : ['-a','--agreement'],
            'parms' : { 'dest' : 'agreement',
                       'help' : "The terms of the license."} },
-        { 'flags' : [ '-i','--licenseID'], 
+        { 'flags' : [ '-i','--licenseID'],
            'parms' : { 'dest' : 'licenseID',
-                      'help' : "Unique ID for the given license agreement."} }, 
+                      'help' : "Unique ID for the given license agreement."} },
       ),
    },
-   "startup" : { 
+   "startup" : {
       'func':chStartup,
       'help' : "Create the startup section for either a Virtual System or a\
                Virtual System Collection. ",
       'args' : (
-         { 'flags' : [ '-m', '--info' ], 
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."} },
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                     information."}},
-        { 'flags' : ['-n','--entityName'], 
+        { 'flags' : ['-n','--entityName'],
            'parms' : { 'dest' : 'entityName','help' : "The entity name within\
                     a collection."} },
-        { 'flags' : [ '-o','--order'], 
+        { 'flags' : [ '-o','--order'],
            'parms' : { 'dest' : 'order','help' : "Specifies the startup order,\
                     starting from 0. Items with same order identifier may be\
                     started up concurrently. The order is reversed for\
-                    shutdown. Default order is 0.."} }, 
-       { 'flags' : ['-s','--startDelay'], 
+                    shutdown. Default order is 0.."} },
+       { 'flags' : ['-s','--startDelay'],
            'parms' : { 'dest' : 'startDelay','help' : "Supported only for a\
                     Virtual System. Specifies a delay in seconds to wait until\
                      proceeding to the next order in the start sequence.\
-                        Default is 0."} }, 
-       { 'flags' : ['-w','--waitForGuest'], 
+                        Default is 0."} },
+       { 'flags' : ['-w','--waitForGuest'],
            'parms' : { 'action': 'store_true','dest' : 'waitForGuest',
                     'help' : " Supported only for a Virtual System. Allows\
                     the platform to resume the startup sequence after the\
-                    guest has reported is ready. Default is False.."} },   
-       { 'flags' : [ '-t', '--startAction' ], 
+                    guest has reported is ready. Default is False.."} },
+       { 'flags' : [ '-t', '--startAction' ],
            'parms' : { 'dest' : 'startAction',
                       'help' : "Supported only for a Virtual System. Specifies\
                       the the start action to use. Valid values are 'powerOn'\
                       and none.The default value is 'powerOn'."} },
-       { 'flags' : [ '-p', '--stopDelay' ], 
+       { 'flags' : [ '-p', '--stopDelay' ],
            'parms' : { 'dest' : 'stopDelay','help' : "Supported only for a\
                     Virtual System. Specifies a delay in seconds to wait until\
                     proceeding to the previous order in the sequence. The\
                     default is 0."} },
-       { 'flags' : [ '-a', '--stopAction' ], 
+       { 'flags' : [ '-a', '--stopAction' ],
            'parms' : { 'dest' : 'stopAction','help' : "Supported only for a\
                     Virtual System.. Specifies the stop action to use. Valid\
                     values are 'powerOff' ,'guestShutdown', and 'none'. The\
                     default is 'powerOff'."} },
       ),
    },
-     
-   "os" : { 
+
+   "os" : {
       'func':chOSsection,
       'help' : 'Creates the operating systems section for a Virtual System.',
       'args' : (
          { 'flags' : [ '-i','--descriptionID' ],
            'parms' : { 'dest' : 'descriptionID', 'action':'store',
-                      'help' : 'The id for the description.'}}, 
+                      'help' : 'The id for the description.'}},
          { 'flags' : [ '-d','--description' ],
            'parms' : { 'dest' : 'description', 'action':'store',
                       'help' : 'The description of the operating system..'}},
          { 'flags' : [ '-n','--name' ],
            'parms' : { 'dest' : 'name', 'action':'store',
-                      'help' : 'Unique name for the section.'}}, 
-         { 'flags' : [ '-m', '--info' ], 
+                      'help' : 'Unique name for the section.'}},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info',
                       'help' : "The information to describe the section."}},
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID',
                       'help' : "The id of the section's information."}},
       )
    },
-    "install" : { 
+    "install" : {
       'func':chInstallSection,
       'help' : 'Creates the install section used to describe a virtual system\
                in a virtual system collection.',
@@ -728,21 +728,21 @@ commands = {
          { 'flags' : [ '-i','--initBoot' ],
            'parms' : { 'dest' : 'initBoot', 'action':'store_true',
                       'help' : 'Specifies if the virtual machine needs to be\
-                        initially booted to install and configure software.'}}, 
+                        initially booted to install and configure software.'}},
          { 'flags' : [ '-b','--bootStopdelay' ],
            'parms' : { 'dest' : 'bootStopdelay', 'action':'store',
                       'help' : 'Specifies a delay in seconds to wait for the\
-                       virtual machine to power off.'}},  
-         { 'flags' : [ '-m', '--info' ], 
+                       virtual machine to power off.'}},
+         { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe\
                     the section."}},
-        { 'flags' : [ '-y','--infoID'], 
+        { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's\
                 information."}},
       )
    },
     "lang" : {
-      'func':chLanguage, 
+      'func':chLanguage,
       'help' : "Change the language of the OVF.",
       'args' : (
          { 'flags' : [ '-l', '--language'],
@@ -755,21 +755,21 @@ commands = {
 }
 common = (
    { 'flags' : [ '--comment' ],
-     'parms' : { 'dest' : 'comment', 'help': 'Comment to add.' } 
+     'parms' : { 'dest' : 'comment', 'help': 'Comment to add.' }
    },
    { 'flags' : [ '--encoding' ],
            'parms' : { 'dest' : 'encoding',
                       'help' : 'Defines the encoding used for the OVF.' }
-    }, 
+    },
    { 'flags' : ['--secID' ],
      'parms' : { 'dest' : 'secID','help':'OVF id of the section.'} ,
-   }, 
+   },
    { 'flags' : [ '--v', '--version' ],
      'parms' : { 'dest' : 'ovfVersion','action':"store_true",'default': False,
                 'help':'OVF specification used.'} ,
    },
    { 'flags' : [ '-f', '--file' ],
-     'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' } 
+     'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' }
    },
    { 'flags' : [ '--id' ],
      'parms' : { 'dest' : 'id','help':'ID of the section to attach to.'}

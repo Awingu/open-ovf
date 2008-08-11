@@ -22,9 +22,9 @@ def libvirtDocument(domain, *sections):
     """
     Creates a libvirt XML Document when passed the L{domain element
     <domainElement>}. Additional section arguments modify the L{domain element
-    <domainElement>} to include children. The XML DOM can be used to add them 
+    <domainElement>} to include children. The XML DOM can be used to add them
     manually.
-    
+
     L{Domain<domainElement>}:
     =======
 
@@ -37,23 +37,23 @@ def libvirtDocument(domain, *sections):
         - L{Vcpu<vcpuElement>}
 
         - L{"Boot"<bootElement>}
-        
+
         - L{On Poweroff<onPowerOffElement>}
         - L{On Reboot<onRebootElement>}
         - L{On Crash<onCrashElement>}
-        
+
         - L{Features<featuresElement>}
-        
+
         - L{Clock<clockElement>}
-        
+
         - L{Devices<devicesElement>}
-    
+
     @param domain: L{Domain Element<domainElement>}
     @type domain: DOM Element
-    
+
     @param sections: tuple of Libvirt sections
     @type sections: DOM Element tuple
-        
+
     @return: XML DOM Document
     @rtype: DOM Document
     """
@@ -83,7 +83,7 @@ def domainElement(domainType):
     @param domainType: hypervisor type
     @type domainType: String
 
-    @return: <domain> Element 
+    @return: <domain> Element
     @rtype: DOM Element
     """
     domain = Document().createElement('domain')
@@ -95,7 +95,7 @@ def nameElement(name):
     Creates a libvirt <name> element, a child of L{domain element
     <domainElement>}, representing the name of the Virtual Machine.
 
-    @param name: a short (alphanumeric) name for the virtual machine    
+    @param name: a short (alphanumeric) name for the virtual machine
     @type name: String
 
     @return: <name> Element
@@ -105,13 +105,13 @@ def nameElement(name):
     elem = document.createElement('name')
     elem.appendChild(document.createTextNode(name))
     return elem
-    
+
 def uuidElement(uuid):
     """
     Creates a libvirt <uuid> element, a child of L{domain element
-    <domainElement>}, representing a unique global identifier for the 
+    <domainElement>}, representing a unique global identifier for the
     virtual machine. The format must be RFC 4122 compliant.
-    
+
     e.g. 3e3fce45-4f53-4fa7-bb32-11f34168b82b
 
     @param uuid: a globally unique identifier, RFC 4122 compliant
@@ -127,8 +127,8 @@ def uuidElement(uuid):
 
 def memoryElement(quantity):
     """
-    Creates a <memory> element, a child of L{domain element<domainElement>}, 
-    that specifies the maximum allocation of memory at boot time. 
+    Creates a <memory> element, a child of L{domain element<domainElement>},
+    that specifies the maximum allocation of memory at boot time.
 
     @param quantity: maximum allocation of memory at boot time
     @type quantity: String
@@ -140,11 +140,11 @@ def memoryElement(quantity):
     elem = document.createElement('memory')
     elem.appendChild(document.createTextNode(quantity))
     return elem
-    
+
 def currentMemoryElement(quantity):
     """
     Creates a <currentMemory> element, a child of L{domain element
-    <domainElement>}, that specifies the current allocation of memory. 
+    <domainElement>}, that specifies the current allocation of memory.
 
     @param quantity: current allocation of memory for guest
     @type quantity: String
@@ -156,11 +156,11 @@ def currentMemoryElement(quantity):
     elem = document.createElement('currentMemory')
     elem.appendChild(document.createTextNode(quantity))
     return elem
-    
+
 def vcpuElement(quantity):
     """
-    Creates a <vcpu> element, a child of L{domain element<domainElement>}, 
-    that specifies the number of CPUs allocated. 
+    Creates a <vcpu> element, a child of L{domain element<domainElement>},
+    that specifies the number of CPUs allocated.
 
     @param quantity: number of virtual CPUs allocated
     @type quantity: String
@@ -176,25 +176,25 @@ def vcpuElement(quantity):
 def bootElement(bootDict):
     """
     Creates a libvirt <os> element, a child of L{domain element
-    <domainElement>}, that describes the operating system boot protocol for 
+    <domainElement>}, that describes the operating system boot protocol for
     the Virtual Machine, specifically values to enable booting from the BIOS.
-    
+
     @param bootDict: dictionary of boot arguments
     @type bootDict: dictionary
-    
+
     @note: bootDict has specific key values for boot type:
-    
+
     bootloader:
         - bootloader: path to bootloader
         - bootloader_args(optional): arguments to bootloader
-    
+
     bios:
         - arch(optional): VM CPU architecture, e.g. i686
         - devices: ordered boot device list: cdrom, hd, fd, or network
         - loader(optional): path to Xen loader
         - machine(optional): VM type, e.g. pc
         - type: hvm or linux
-    
+
     kernel:
         - arch(optional): VM CPU architecture, e.g. i686
         - cmdline(optional): arguments to kernel
@@ -203,13 +203,13 @@ def bootElement(bootDict):
         - loader(optional): path to Xen loader
         - machine(optional): VM type, e.g. pc
         - type: hvm or linux
-    
+
     @return: Ovf boot element tuple
     @rtype: DOM Element tuple
     """
     document = Document()
     bootList = ()
-    
+
     # Bootloader
     if bootDict.has_key('bootloader'):
         if(bootDict.has_key('devices') | bootDict.has_key('kernel')):
@@ -219,7 +219,7 @@ def bootElement(bootDict):
             bootloaderText = document.createTextNode(bootDict['bootloader'])
             bootloader.appendChild(bootloaderText)
             bootList += (bootloader,)
-            
+
             if bootDict.has_key('arguments'):
                 arguments = document.createElement('bootloader_args')
                 argumentsText = \
@@ -230,7 +230,7 @@ def bootElement(bootDict):
     elif(bootDict.has_key('devices') ^
          bootDict.has_key('kernel')):
         os = document.createElement('os')
-            
+
         bootType = document.createElement('type')
         if bootDict.has_key('arch'):
             bootType.setAttribute('arch', bootDict['arch'])
@@ -238,32 +238,32 @@ def bootElement(bootDict):
             bootType.setAttribute('machine', bootDict['machine'])
         bootType.appendChild(document.createTextNode(bootDict['type']))
         os.appendChild(bootType)
-            
+
         if bootDict.has_key('loader'):
             loader = document.createElement('loader')
             loader.appendChild(document.createTextNode(bootDict['loader']))
             os.appendChild(loader)
-        
+
     # BIOS
         if bootDict.has_key('devices'):
             for device in bootDict['devices']:
                 boot = document.createElement('boot')
                 boot.setAttribute('dev', device)
                 os.appendChild(boot)
-            
+
     # Kernel
         else:
             kernel = document.createElement('kernel')
             kernel.appendChild(document.createTextNode(bootDict['kernel']))
             os.appendChild(kernel)
-            
+
             if bootDict.has_key('initrd'):
                 initrd = document.createElement('initrd')
                 initrdText = document.createTextNode(bootDict['initrd'])
                 initrd.appendChild(initrdText)
                 os.appendChild(initrd)
-            
-            if bootDict.has_key('cmdline'): 
+
+            if bootDict.has_key('cmdline'):
                 cmdline = document.createElement('cmdline')
                 cmdlineText = document.createTextNode(bootDict['cmdline'])
                 cmdline.appendChild(cmdlineText)
@@ -273,13 +273,13 @@ def bootElement(bootDict):
 
     else:
         raise TypeError
-    
+
     return bootList
 
 def onPowerOffElement(action):
     """
     Creates a <on_poweroff> element, a child of L{domain element
-    <domainElement>}, that specifies the action to take when powered off. 
+    <domainElement>}, that specifies the action to take when powered off.
 
     @param action: action to take on power off
     @type action: String
@@ -358,7 +358,7 @@ def featuresElement(pae=False, nonpae=False, acpi=False, apic=False):
 
 def clockElement(sync):
     """
-    Creates a <clock> element, a child of L{domain element<domainElement>}, 
+    Creates a <clock> element, a child of L{domain element<domainElement>},
     that specifies how the clock is set.
 
     @param sync: initialization method for host, 'localtime' or 'utc'
@@ -376,10 +376,10 @@ def devicesElement(*devices):
     """
     Creates a <devices> element, a child of L{domain element
     <domainElement>}, is the parent element for all devices.
-    
+
     Devices:
     ========
-    
+
     -L{<Emulator<emulatorElement>}
     -L{<Disk<diskElement>}
     -L{<Network<networkElement>}
@@ -400,7 +400,7 @@ def devicesElement(*devices):
 
 def addDevice(deviceElem, *devices):
     """
-    Adds to a <devices> element, a child of L{domain element<domainElement>}, 
+    Adds to a <devices> element, a child of L{domain element<domainElement>},
     the devices specified as elements in the devices argument.
 
     @param deviceElem: <devices> element
@@ -437,15 +437,15 @@ def emulatorElement(path):
 
 def diskElement(diskDict):
     """
-    Creates a <disk> element, a child of L{device element<devicesElement>}, 
+    Creates a <disk> element, a child of L{device element<devicesElement>},
     that specifies the devices to be mounted.
 
     diskType, diskDevice, sourceFile, targetBus=None,
     targetDev=None, readonly=False, driverName=None, driverType=None
-    
+
     @param diskDict: dictionary of disk arguments
     @type diskDict: dictionary
-    
+
     @note: diskDict has specific key values:
         - diskDevice(optional): floppy, disk, or cdrom
         - driverName(optional): primary hypervisor backend name
@@ -463,11 +463,11 @@ def diskElement(diskDict):
     diskElem = document.createElement('disk')
     diskElem.setAttribute('type', diskDict['diskType'])
     diskElem.setAttribute('device', diskDict['diskDevice'])
-    
+
     sourceElem = document.createElement('source')
     sourceElem.setAttribute('file', diskDict['sourceFile'])
     diskElem.appendChild(sourceElem)
-    
+
     if(diskDict.has_key('targetDev') or diskDict.has_key('targetBus')):
         targetElem = document.createElement('target')
         if diskDict.has_key('targetDev'):
@@ -475,7 +475,7 @@ def diskElement(diskDict):
         if diskDict.has_key('targetBus'):
             targetElem.setAttribute('bus', diskDict['targetBus'])
         diskElem.appendChild(targetElem)
-    
+
     if(diskDict.has_key('driverName') or diskDict.has_key('driverType')):
         driverElem = document.createElement('driver')
         if diskDict.has_key('driverName'):
@@ -483,56 +483,56 @@ def diskElement(diskDict):
         if diskDict.has_key('driverType'):
             driverElem.setAttribute('type', diskDict['driverType'])
         diskElem.appendChild(driverElem)
-    
+
     if diskDict.has_key('readonly'):
         if diskDict['readonly']:
             readonlyElem = document.createElement('readonly')
             diskElem.appendChild(readonlyElem)
-        
+
     return diskElem
 
 def networkElement(netDict):
     """
     Creates a <interface> element, a child of L{device element
-    <devicesElement>}, that specifies network interfaces. 
-    
+    <devicesElement>}, that specifies network interfaces.
+
     @param netDict: dictionary of network interfaces
     @type netDict: dictionary
-    
+
     @note: netDict has specific key values:
-    
+
     bridge:
         - interfaceType: bridge
         - macAddress: MAC address
         - sourceName: bridge name
         - targetDev: tun device name
-    
+
     client:
         - interfaceType: client
         - sourceAddress: ip address
         - sourcePort: port
-    
+
     ethernet:
         - interfaceType: ethernet
         - script: host setup shell script
         - targetDev: tun device name
-    
+
     mcast:
         - interfaceType: mcast
         - sourceAddress: ip address
         - sourcePort: port
-    
+
     network:
         - interfaceType: network
         - macAddress: MAC address
         - sourceName: network name
         - targetDev: tun device name
-    
+
     server:
         - interfaceType: server
         - sourceAddress: ip address
         - sourcePort: port
-    
+
     user:
         - interfaceType: user
         - macAddress: MAC address
@@ -544,7 +544,7 @@ def networkElement(netDict):
 
     interface = document.createElement('interface')
     interface.setAttribute('type', netDict['interfaceType'])
-    
+
     if netDict['interfaceType'] == 'user':
         if netDict.has_key('macAddress'):
             mac = document.createElement('mac')
@@ -563,7 +563,7 @@ def networkElement(netDict):
         source = document.createElement('source')
         if(netDict['interfaceType'] == 'network' or
            netDict['interfaceType'] == 'bridge'):
-            source.setAttribute(netDict['interfaceType'], 
+            source.setAttribute(netDict['interfaceType'],
                                 netDict['sourceName'])
             interface.appendChild(source)
             if netDict.has_key('target'):
@@ -574,7 +574,7 @@ def networkElement(netDict):
                 mac = document.createElement('mac')
                 mac.setAttribute('address', netDict['macAddress'])
                 interface.appendChild(mac)
-        elif(netDict['interfaceType'] == 'server' or 
+        elif(netDict['interfaceType'] == 'server' or
              netDict['interfaceType'] == 'client' or
              netDict['interfaceType'] == 'mcast'):
             source.setAttribute('address', netDict['sourceAddress'])
@@ -582,15 +582,15 @@ def networkElement(netDict):
             interface.appendChild(source)
         else:
             raise ValueError
-    
+
     return interface
 
 def inputElement(inputType, bus=None):
     """
-    Creates a <input> element, a child of L{device element<devicesElement>}, 
-    that specifies input devices. Input device automatically provided, use to 
-    add additional input devices, such as a tablet input device for absolute 
-    cursor movement. 
+    Creates a <input> element, a child of L{device element<devicesElement>},
+    that specifies input devices. Input device automatically provided, use to
+    add additional input devices, such as a tablet input device for absolute
+    cursor movement.
 
     @param inputType: input type: mouse or tablet
     @type inputType: String
@@ -610,20 +610,20 @@ def inputElement(inputType, bus=None):
 
 def graphicsElement(graphicsType, listen=None, port=None):
     """
-    Creates a <graphics> element, a child of L{device element<devicesElement>}, 
-    that specifies the graphics framebuffer device, either on the host or 
+    Creates a <graphics> element, a child of L{device element<devicesElement>},
+    that specifies the graphics framebuffer device, either on the host or
     through a VNC server.
 
-    @param graphicsType: frame buffer type: sdl or vnc    
+    @param graphicsType: frame buffer type: sdl or vnc
     @type graphicsType: String
 
-    @param listen: IP address for VNC server    
+    @param listen: IP address for VNC server
     @type listen: String
 
-    @param port: port for VNC server    
+    @param port: port for VNC server
     @type port: String
 
-    @return: <graphics> element    
+    @return: <graphics> element
     @rtype: DOM Element
     """
     document = Document()
@@ -637,28 +637,28 @@ def graphicsElement(graphicsType, listen=None, port=None):
 
 def serialElement(deviceDict):
     """
-    Creates a character device element, a <serial> element, as a child 
-    of L{device element<devicesElement>}, that specifies the serial character 
+    Creates a character device element, a <serial> element, as a child
+    of L{device element<devicesElement>}, that specifies the serial character
     device to be used. Examples from libvirt.org:
-        
-    Device Logfile: A file is opened and all data sent to the character 
+
+    Device Logfile: A file is opened and all data sent to the character
     device is written to the file.
         - type: file
         - path: /var/log/vm/vm-serial.log
         - port: 1
-        
-    Virtual Console: Connects the character device to the graphical 
-    framebuffer in a virtual console. This is typically accessed via a 
+
+    Virtual Console: Connects the character device to the graphical
+    framebuffer in a virtual console. This is typically accessed via a
     special hotkey sequence such as "ctrl+alt+3".
         - type: vc
         - port: 1
-        
-    Null Device: Connects the character device to the void. No data is 
+
+    Null Device: Connects the character device to the void. No data is
     ever provided to the input. All data written is discarded.
         - type: null
         - port: 1
-        
-    TCP Client/Server: The character device acts as a TCP client connecting 
+
+    TCP Client/Server: The character device acts as a TCP client connecting
     to a remote server, or as a server waiting for a client connection.
         - type: tcp
         - mode: connect
@@ -666,10 +666,10 @@ def serialElement(deviceDict):
         - service: 2445
         - wiremode: telnet
         - port: 1
-    
+
     @param deviceDict: dictionary of character device attributes
     @type deviceDict: dictionary
-    
+
     @note: deviceDict keys:
         - type: pty, stdio, vc, null, dev, tcp, udp, unix, or file
         - port: port number
@@ -678,14 +678,14 @@ def serialElement(deviceDict):
         - host(optional): ip address
         - service(optional): service port
         - wiremode(optional): telnet
-    
+
     @return: character device Element
     @rtype: DOM Element
     """
     document = Document()
     deviceElem = document.createElement('serial')
     deviceElem.setAttribute('type', deviceDict['type'])
-    
+
     if deviceDict.has_key('path'):
         pathElem = document.createElement('source')
         pathElem.setAttribute('path', deviceDict['path'])
@@ -701,7 +701,7 @@ def serialElement(deviceDict):
         wiremodeElem = document.createElement('wiremode')
         wiremodeElem.setAttribute('type', deviceDict['wiremode'])
         deviceElem.appendChild(wiremodeElem)
-    
+
     portElem = document.createElement('target')
     portElem.setAttribute('port', deviceDict['port'])
     deviceElem.appendChild(portElem)
@@ -709,21 +709,21 @@ def serialElement(deviceDict):
 
 def consoleElement(deviceType, port):
     """
-    Creates a character device element, a <console> element, as a child 
+    Creates a character device element, a <console> element, as a child
     of L{device element<devicesElement>}, that specifies the console character
     device to be used. Examples from libvirt.org:
-    
-    Domain Logfile: This disables all input on the character device, and 
+
+    Domain Logfile: This disables all input on the character device, and
     sends output into the virtual machine's logfile.
         - type: stdio
         - port: 1
-        
+
     @param deviceType: device type
     @type deviceType: String
-    
+
     @param port: port number
     @type port: String
-    
+
     @return: <console> element
     @rtype: String
     """
@@ -734,22 +734,22 @@ def consoleElement(deviceType, port):
     portElem.setAttribute('port', port)
     deviceElem.appendChild(portElem)
     return deviceElem
-    
+
 def parallalElement(deviceType, path, port):
     """
-    Creates a character device element, a <parallel> element, as a child 
-    of L{device element<devicesElement>}, that specifies the parallel character 
+    Creates a character device element, a <parallel> element, as a child
+    of L{device element<devicesElement>}, that specifies the parallel character
     device to be used.
-    
+
     @param deviceType: device type
     @type deviceType: String
-    
+
     @param path: source path
     @type path: String
-    
+
     @param port: port number
     @type port: String
-    
+
     @return: <parallel> element
     @rtype: DOM Element
     """
@@ -765,7 +765,7 @@ def parallalElement(deviceType, path, port):
 
 def getOvfSystemType(virtualSys):
     """
-    Retrieves a list of system types for the virtual machine from the 
+    Retrieves a list of system types for the virtual machine from the
     Ovf file.
 
     @param virtualSys: Ovf VirtualSystem Node
@@ -779,17 +779,17 @@ def getOvfSystemType(virtualSys):
     if sys != []:
         for each in sys:
             systemTypes.append(each.firstChild.data)
-    
+
     return systemTypes
 
 def getOvfMemory(virtualHardware, configId=None):
     """
-    Retrieves the maximum amount of memory (kB) to be allocated for the 
+    Retrieves the maximum amount of memory (kB) to be allocated for the
     virtual machine from the Ovf file.
 
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
-    
+
     @param configId: configuration name
     @type configId: String
 
@@ -797,7 +797,7 @@ def getOvfMemory(virtualHardware, configId=None):
     @rtype: String
     """
     memory = ''
-    
+
     # TODO: needs to use bound:max, if it exists
     rasd = Ovf.getDict(virtualHardware, configId)['children']
     for resource in rasd:
@@ -823,17 +823,17 @@ def getOvfMemory(virtualHardware, configId=None):
             memoryFactor = eval(memoryUnits)
 
             memory = str(int(memoryQuantity) * memoryFactor)
-    
+
     return memory
 
 def getOvfCurrentMemory(virtualHardware, configId=None):
     """
-    Retrieves the amount of memory (kB) to be allocated for the virtual machine 
+    Retrieves the amount of memory (kB) to be allocated for the virtual machine
     from the Ovf file.
 
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
-    
+
     @param configId: configuration name
     @type configId: String
 
@@ -841,7 +841,7 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
     @rtype: String
     """
     memory = ''
-    
+
     # TODO: needs to use bound:normal, if it is present
     rasd = Ovf.getDict(virtualHardware, configId)['children']
     for resource in rasd:
@@ -849,7 +849,7 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
            resource['rasd:ResourceType'] == '4'):
             memoryQuantity = resource['rasd:VirtualQuantity']
             memoryUnits = resource['rasd:AllocationUnits']
-    
+
             # Calculate PUnit numerical factor
             memoryUnits = memoryUnits.replace('^','**')
 
@@ -869,15 +869,15 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
             memory = str(int(memoryQuantity) * memoryFactor)
 
     return memory
-    
+
 def getOvfVcpu(virtualHardware, configId=None):
     """
-    Retrieves the number of virtual CPUs to be allocated for the virtual 
+    Retrieves the number of virtual CPUs to be allocated for the virtual
     machine from the Ovf file.
 
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
-    
+
     @param configId: configuration name
     @type configId: String
 
@@ -899,10 +899,10 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
 
     @param ovf: Ovf file
     @type ovf: DOM Document
-    
+
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
-    
+
     @param configId: configuration name
     @type configId: String
 
@@ -911,9 +911,9 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
     """
     disks = ()
     logicalNames = ['hda', 'hdb', 'hdd']
-    
+
     rasd = Ovf.getDict(virtualHardware, configId)['children']
-    
+
     ovfDiskList = []
     for resource in rasd:
         if resource['name'] == 'Item':
@@ -990,16 +990,16 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
 def getOvfNetworks(virtualHardware, configId=None):
     """
     Retrieves network interface information for the virtual machine from the Ovf file.
-    
+
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
-    
+
     @param configId: configuration name
     @type configId: String
 
     @return: list of dictionaries, seeL{Interface Elements<networkElement>}
     @rtype: list
-    
+
     @todo: stubbed function, needs work
     """
     netList = ()
@@ -1008,24 +1008,24 @@ def getOvfNetworks(virtualHardware, configId=None):
 
 def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     """
-    Returns a libvirt domain object for a specific virtual system, 
+    Returns a libvirt domain object for a specific virtual system,
     based on the id and configuration, from the ovf.
-    
+
     @param ovf: Ovf file
     @type ovf: DOM Document
-    
+
     @param ovfId: VirtualSystem(Collection) identifier
     @type ovfId: String
-    
+
     @param configId: configuration name
     @type configId: String
-    
+
     @todo: needs work, very basic, assumes hypervisor type
     """
     # Get VirtualHardwareSection
     virtualHardwareSection = Ovf.getSections(virtualSys,
                                              'VirtualHardwareSection')
-    
+
     if virtualHardwareSection == []:
         raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
                                   "VirtualHardwareSection in VirtualSystem.")
@@ -1080,7 +1080,7 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
         document = libvirtDocument(domain, name, memory, vcpu,
                                    boot, clock, features, onPowerOff,
                                    onReboot, onCrash, devices)
-    
+
         return Ovf.xmlString(document)
 
 def getOvfLibvirt(ovf, configId=None):
@@ -1091,44 +1091,44 @@ def getOvfLibvirt(ovf, configId=None):
 
     @param ovf: Ovf file
     @type ovf: DOM Document
-    
+
     @param configId: configuration name
     @type configId: String
-    
+
     @return: dicitonary of L{Libvirt Domains<getOvfDomain>}
-    @rtype: dictionary 
+    @rtype: dictionary
     """
     domains = dict()
-    
+
     if configId == None:
         configId = Ovf.getDefaultConfiguration(ovf)
-    
+
     # For each system, create libvirt domain description
     for system in Ovf.getSections(ovf, 'VirtualSystem'):
         ovfId = system.getAttribute('ovf:id')
         domains[ovfId] = getOvfDomain(ovf, system, ovfId, configId)
-        
+
     return domains
 
 def getOvfStartup(ovf):
     """
     Returns a schedule representing the startup order for a virtual
     appliance from an ovf.
-    
+
     @param ovf: Ovf file
     @type ovf: DOM Document
-    
+
     @rtype: dictionary
     @return: startup dictionary of domains
     """
     startupDict = dict(boot='',
                        entities=dict())
-    
+
     systems = startupDict['entities']
-    
+
     # Create a list of all startup sections
     startupSections = Ovf.getSections(ovf, 'StartupSection')
-    
+
     # Create an entry in startup dictionary for each entry in Startup sections
     for section in startupSections:
         for item in section.getElementsByTagName('Item'):
@@ -1140,23 +1140,23 @@ def getOvfStartup(ovf):
                 elif(attr.name == 'ovf:order' or
                    attr.name == 'ovf:startDelay'):
                     attributes.append((attr.name, attr.value))
-            
+
             # Store attribute pairs in dicitonary
             virtualSys = dict(attributes)
             if not virtualSys.has_key('ovf:order'):
                 virtualSys['ovf:order'] = '0'
             if not virtualSys.has_key('ovf:startDelay'):
                 virtualSys['ovf:startDelay'] = '0'
-            
+
             parentId = section.parentNode.getAttribute('ovf:id')
             systems[parentId] = dict(systems=[])
             systems[parentId]['systems'].append(sysId)
             systems[sysId] = virtualSys
-                
+
     # Create a default entry for each system not in a startup section
     for each in Ovf.getSections(ovf, 'VirtualSystem'):
         sysId = each.getAttribute('ovf:id')
-        
+
         # If parentNode is Envelope, set as root system
         # else, trace back and fill in missing parent info
         if each.parentNode.tagName == 'Envelope':
@@ -1168,14 +1168,14 @@ def getOvfStartup(ovf):
             if systems.has_key(parentId):
                 systems[parentId]['systems'].append(sysId)
                 systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
-                
+
             while(not systems.has_key(parentId)):
                 systems[parentId] = {'systems':[],
-                                     'ovf:order':'0', 
+                                     'ovf:order':'0',
                                      'ovf:startDelay':'0'}
                 systems[parentId]['systems'].append(sysId)
                 systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
-                
+
                 # Increment, if not at root
                 if parent.parentNode.tagName == 'Envelope':
                     startupDict['boot'] = parentId
@@ -1183,23 +1183,23 @@ def getOvfStartup(ovf):
                     parent = parent.parentNode
                     sysId = parentId
                     parentId = parent.getAttribute('ovf:id')
-            
+
     return startupDict
-    
+
 def getSchedule(conn, startup, domains):
     """
     Returns a schedule representing the startup order for a virtual
     appliance and boots the defined domains.
-        
+
     @param conn: libvirt connection instance
     @type conn: libvirt.virConnect
-    
+
     @param startup: L{Startup dictionary<getOvfStartup>}
     @type startup: dictionary
-    
+
     @param domains: L{Domain dictionary<getOvfDomain>}
     @type domains: dictionary
-    
+
     @return: queue of domains and their startup delays
     @rtype: sched.scheduler
     """
@@ -1208,15 +1208,15 @@ def getSchedule(conn, startup, domains):
     delay = 0
     queue = [startup['boot']]
     schedule = sched.scheduler(time.time, time.sleep)
-    
+
     # Add actions to scheduler
     while(queue != []):
         sysId = queue.pop(0)
         system = startup['entities'][sysId]
-        
+
         index += int(system['ovf:order'])
         delay += int(system['ovf:startDelay'])
-        
+
         if not system.has_key('systems'):
             sysIndex = index + int(system['ovf:order'])
             sysDelay = delay + int(system['ovf:startDelay'])
@@ -1224,5 +1224,5 @@ def getSchedule(conn, startup, domains):
                            conn.createLinux, (domains[sysId], 0))
         else:
             queue.extend(system['systems'])
-    
+
     return schedule

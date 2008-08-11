@@ -18,8 +18,8 @@ VERSION = '0.1'
 #
 VERSION_STR = """%(prog)s (Open-OVF) %(version)s
 OVF version: %(ovf_version)s
-""" % { 
-        'prog': '%prog', 
-        'version': VERSION, 
+""" % {
+        'prog': '%prog',
+        'version': VERSION,
         'ovf_version': OVF_VERSION
       }

@@ -25,11 +25,11 @@ def getReferencedFilesFromManifest(fileName):
     try:
         files = []
         mfFD = open(fileName,"r")#only need to read the contents
-           
+
         line = mfFD.readline()
 
         prefix = "SHA1("
-        
+
         while line:
             txt = line.strip()
             newLn = txt.split('=')#newLn is what we get from the .mf file
@@ -44,13 +44,13 @@ def getReferencedFilesFromManifest(fileName):
             path = Ovf.href2abspath(href, fileName)
             files.append(OvfReferencedFile.OvfReferencedFile(path, href, ans))
             line = mfFD.readline()#get the next line
-        
-        return files 
-           
+
+        return files
+
     except Exception, e:
         raise e
-        
-        
+
+
 def writeManifestFromReferencedFilesList(fileName, refList):
     """
     Write a OVF Manifest file from a list of ReferencedFile objects
@@ -62,31 +62,31 @@ def writeManifestFromReferencedFilesList(fileName, refList):
 
     try:
         mfFile = fileName
-            
+
         if os.path.isfile(mfFile):
-            os.remove(mfFile)         
+            os.remove(mfFile)
 
         mfFD = os.open(mfFile, os.O_RDWR | os.O_CREAT)#might want to change how i open it to just create
-            
+
         prefix = "SHA1("
         suffix = ")= "
-        #since list is a OvfReferencedFile list we don't need to create a new object 
+        #since list is a OvfReferencedFile list we don't need to create a new object
         sum = refList[0].getChecksum()#this will get the new sum for the ovf file that was passed
         #The line below creates the line in the correct format
         newLine = prefix+fileName+suffix+sum
         os.write(mfFD, newLine)
-            
+
         for currFile in refList:
             if currFile.checksum == None:#if the file doesn't have a sum then get one
                 currFile.doChecksum()
-                
+
             sum = currFile.checksum
             name = currFile.href
             newLine = "\n" + prefix + name + suffix+sum
-                
+
             os.write(mfFD, newLine)
-               
+
         os.close(mfFD)
-   
+
     except Exception, e:
         print "%swriteManifestFromReferencedFilesList: %s" % ('', e)

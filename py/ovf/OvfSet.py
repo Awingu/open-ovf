@@ -21,7 +21,7 @@ import OvfManifest
 
 class OvfSet:
     """
-    This is the base OvfSet class. It represents an OVF Set, either as a tar 
+    This is the base OvfSet class. It represents an OVF Set, either as a tar
     archive or as a directory layout
     """
 
@@ -38,13 +38,13 @@ class OvfSet:
     def __init__(self, path=None, mode="r"):
         """
         Initialize object from path in read/write mode
-        
+
         Note::
             Default mode is r for read.
-        
-        @raise TypeError: The error gets thrown if the prameter mode has a 
+
+        @raise TypeError: The error gets thrown if the prameter mode has a
         value other than I{r} or I{w}.
-        
+
         @type  path: String
         @param path: a path to initialize object from
         @type  mode: String
@@ -69,17 +69,17 @@ class OvfSet:
     def initializeFromPath(self, path, mode="r"):
         """
         initialize object from the file or path given in path
-        
+
         @raise IOError: The cases are as follow
                 - I{B{Case 1:}} The path provided in the parameters is not
                 valid.
                 - I{B{Case 2:}} The mode parameter has a value of r and the path
                 already exist.
                 - I{B{Case 3:}} Unsafe Tar file
-                - I{B{Case 4:}} The tar file cannot be found. 
-                
-                
-        
+                - I{B{Case 4:}} The tar file cannot be found.
+
+
+
         @type  path: String
         @param path: a path to a file to open
         @type  mode: string
@@ -131,7 +131,7 @@ class OvfSet:
             if os.path.isfile(path):
                 self.archivePath = os.path.dirname(path)
                 # dirname returns "" rather than "." for "filename"
-                if self.archivePath == "": 
+                if self.archivePath == "":
                     self.archivePath = "."
                 self.setName(os.path.basename(path)[0:(len(os.path.basename(path))-4)])
             else:
@@ -149,7 +149,7 @@ class OvfSet:
         else:
             raise IOError("shouldn't be here")
 
-        if ( not os.path.isfile(path) and self.archiveFormat == "Dir" and 
+        if ( not os.path.isfile(path) and self.archiveFormat == "Dir" and
              exists == True ) or self.__tmpdir__ != None:
             name = False
             for curFile in os.listdir(self.archivePath):
@@ -166,7 +166,7 @@ class OvfSet:
         # now self.archivePath, self.archiveSavePath and self.archiveFormat should
         # be set.  self.name should be set if possible.
         # now, self.archivePath/self.name + ".ovf" should have the ovf file
-        
+
         if self.name != None:
             basepath = self.archivePath + "/" + self.name
             self.ovfFile = OvfFile.OvfFile(basepath + ".ovf")
@@ -201,7 +201,7 @@ class OvfSet:
         Set the OvfSet's name (file name of .ovf file without .ovf)
         @type  name: String
         @param name: the new name
-        @raise TypeError: on non-string input 
+        @raise TypeError: on non-string input
         """
         if type(name) == type(''):
             self.name = name
@@ -211,10 +211,10 @@ class OvfSet:
     def write(self, path=None, format=None):
         """
         Write the object to disk
-        
+
         @raise ValueError: The error is thrown if the format parameter is not
         a Dir or Tar.
-        
+
         @type  path: String
         @param path: path to save the file to.  Default is self.archivePath
         @type  format: String
@@ -246,9 +246,9 @@ class OvfSet:
         """
         if path == None:
             path = self.archivePath
-        
-        tar = tarfile.open(path,"w")#if any type of compression is needed use "w:<compressoin_used>" 
-        
+
+        tar = tarfile.open(path,"w")#if any type of compression is needed use "w:<compressoin_used>"
+
         ovfName = None
         try:
             (fd, ovfName) = tempfile.mkstemp()
@@ -263,14 +263,14 @@ class OvfSet:
             if ovfname != None:
                 os.unlink(ovfName)
             raise
-        
-        files = self.getOvfFile().getReferencedFiles() 
-        
+
+        files = self.getOvfFile().getReferencedFiles()
+
         for currFile in files:
             tar.add(currFile.path, currFile.href.encode('ascii'))
-                                 
+
         tar.close()
-            
+
     def writeAsDir(self, path=None):
         """
         Write a directory archive to path given.
@@ -283,7 +283,7 @@ class OvfSet:
                 ovfPath = path + self.getName() + '.ovf'
             else:
                 ovfPath = self.ovfFile.path
-                
+
             #Open the file for writing, write, and close file.
             ovf = open(ovfPath, 'w')
             self.ovfFile.writeFile(ovf)
@@ -303,28 +303,28 @@ class OvfSet:
     def getOvfFile(self):
         """
         This function will return the object instance of the L{OvfFile}
-        class that is associated with this L{OvfSet} object. 
-        
+        class that is associated with this L{OvfSet} object.
+
         @rtype: OvfFile object
         @return: OvfFile object associated with calling OvfSet object
         """
         return self.ovfFile
-    
+
     def verifyManifest(self, path=None):
         """
         This method will get manifest file based on the current object name.
-        It will then get all the sums from the manifest file and compare them 
-        to the sums in the OvfRefernecedFile list. If the checksum for a 
+        It will then get all the sums from the manifest file and compare them
+        to the sums in the OvfRefernecedFile list. If the checksum for a
         specified file does not match then the given OvfRefencedFile will return False.
-        
+
         @type  path: String
         @param path: the file that contains the manifest for the OvfSet (basename.mf)
-        
+
         @rtype: Boolean
         @return: True if all the checksums of the files match
                  False if at least one checksum does not match
-                 
-        @raise IOError: File does not exist at path 
+
+        @raise IOError: File does not exist at path
         """
         try:
             if path == None:
@@ -333,7 +333,7 @@ class OvfSet:
             expected = { }
             for ref in OvfManifest.getReferencedFilesFromManifest(path):
                 expected[ref.href] = ref
-                
+
             found = { }
             for ref in self.ovfFile.files:
                 if ref.checksum == None:
@@ -342,7 +342,7 @@ class OvfSet:
 
             # ovf file doesn't reference itself, so its not in the
             # found list.  add it if it is present in the expected
-            if expected[self.name + ".ovf"]: 
+            if expected[self.name + ".ovf"]:
                 nref = OvfReferencedFile.OvfReferencedFile(
                         self.archivePath + "/" + self.name + ".ovf",
                         self.name + ".ovf")
@@ -355,31 +355,31 @@ class OvfSet:
 
             return True
         except:
-            raise 
+            raise
 
 # Libvirt Interface
     def boot(self, conn, configId=None):
         """
         Boots OvfSet as libvirt domain(s).
-        
+
         @param conn: libvirt connection instance
         @type conn: libvirt.virConnect
-        
+
         @param configId: configuration identifier
         @type configId: String
         """
         ovf = self.ovfFile.document
-            
-        # TODO: Verify reservations DON'T exceed capabilities     
-        
+
+        # TODO: Verify reservations DON'T exceed capabilities
+
         # Get Startup order
         startup = OvfLibvirt.getOvfStartup(ovf)
-        
+
         # Get Domain definitions
         domains = OvfLibvirt.getOvfLibvirt(ovf, configId)
-        
+
         # queue domains with action: domains[id].create()
         schedule = OvfLibvirt.getSchedule(conn, startup, domains)
-        
+
         schedule.run()
-        
+

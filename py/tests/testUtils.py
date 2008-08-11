@@ -14,8 +14,8 @@ import xml.dom.minidom
 from copy import deepcopy
 
 def remove_whitespace_nodes(node,stripTextContent=False):
-    """ 
-    Removes all whitespace in DOM node. 
+    """
+    Removes all whitespace in DOM node.
     http://safari.oreilly.com/0596007973/pythoncook2-CHP-12-SECT-6
     """
     # prepare the list of text nodes to remove (and recurse when needed)

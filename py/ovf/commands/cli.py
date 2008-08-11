@@ -21,7 +21,7 @@ class CLI:
 
     def __init__(self, commands, common, usage=None, version=None):
         """
-        
+
 
         @param commands: subcommand specification
         @type commands: dict
@@ -41,11 +41,11 @@ class CLI:
         @param cmd: Command name
         @type cmd: str
 
-        @return: a single list containing both the specific 
+        @return: a single list containing both the specific
                  and common arguments for a specified command.
         @rtype: list
         """
-       
+
         try:
             allArgs = self.commands[cmd]['args'] + self.common
         except KeyError:
@@ -54,14 +54,14 @@ class CLI:
         return allArgs
 
     def checkRequiredArgs(self, cmd, options):
-        """Return a list of missing required arguments for a 
-        specified command. Returns an empty if all required 
+        """Return a list of missing required arguments for a
+        specified command. Returns an empty if all required
         args were set or if there is no required argument.
 
         @param cmd: Command name
         @type cmd: str
 
-        @param options: object returned by OptionParser.parse_args(), 
+        @param options: object returned by OptionParser.parse_args(),
                         containing the values set by the user.
         @type options: optparse.Values
 
@@ -74,7 +74,7 @@ class CLI:
             # If not required, there is nothing to check
             if not opt.get('required', False):
                 continue
-        
+
             dest = opt['parms']['dest']
             value = getattr(options, dest)
 
@@ -85,11 +85,11 @@ class CLI:
             # otherwise, add to the missing list
             flag = opt['flags'][0]
             ret.append(flag)
-            
-        return ret 
+
+        return ret
 
     def _parseCommand(self, args):
-        """Method to parse only the command. If the command 
+        """Method to parse only the command. If the command
         specified does not exists exit with status 2.
 
         @param args: Arguments passed
@@ -98,7 +98,7 @@ class CLI:
         @return: Command name
         @rtype: str
         """
-        
+
         parser = OptionParser(self.usage, version = self.version)
         for opt in self.commands:
             parser.add_option("--" + opt, help = self.commands[opt]['help'],
@@ -111,23 +111,23 @@ class CLI:
             sys.exit(2)
 
         options, args = parser.parse_args([ cmdStr ])
-        
+
         return options.cmd
 
     def _parseSubcommand(self, command, args):
-        """Method to parse a command specific arguments 
+        """Method to parse a command specific arguments
 
         @param command: Command name
         @type command: str
-        
+
         @param args: Arguments passed
         @type args: list
 
-        @return: Tuple (options, args), as returned by 
+        @return: Tuple (options, args), as returned by
                  OptionParser.parse_args()
-        @rtype: tuple 
+        @rtype: tuple
         """
- 
+
         parser = OptionParser(self.usage)
 
         for opt in self.getAllCmdArgs(command):
@@ -147,22 +147,22 @@ class CLI:
         In case it finds
 
         @param args: Arguments (defaults to sys.argv[1:])
-        @type args: list 
+        @type args: list
 
         @return: tuple (command, options, args).
                  command: the command name specified,
-                 options: command options, as returned by 
+                 options: command options, as returned by
                  OptionParser.parse_args().
-                 pArgs: a list of positional args, as 
+                 pArgs: a list of positional args, as
                  returned by OptionParser.parse_args().
         @rtype: tuple
         """
 
         # if args is not specified use sys.argv
         args = args or sys.argv[1:]
-        
+
         cmd = self._parseCommand(args)
         options, pArgs = self._parseSubcommand(cmd, args[1:])
-        
+
         return cmd, options, pArgs
 

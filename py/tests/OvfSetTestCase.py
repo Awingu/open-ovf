@@ -25,12 +25,12 @@ class SimpleTestCase(unittest.TestCase):
         # Create OvfSet Object
         self.path = TEST_FILES_DIR
         self.ovfSetObject = OvfSet.OvfSet(self.path + 'ourOVF.ovf','r')
-        
+
     def tearDown(self):
         # Dispose of OvfSet instance
         self.ovfSetObject.__del__()
         self.ovfSetObject = None
-        
+
     def test_getName(self):
         """Testing OvfSet.getName"""
         self.ovfSetObject.name = 'ourOVF'
@@ -50,13 +50,13 @@ class SimpleTestCase(unittest.TestCase):
         self.ovfSetObject.archiveFormat = "Dir"
         self.ovfSetObject.archivePath = "tests/"
         self.ovfSetObject.archiveSavePath = "tests/archive/"
-        
+
         string = "name=ourOVF mode=r archiveFormat=Dir archivePath=tests/" \
             + " archiveSavePath=tests/archive/"
         if self.ovfSetObject.__tmpdir__ != None:
             string = string + " tmpdir=" + self.ovfSetObject.__tmpdir__
         self.assertEqual(self.ovfSetObject.toString(), string)
-        
+
     def test_getOvfFile(self):
         """Testing OvfSet.getOvfFile"""
         self.assertEqual(self.ovfSetObject.getOvfFile().path, self.path + 'ourOVF.ovf')
@@ -84,27 +84,27 @@ class WriteTestCase(unittest.TestCase):
         # Create OvfSet Object
         self.path = TEST_FILES_DIR
         self.ovfSetObject = OvfSet.OvfSet(self.path + 'ourOVF.ovf','r')
-        
+
         # Create temporary directory to store test files
         self.tmpDir = tempfile.mkdtemp() + '/'
         self.assertTrue(os.path.isdir(self.tmpDir), 'Temp directory failed to be created')
-        
+
     def tearDown(self):
         # Dispose of OvfSet instance
         self.ovfSetObject.__del__()
         self.ovfSetObject = None
-        
+
         # Remove temporary files
         shutil.rmtree(self.tmpDir)
         self.assertFalse(os.path.isdir(self.tmpDir), 'Temporary files were not successfully removed')
-        
+
     def test_write(self):
         """Testing OvfSet.write"""
         self.ovfSetObject.archiveFormat = None
         self.assertRaises(ValueError,self.ovfSetObject.write, self.tmpDir, None)
-        
+
         self.assertRaises(ValueError,self.ovfSetObject.write, self.tmpDir, "File")
-        
+
 #        self.ovfSetObject.archiveSavePath = None
 #        self.assertRaises(ValueError,self.ovfSetObject.write, None, "Tar")
 
@@ -131,18 +131,18 @@ class WriteTestCase(unittest.TestCase):
             objmembers.append(ref.href)
 
         # if a .mf is present it must be second file
-        self.assertTrue((name + ".mf" not in objmembers or 
+        self.assertTrue((name + ".mf" not in objmembers or
                          tarmembers[1] == name + ".mf"),
                         "file named <name>.mf present but not second file")
 
         # if a .cert is present it must be third
-        self.assertTrue((name + ".cert" not in objmembers or 
+        self.assertTrue((name + ".cert" not in objmembers or
                          tarmembers[2] == name + ".cert"),
                         "file named <name>.mf present but not second file")
 
         # other entries in the tar might not be in order of getReferencedFiles
         # but the list should contain the same items (without extras)
-        # a reason for that would be if 2 references had same href (with 
+        # a reason for that would be if 2 references had same href (with
         # different file_ids) the tar should only contain one copy
 
         objuniq = []
@@ -154,7 +154,7 @@ class WriteTestCase(unittest.TestCase):
         self.assertTrue(tarmembers.sort() == objuniq.sort(),
                         "files in tar (" + str(tarmembers) +
                         ") != files referenced (" + str(objuniq) + ")")
-        
+
     def test_writeAsDir(self):
         """Testing OvfSet.writeAsDir"""
         # Write the modified OvfSet to disk as a dir
@@ -168,11 +168,11 @@ class WriteTestCase(unittest.TestCase):
         for each in self.ovfSetObject.ovfFile.files:
             self.assertTrue(os.path.isfile(self.tmpDir + each.href), \
                 'Files referenced in the Ovf were not found in write path')
-    
+
         # Test if IOError raised when no save path was provided
         self.ovfSetObject.ovfFile.path = ''
         self.assertRaises(IOError, self.ovfSetObject.writeAsDir, None)
-        
+
     #TODO: Unfinished
     def test_initializeFromPath(self):
         """Testing OvfSet.initializeFromPath"""

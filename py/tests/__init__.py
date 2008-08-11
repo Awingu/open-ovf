@@ -9,11 +9,11 @@
 # Contributors:
 # Eric Casler (IBM) - initial implementation
 ##############################################################################
-__all__ = ["OvfCertificateTestCase", 
+__all__ = ["OvfCertificateTestCase",
            "OvfFileTestCase",
            "OvfLibvirtTestCase",
-           "OvfManifestTestCase", 
-           "OvfReferencedFileTestCase", 
-           "OvfSetTestCase", 
+           "OvfManifestTestCase",
+           "OvfReferencedFileTestCase",
+           "OvfSetTestCase",
            "OvfTestCase",
            "UnitTests"]

@@ -29,11 +29,11 @@ COMMON = (
    }
 )
 
-COMMANDS = { 
+COMMANDS = {
     "init" : {
                 'func': lambda x: x,
          'help': "Create a brand new OVF with just a root, 'Envelope', node.",
-                'args' : 
+                'args' :
                     (
                         {   'flags' : [ '-d' ],
                             'parms' : { 'dest' : 'init','action':"store_true",
