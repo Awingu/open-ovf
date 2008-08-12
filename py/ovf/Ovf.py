@@ -30,7 +30,6 @@ def getDefaultConfiguration(ovfDoc):
 
     return None
 
-
 def getSections(ovfNode, ovfSectionName, ovfId=None, sectionId=None):
     """
     Returns a list of matching sections from an OVF file, from an XML DOM
@@ -48,52 +47,67 @@ def getSections(ovfNode, ovfSectionName, ovfId=None, sectionId=None):
 
     @param sectionId: The id for the section that will be returned
     @type sectionId: String
+
     @return: list of sections
     @rtype: list of DOM nodes
     """
-    entity = None
-    if ovfId != None:
-        sections = ovfNode.getElementsByTagName('VirtualSystem')
-        sections.extend(ovfNode.getElementsByTagName('VirtualSystemCollection'))
-        if sections != []:
-            found = False
-            while(sections != [] and not found):
-                element = sections.pop(0)
-                if element.getAttribute('ovf:id') == ovfId:
-                    entity = element
-                    found = True
+    sections = None
 
-            if entity != None:
-                if(ovfSectionName == 'VirtualSystem' or
-                   ovfSectionName == 'VirtualSystemCollection'):
-                    sections = [entity]
-                else:
-                    # Fix to identify multiple ResourceAllocationSection and
-                    # VirtualHardwareSection elements
-                    sections = entity.getElementsByTagName(ovfSectionName)
-                    if sectionId != None:
-                        while(sections != [] and not found):
-                            element = sections.pop(0)
-                            if element.getAttribute('ovf:id') == sectionId:
-                                sections = [element]
-                                found = True
-            else:
-                sections = []
+    # Unique VirtualSystem/VirtualSystemCollection Sections
+    if ovfId != None:
+        # Find VirtualSystem/VirtualSystemCollection with ovf:id=systemId
+        entities = getContentEntities(ovfNode, ovfId)
+
+        # Check if entity was found
+        if entities == []:
+            sections = []
         else:
-            raise ValueError("Ill-formed OVF: No Entities")
-    else:
-        # Fix to identify multiple ResourceAllocationSection and
-        # VirtualHardwareSection elements
+            ovfNode = entities[0]
+
+            # If looking for an entity, set return value
+            if(ovfSectionName == 'VirtualSystem' or
+               ovfSectionName == 'VirtualSystemCollection'):
+                sections = [ovfNode]
+
+    # If return value not set, continue search
+    if sections == None:
+        element = None
         sections = ovfNode.getElementsByTagName(ovfSectionName)
-        found = False
-        if sectionId != None:
-            while(sections != [] and not found):
-                element = sections.pop(0)
+
+        while(sections != [] and sections != [element]):
+            element = sections.pop(0)
+
+            if sectionId != None:
+                # Fix to identify multiple ResourceAllocationSection and
+                # VirtualHardwareSection elements, not listed in schema
                 if element.getAttribute('ovf:id') == sectionId:
                     sections = [element]
-                    found = True
+            else:
+                sections = [element]
 
     return sections
+
+def getContentEntities(ovfNode, ovfId=None):
+    """
+    Returns a list of OVF Entities, optionally restricted by id.
+
+    @param ovfNode: OVF document or element
+    @type ovfNode: DOM Node
+
+    @param ovfId: VirtualSystem or VirtualSystemCollection id
+    @type ovfId: String
+
+    @return: list of entities
+    @rtype: list of DOM nodes
+    """
+    entities = ovfNode.getElementsByTagName('VirtualSystem')
+    entities.extend(ovfNode.getElementsByTagName('VirtualSystemCollection'))
+
+    if ovfId == None:
+        return entities
+    else:
+        return [entity for entity in entities
+                if entity.getAttribute('ovf:id') == ovfId]
 
 def getDict(ovfSection, configId=None):
     """
