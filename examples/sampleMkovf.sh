@@ -142,27 +142,27 @@ $mkovf --property -f "$f" --classDesc org.mysql.db --key memoryLimit \
 $mkovf --os -f "$f" --id MyLampService --info "Guest Operating System" \
    --description "Linux 2.6.x" --secID 103
 
-$mkovf --virthw -f "$f" --id MyLampService --type vmx-4 \
+$mkovf --virthw -f "$f" --id MyLampService --type vmx-4 --secID vh0 \
    --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic"
  
-$mkovf --resource -f "$f" --id MyLampService --caption "1 virtual CPU" \
+$mkovf --resource -f "$f" --id vh0 --caption "1 virtual CPU" \
    --description "Number of virtual CPUs" \
    --resourceID 1 --resourceType 3 --virtualQuantity 1 --elementName "virtual CPU"
 
-$mkovf --resource -f "$f" --id MyLampService --allocUnits MegaBytes \
+$mkovf --resource -f "$f" --id vh0 --allocUnits MegaBytes \
    --caption "256 MB of memory" --description "Memory Size" \
    --resourceID 2 --resourceType 4 --virtualQuantity 256
 
-$mkovf --resource -f "$f" --id MyLampService --automaticAllocation True \
+$mkovf --resource -f "$f" --id vh0 --automaticAllocation True \
    --caption "Ethernet adapter on 'VM Network'" --description "Ethernet" \
    --connection "VM Network" --resourceID 3 --resourceType 10 \
    --elementName "Ethernet adapter"
 
-$mkovf --resource -f "$f" --id MyLampService \
+$mkovf --resource -f "$f" --id vh0 \
    --caption "SCSI Controller 0 - LSI Logic" --description "SCSI" --resourceID 4 \
    --resourceSubtype LsiLogic --resourceType 6 --elementName "SCSI controller"
 
-$mkovf --resource -f "$f" --id MyLampService --caption "Harddisk 1" \
+$mkovf --resource -f "$f" --id vh0 --caption "Harddisk 1" \
    --description "Harddisk" --hostResource "ovf://disk/lamp" --resourceID 5 \
    --parent 4 --resourceType 17 --elementName "Hard Disk"
 
