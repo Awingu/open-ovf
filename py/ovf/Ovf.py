@@ -33,29 +33,6 @@ def rmNode(node):
 
     node.parentNode.removeChild(node)
 
-def findChildWithID(node,id):
-    """
-    This helper function will find a child node with the
-    given id.
-
-    @param node: The DOM node of the section to be deleted
-    @type node: DOM node
-
-    @param id: The id of the node.
-    @type id: String
-
-    @return: DOM Node
-    """
-    section = None
-    for child in node.childNodes:
-        if child.nodeName != '#text':
-            if ((child.getAttribute('ovf:id')== id) or
-                (child.getAttribute('ovf:msgid')== id) or
-                (child.getAttribute('ovf:diskId')== id)):
-                section = child
-                break
-    return section
-
 def rmNodeAttributes(node,attributeList=[],strict=False):
     """
     This function will remove the attributes for a given section.
@@ -148,7 +125,9 @@ def getSections(ovfNode, ovfSectionName, ovfId=None, sectionId=None):
             if sectionId != None:
                 # Fix to identify multiple ResourceAllocationSection and
                 # VirtualHardwareSection elements, not listed in schema
-                if element.getAttribute('ovf:id') == sectionId:
+                if ((element.getAttribute('ovf:id') == sectionId)or
+                    (element.getAttribute('ovf:msgid') == sectionId)or
+                    (element.getAttribute('ovf:diskId') == sectionId)):
                     sections = [element]
             else:
                 sections = [element]
