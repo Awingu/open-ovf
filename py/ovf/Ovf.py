@@ -18,6 +18,74 @@ import os
 import sha
 from xml.dom import Node
 
+def rmNode(node):
+    """
+    This function will remove a node and all of its children.
+
+    NOTE::
+        If parentNode is None then it will use self.envelope.
+
+    @param node: The DOM node of the section to be deleted
+    @type node: DOM node
+    """
+    while node.firstChild != None:
+        node.removeChild(node.firstChild)
+
+    node.parentNode.removeChild(node)
+
+def findChildWithID(node,id):
+    """
+    This helper function will find a child node with the
+    given id.
+
+    @param node: The DOM node of the section to be deleted
+    @type node: DOM node
+
+    @param id: The id of the node.
+    @type id: String
+
+    @return: DOM Node
+    """
+    section = None
+    for child in node.childNodes:
+        if child.nodeName != '#text':
+            if ((child.getAttribute('ovf:id')== id) or
+                (child.getAttribute('ovf:msgid')== id) or
+                (child.getAttribute('ovf:diskId')== id)):
+                section = child
+                break
+    return section
+
+def rmNodeAttributes(node,attributeList=[],strict=False):
+    """
+    This function will remove the attributes for a given section.
+    Passing False to strict will mean that no errors will be thrown
+    if an attribute for the given node is not found.
+
+    @param node: The DOM node of the attribute to be deleted
+    @type node: DOM node
+
+    @param strict: This will allow an error to be thrown if an attribute is not
+                    present. Default is False, no errors thrown.
+    @type strict: Boolean
+
+    @param attributeList: A list of attributes to be deleted.
+    @type attributeList: List in the following form:
+            attList =['ovf:size','ovf:href']
+    """
+    section = node
+
+    if section == None:
+        raise ValueError, 'Node must be present.'
+
+    if attributeList != []:
+        for attribute in attributeList:
+            if section.hasAttribute(attribute):
+                section.removeAttribute(attribute)
+            elif strict:
+                raise ValueError, ("The attribute, "+attribute
+                                   +", does not exist.")
+
 def getDefaultConfiguration(ovfDoc):
     """
     Returns identifier for the default configuration
