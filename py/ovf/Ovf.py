@@ -182,7 +182,7 @@ def getDict(ovfSection, configId=None):
     sectDict = dict(node=ovfSection,
                     name=ovfSection.tagName)
 
-    attributes = getOvfAttributes(ovfSection)
+    attributes = getAttributes(ovfSection)
     if attributes != None:
         sectDict['attr'] = attributes
 
@@ -200,7 +200,7 @@ def getDict(ovfSection, configId=None):
 
                     childDict = dict(node=child,
                                      name=child.tagName)
-                    getOvfAttributes(child, childDict)
+                    getAttributes(child, childDict)
                     sectDict['children'].append(childDict)
 
                     # Get info from grandchildren, either text, or
@@ -222,7 +222,7 @@ def getDict(ovfSection, configId=None):
 
     return sectDict
 
-def getOvfAttributes(xmlNode, attributes=None):
+def getAttributes(xmlNode, attributes=None):
     """
     Returns a dictionary of the attributes for a DOM node.
 
