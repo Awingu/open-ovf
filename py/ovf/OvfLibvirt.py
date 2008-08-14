@@ -937,7 +937,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            diskList = Ovf.getDict(Ovf.getSections(ovf, 'DiskSection')[0],
+            diskList = Ovf.getDict(Ovf.getNodes(ovf, 'DiskSection')[0],
                                    configId)['children']
 
             for child in diskList:
@@ -946,7 +946,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
                     resourceId = hostResource.rsplit('/', 1).pop()
 
         if hostResource.startswith('ovf://file/'):
-            refList = Ovf.getDict(Ovf.getSections(ovf, 'References')[0],
+            refList = Ovf.getDict(Ovf.getNodes(ovf, 'References')[0],
                                configId)['children']
 
             for child in refList:
@@ -1023,8 +1023,7 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     @todo: needs work, very basic, assumes hypervisor type
     """
     # Get VirtualHardwareSection
-    virtualHardwareSection = Ovf.getSections(virtualSys,
-                                             'VirtualHardwareSection')
+    virtualHardwareSection = Ovf.getNodes(virtualSys, 'VirtualHardwareSection')
 
     if virtualHardwareSection == []:
         raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
@@ -1104,7 +1103,7 @@ def getOvfLibvirt(ovf, configId=None):
         configId = Ovf.getDefaultConfiguration(ovf)
 
     # For each system, create libvirt domain description
-    for system in Ovf.getSections(ovf, 'VirtualSystem'):
+    for system in Ovf.getNodes(ovf, 'VirtualSystem'):
         ovfId = system.getAttribute('ovf:id')
         domains[ovfId] = getOvfDomain(ovf, system, ovfId, configId)
 
@@ -1127,7 +1126,7 @@ def getOvfStartup(ovf):
     systems = startupDict['entities']
 
     # Create a list of all startup sections
-    startupSections = Ovf.getSections(ovf, 'StartupSection')
+    startupSections = Ovf.getNodes(ovf, 'StartupSection')
 
     # Create an entry in startup dictionary for each entry in Startup sections
     for section in startupSections:
@@ -1154,7 +1153,7 @@ def getOvfStartup(ovf):
             systems[sysId] = virtualSys
 
     # Create a default entry for each system not in a startup section
-    for each in Ovf.getSections(ovf, 'VirtualSystem'):
+    for each in Ovf.getNodes(ovf, 'VirtualSystem'):
         sysId = each.getAttribute('ovf:id')
 
         # If parentNode is Envelope, set as root system

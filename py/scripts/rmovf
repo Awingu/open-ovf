@@ -34,7 +34,7 @@ def rmReferences(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node  = Ovf.getSections(ovfFile.envelope, 'References',None)
+    node  = Ovf.getNodes(ovfFile.envelope, 'References')
     child = None
     for child in node[0].childNodes:
         if child.nodeName == "File":
@@ -63,7 +63,7 @@ def rmDiskSection(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node = Ovf.getSections(ovfFile.envelope, 'DiskSection')
+    node = Ovf.getNodes(ovfFile.envelope, 'DiskSection')
     if options.section:
         ovfFile.envelope.removeChild(node[0])
     else:
@@ -103,7 +103,7 @@ def rmNetworkSection(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node = Ovf.getSections(ovfFile.envelope, "NetworkSection")
+    node = Ovf.getNodes(ovfFile.envelope, "NetworkSection")
     #need to get Network which is a child of node[0]
     if options.section:
         ovfFile.removeChild(node[0])
@@ -142,7 +142,7 @@ def rmDeploymentOptions(ovfFile, options):
     @type options: Optparser object.
 
     """
-    node = Ovf.getSections(ovfFile.envelope, 'DeploymentOptionSection')
+    node = Ovf.getNodes(ovfFile.envelope, 'DeploymentOptionSection')
     if options.section:
         ovfFile.envelope.removeChild(node[0])
     for child in node[0].childNodes:

@@ -67,7 +67,7 @@ def getDefaultConfiguration(ovfDoc):
     """
     Returns identifier for the default configuration
     """
-    deploySection = getSections(ovfDoc, 'DeploymentOptions')
+    deploySection = getNodes(ovfDoc, 'DeploymentOptions')
     if deploySection != []:
         deployDict = getDict(deploySection[0])
         if deployDict['children'] != []:
@@ -75,64 +75,59 @@ def getDefaultConfiguration(ovfDoc):
 
     return None
 
-def getSections(ovfNode, ovfSectionName, ovfId=None, sectionId=None):
+def getNodes(ovfNode, tagName, attrList = { }):
     """
-    Returns a list of matching sections from an OVF file, from an XML DOM
-    node, when also passed the tag name of the section and optionally the
-    identifier of a VirtualSystem or VirtualSystemCollection.
+    Returns a list of nodes from an OVF whose tagname is tagName 
+    and that have attributes matching attrList.
 
-    @param ovfNode: OVF document or element
+    @param ovfNode: document or element to search
     @type ovfNode: DOM Node
 
-    @param ovfSectionName: tag name of section
-    @type ovfSectionName: String
+    @param tagName: tag name of a node
+    @type tagName: String
 
-    @param ovfId: VirtualSystem or VirtualSystemCollection id
-    @type ovfId: String
+    @param attrList: dictionary of attributes that returned list must contain
+    @type  attrList: dictionary
 
-    @param sectionId: The id for the section that will be returned
-    @type sectionId: String
-
-    @return: list of sections
+    @return: list of nodes
     @rtype: list of DOM nodes
     """
-    sections = None
+    matches = [ ]
+    for element in ovfNode.getElementsByTagName(tagName):
+        matches.append(element)
+        for key, val in attrList.items():
+            if element.getAttribute(key) != val:
+                matches.pop()
+                break
+    return(matches)
 
-    # Unique VirtualSystem/VirtualSystemCollection Sections
-    if ovfId != None:
-        # Find VirtualSystem/VirtualSystemCollection with ovf:id=systemId
-        entities = getContentEntities(ovfNode, ovfId)
+def getNodesWithId(ovfNode, tagName, id = None):
+    """
+    return a list of nodes that have attribute 
+        ( ovf:id | ovf:msgid | ovf:diskId ) == id
+    if id is 'None', all nodes matching tagName will be returned
 
-        # Check if entity was found
-        if entities == []:
-            sections = []
-        else:
-            ovfNode = entities[0]
+    @param ovfNode: document or element to search
+    @type ovfNode: DOM Node
 
-            # If looking for an entity, set return value
-            if(ovfSectionName == 'VirtualSystem' or
-               ovfSectionName == 'VirtualSystemCollection'):
-                sections = [ovfNode]
+    @param tagName: tag name of a node
+    @type  tagName: String
 
-    # If return value not set, continue search
-    if sections == None:
-        element = None
-        sections = ovfNode.getElementsByTagName(ovfSectionName)
+    @param id: id
+    @type  id: String
 
-        while(sections != [] and sections != [element]):
-            element = sections.pop(0)
-
-            if sectionId != None:
-                # Fix to identify multiple ResourceAllocationSection and
-                # VirtualHardwareSection elements, not listed in schema
-                if ((element.getAttribute('ovf:id') == sectionId)or
-                    (element.getAttribute('ovf:msgid') == sectionId)or
-                    (element.getAttribute('ovf:diskId') == sectionId)):
-                    sections = [element]
-            else:
-                sections = [element]
-
-    return sections
+    @return: list of nodes
+    @rtype: list of DOM nodes
+    """
+    if(id == None):
+        return(getNodes(ovfNode, tagName))
+    else:
+        t = getNodes(ovfNode,tagName)
+        return([ x for x in getNodes(ovfNode,tagName)
+                   if x.getAttribute('ovf:id') == id or
+                      x.getAttribute('ovf:msgid') == id or
+                      x.getAttribute('ovf:diskId') == id
+               ])
 
 def getContentEntities(ovfNode, ovfId=None):
     """
@@ -160,8 +155,8 @@ def getDict(ovfSection, configId=None):
     """
     Returns a dictionary, with keys representing the attributes and the
     children, for an ovf section. Optionally, limits to given configuration.
-    L{getSections} can be used to get a list of sections, each of which could
-    be passed in for the argument ovfSectionNode.
+    L{getNodes} can be used to get a list of sections, each of which
+    could be passed in for the argument ovfSectionNode.
 
     @param ovfSection: OVF section
     @type ovfSection: DOM Node
@@ -302,12 +297,7 @@ def isVirtualSystem(ovfDoc, ovfId):
     @return: True or False
     @rtype: boolean
     """
-    systems = getSections(ovfDoc, 'VirtualSystem', ovfId)
-
-    if systems == []:
-        return False
-    else:
-        return True
+    return(getNodes(ovfDoc,'VirtualSystem', { 'ovf:id':ovfId }) != [])
 
 def isVirtualSystemCollection(ovfDoc, ovfId):
     """
@@ -323,12 +313,8 @@ def isVirtualSystemCollection(ovfDoc, ovfId):
     @return: True or False
     @rtype: boolean
     """
-    systems = getSections(ovfDoc, 'VirtualSystemCollection', ovfId)
-
-    if systems == []:
-        return False
-    else:
-        return True
+    return(getNodes(ovfDoc,'VirtualSystemCollection',
+                    { 'ovf:id':ovfId }) != [])
 
 def isConfiguration(ovfDoc, configId):
     """
@@ -346,7 +332,7 @@ def isConfiguration(ovfDoc, configId):
     @raise ValueError: ConfigId doesn't match any in DeploymentOptions
     @raise NotImplementedError: DeploymentOptions not defined
     """
-    deploy = getSections(ovfDoc, 'DeploymentOptions')
+    deploy = getNodes(ovfDoc, 'DeploymentOptions')
     if deploy != []:
         configList = getDict(deploy[0])['children']
         while configList != []:
