@@ -11,16 +11,36 @@
 # Eric Casler (IBM) - initial implementation
 ##############################################################################
 
+from optparse import OptionParser
+
 import libvirt
 
 from ovf import OvfSet
 
 if __name__ == "__main__":
-    # Open libvirt connection
-    conn = libvirt.open('qemu:///system')
+    parser = OptionParser()
+    parser.add_option("-f", "--file", dest="filename",
+                  help="path to OVF file", metavar="FILE PATH")
+    parser.add_option("-c", "--connect", dest="connect",
+                  help="libvirt connection URI", metavar="URI")
+
+    (options, args) = parser.parse_args()
+
+    if options.connect != None:
+        # Open libvirt connection
+        conn = libvirt.open(options.connect)
+
+        if options.filename != None:
+            # Instantiate OvfSet instance for httpd.ovf
+            ovf = OvfSet.OvfSet(options.filename)
+
+            # Boot Virtual Machines
+            ovf.boot(conn)
+
+
+    # Otherwise, just print help/usage message
     
-    # Instantiate OvfSet instance for httpd.ovf
-    ovf = OvfSet.OvfSet('httpd.ovf')
-    
-    # Boot Virtual Machines
-    ovf.boot(conn)
+        else:
+            parser.print_help()
+    else:
+        parser.print_help()
