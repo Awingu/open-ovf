@@ -30,6 +30,7 @@ def initOVF(ovfFile, options=None):
     @type ovfFile: OvfFile
     """
 
+    ovfFile.path = options.ovfFile
     ovfFile.createEnvelope()
 
 def createReferences(ovfFile, options):
@@ -584,19 +585,20 @@ def main():
     cliParser = cli.CLI(commands, common, version=VERSION_STR)
     command, options, args = cliParser.parseArgs()
 
+    ovfFile = None
+
     if options.ovfFile:
         try:
-            ovfFile = OvfFile(options.ovfFile)
-        except:
-            ovfFile = OvfFile()
-            #i want the object OvfFile not the
-            #name of the file... Bad naming here
-            initOVF(ovfFile)
-            ovfFile.path = options.ovfFile
-            ovfFileCreated = True
+            if command != 'init':
+                ovfFile = OvfFile(options.ovfFile)
+            else:
+                ovfFile = OvfFile()
+        except Exception,e:
+            raise e
+
     else:
-        raise NotImplementedError, "Please pass the path to an OVF file with\
-         the flag -f."
+        raise(NotImplementedError,
+              "Please pass the path to an OVF file with the flag -f.")
 
     commands[command]['func'](ovfFile, options)
 

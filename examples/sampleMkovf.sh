@@ -15,7 +15,7 @@ mkovf=${MKOVF}
 
 f=${1:-out.ovf}
 rm -f "${f}"
-
+$mkovf --init -f "$f"
 $mkovf --efile -f "$f" -i lamp -n lamp.vmdk  -s 180114671
 
 $mkovf --disk -f "$f" \

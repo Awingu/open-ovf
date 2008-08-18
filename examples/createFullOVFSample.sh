@@ -15,7 +15,7 @@ mkovf=${MKOVF}
 
 f=${1:-out.ovf}
 rm -f "${f}"
-
+$mkovf --init -f "$f"
 $mkovf --efile -f "$f" -i lamp -n lamp.vmdk  -s 180114671
 $mkovf --efile -f "$f" -i otherLamp -n otherLamp.vmdk -s 20000 --compression gzip \
 		--chunksize 150000
