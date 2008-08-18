@@ -1,0 +1,76 @@
+Open-Ovf Examples
+
+Introduction
+
+  Description of files, and their purpose.
+
+
+
+Files
+
+  createFullOVFSample.sh
+
+	  usage: $createFullOVFSample.sh
+
+	  Creates a sample OVF file with all of the possible fields and
+	  attributes.
+
+  sampleMkovf.sh
+
+	  usage: $sampleMkovf.sh
+
+	  Creates a sample OVF file.
+
+  sample/Makefile
+
+	  usage: $make all
+
+	  depends: sample/createimg
+			   sample/mk-httpd-ovf
+			   sample/ovf-env.xml
+
+	  The file, Makefile, will create the necessary sample files and
+	  directories to get started using the Open-Ovf library and toolset.
+
+	  To get started, run the following on command-line:
+
+	  $make all
+
+	  This will create the sub-directories auxiliary/ubuntu-hardy in
+	  sample/ and populate it with an ovf file, httpd.ovf, a disk images,
+	  root.qcow2 and swap.qcow2, and a iso file, ovf-env.iso.
+
+	  The OVF file is created using the script mk-httpd-ovf, which
+	  outlines repeated calls to the python library script mkovf.
+
+	  The disk images are created using the script createimg, which calls
+	  ubuntu-vm-builder. Ubuntu-vm-builder was used for example
+	  purposes only and not a requirement of the library. For more
+	  information on ubuntu-vm-builder checkout:
+
+	  https://help.ubuntu.com/8.04/serverguide/C/ubuntu-vm-builder.html
+
+	  The iso file is created using mkisofs and takes as input a file in
+	  the sample directory called ovf-env.xml.
+
+  sample/Run.py
+
+	  usage: $run.py -f <OVF file path> -c <libvirt URI>
+
+	  depends: $./sample/make all
+
+	  Run.py is a python script that demonstrates one way the Open-Ovf
+	  library can interface with libvirt. It takes in two arguments, the
+	  path to an OVF file and the libvirt hypervisor URI. It depends on
+	  two modules, ovf/OvfSet.py and ovf/OvfLibvirt.py, to generate the
+	  libvirt domain descriptions and to be instantiate them in libvirt.
+	  Qemu is used as an example hypervisor, but all libvirt supported
+	  hypervisors are supported by the library.
+
+
+
+Appendix:
+
+	sample/mini-ae
+
+		To be completed
