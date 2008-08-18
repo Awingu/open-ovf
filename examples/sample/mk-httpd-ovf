@@ -105,7 +105,7 @@ $mkovf --resource -f "$f" --caption "1 virtual CPU" \
    --resourceID 1 --resourceType 3 --virtualQuantity 1 \
    --elementName "virtual CPU"
 
-$mkovf --resource -f "$f" --allocUnits MegaBytes \
+$mkovf --resource -f "$f" --allocUnits "byte * 2^20" \
    --caption "256 MB of memory" --description "Memory Size" \
    --resourceID 2 --resourceType 4 --virtualQuantity 256 \
    --elementName "Memory"
