@@ -543,6 +543,7 @@ def raiseException(id):
     @type id: String
     """
     raise NotImplementedError, "The section with id, "+id+" not found."
+
 def validateOVF(ovfFile, options):
     """
     This method validates the ovf against the schema.
@@ -555,7 +556,7 @@ def validateOVF(ovfFile, options):
     """
     ovf = options.ovfFile
     if not options.schema:
-        schema =  '../../ovf-dmtf/DMTF-1.0.0b/ovf-envelope.xsd'
+        schema =  '../../schemas/ovf-envelope.xsd'
     else:
         schema = options.schema
 
