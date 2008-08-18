@@ -20,7 +20,7 @@
 	<xs:element name="AutomaticStartupAction" nillable="true">
 		<xs:complexType>
 			<xs:simpleContent>
-				<xs:restriction base="cim:cimAnySimpleType">
+				<xs:restriction base="xs:anyType">
 					<xs:simpleType>
 						<xs:union>
 							<xs:simpleType>
@@ -52,7 +52,7 @@
 	<xs:element name="AutomaticShutdownAction" nillable="true">
 		<xs:complexType>
 			<xs:simpleContent>
-				<xs:restriction base="cim:cimAnySimpleType">
+				<xs:restriction base="xs:anyType">
 					<xs:simpleType>
 						<xs:union>
 							<xs:simpleType>
@@ -81,7 +81,7 @@
 	<xs:element name="AutomaticRecoveryAction" nillable="true">
 		<xs:complexType>
 			<xs:simpleContent>
-				<xs:restriction base="cim:cimAnySimpleType">
+				<xs:restriction base="xs:anyType">
 					<xs:simpleType>
 						<xs:union>
 							<xs:simpleType>
