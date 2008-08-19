@@ -1,0 +1,46 @@
+Schemas
+
+Introduction
+------------
+The contents of this directory are provided for the convenience of library
+users and distributed in accordance with the,
+
+Distribute Management Task Force, Inc. (DMTF) - http://www.dmtf.org/
+World Wide Web Consortium, (W3C)              - http://www.w3.org/
+
+
+Copyright Notice
+----------------
+All documents contained in schemas/ are thereby copyrighted such,
+
+Copyright © 2008 Distributed Management Task Force, Inc. (DMTF). All rights reserved.
+	- cim-rasd.xsd
+	- cim-vssd.xsd
+	- common.xsd
+	- ovf-envelope.xsd
+	- ovf-environment.xsd
+
+Copyright © 1997-2007 W3C® (MIT, ERCIM, Keio), All Rights Reserved. W3C liability,
+trademark, document use and software licensing rules apply.
+	- xml.xsd
+
+Modifications
+-------------
+Additionally, modifications have been made the original files, as follows:
+
+From http://www.dmtf.org/standards/cim/cim_schema_v219/cim_schema_2.19.0Experimental-XSDClasses.zip
+renamed:
+    - wbem/wscim/1/common.xsd                                 -> schemas/common.xsd
+    - wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData.xsd
+                                                              -> schemas/cim-rasd.xsd
+    - wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData.xsd
+                                                              -> schemas/cim-vssd.xsd
+
+In both schema files, there were three definitions of
+
+	<xs:restriction base="cim:cimAnySimpleType">
+
+libxml2 failed to parse the schemas with these lines, however they did parse after
+modifying them to:
+
+	<xs:restriction base="xs:anyType">
