@@ -526,15 +526,7 @@ def main():
         parser.error(errMsg)
 
     if options.ovfFile:
-        try:
-            ovfFile = OvfFile(options.ovfFile)
-        except:
-            ovfFile = OvfFile()
-            #i want the object OvfFile not the
-            #name of the file... Bad naming here
-
-            ovfFile.path = options.ovfFile
-            ovfFileCreated = True
+        ovfFile = OvfFile(options.ovfFile)
     else:
         raise NotImplementedError, "Please pass the path to an OVF file with\
          the flag -f."
