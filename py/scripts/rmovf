@@ -538,7 +538,7 @@ def main():
 
 commands = {
    "efile" : {
-      'func':rmReferences,
+      'func':rmReferencesHandler,
       'help' : "Removes an efile sectoin",
       'args' : (
          { 'flags' : [ '-i','--ovfID' ],
@@ -564,7 +564,7 @@ commands = {
       )
    },
    "disk" : {
-      'func':rmDiskSection,
+      'func':rmDiskHandler,
       'help' : 'Removes a disk section.',
       'args' : (
          { 'flags' : [ '-i','--diskID' ],
@@ -600,7 +600,7 @@ commands = {
       )
    },
   "net" : {
-      'func':rmNetworkSection,
+      'func':rmDeploymentHandler,
       'help' : 'Remove a Network Section.',
       'args' : (
          { 'flags' : [ '-i','--netID' ],
