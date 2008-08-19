@@ -116,12 +116,13 @@ def rmDiskHandler(ovfFile, options):
                 Ovf.rmNodeAttributes(diskNode[0],diskAttribs,
                                             options.strict)
 
-def rmNetworkSection(ovfFile, options):
+def rmNetworkHandler(ovfFile, options):
     """
     This function removes a network section.
 
     NOTE::
-        To remove an entire network use --network
+        To remove an entire network use --node
+        To remove the NetworkSection use --section
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -132,29 +133,32 @@ def rmNetworkSection(ovfFile, options):
     node = Ovf.getNodes(ovfFile.envelope, "NetworkSection")
     #need to get Network which is a child of node[0]
     if options.section:
-        ovfFile.removeChild(node[0])
-    #info,infoID,networkName,description
-    for child in node[0].childNodes:
-        if child.nodeName == 'Info':
-            if options.info:
-                node[0].removeChild(child)
-            if (child.hasAttribute('ovf:msgid') and options.infoID):
-                child.removeAttribute('ovf:msgid')
+          Ovf.rmNode(node[0])
+    else:
+        if options.info:
+            Ovf.rmNode(node[0].getElementsByTagName('Info')[0])
+        elif options.infoID:
+            attribute = ['ovf:msgid']
+            Ovf.rmNodeAttributes(node[0].getElementsByTagName('Info')[0]
+                                        ,attribute,options.strict)
+        #no need to go in here if there isn't a network id
+        if options.networkID:
+            try:
+                netNode = Ovf.getNodesWithId(ovfFile.envelope, 'Network',
+                                         options.networkID)[0]
+            except IndexError:
+                raise ValueError,("The given network with id, "+options.networkID+
+                                  ", not found.")
 
-        if child.nodeName == 'Network':
-            if child.hasAttribute('ovf:id'):
-                if child.getAttribute('ovf:id') == options.networkID:
-                    if options.network:
-                        node[0].removeChild(child)
-                        break
-                    else:
-                        if (child.hasAttribute('ovf:name')and
-                            options.networkName):
-                            child.removeAttribute('ovf:name')
-                        for desc in child.childNodes:
-                            if desc.nodeName == 'Description':
-                                child.removeChild(desc)
+            if options.node:
+                Ovf.rmNode(netNode)
+            if options.networkName:
+                netList = ['ovf:name']
+                Ovf.rmNodeAttributes(netNode,netList,options.strict)
 
+            elif options.description:
+                netDesc = Ovf.getNodes(netNode, 'Description')
+                Ovf.rmNode(netDesc)
 
 def rmDeploymentOptions(ovfFile, options):
     """
