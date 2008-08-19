@@ -61,10 +61,14 @@ def rmReferencesHandler(ovfFile, options):
                     attribs.append(attrib[1])
             Ovf.rmNodeAttributes(fileNode[0], attribs, options.strict)
 
-def rmDiskSection(ovfFile, options):
+def rmDiskHandler(ovfFile, options):
     """
-    This function will remove the disk section of an OVF or remove an\
-    attribute.
+    This function will remove the disk section of an OVF or remove an
+    attribute from a node with a given id. Also the method can remove a node
+    with a given id.
+    NOTE::
+        If the flag strict is set and the node with the given id does not exist
+        then it will throw an error.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -73,31 +77,44 @@ def rmDiskSection(ovfFile, options):
     @type options: Optparser object.
     """
     node = Ovf.getNodes(ovfFile.envelope, 'DiskSection')
+    if node == []:
+        raise ValueError, 'The DiskSection Section was not found.'
+
     if options.section:
-        ovfFile.envelope.removeChild(node[0])
+         Ovf.rmNode(node[0])
     else:
-        diskDict = [(options.capacity,'ovf:capacity'),(options.format,'ovf:format'),
-                    (options.fileRef,'ovf:fileRef'),
-                    (options.populatedSize,'ovf:populatedSize'),
-                    (options.capacityAllocUnits,'ovf:capacityAllocationUnits'),
-                    (options.parentRef,'ovf:parentRef')]
+        #the required is part of the DiskSection node and not the individual
+        #Disk nodes.
+        if options.required:
+            attribute = ['ovf:required']
+            Ovf.rmNodeAttributes(node[0],attribute)
+        #this will find the node with the given id.
+        diskNode = Ovf.getNodesWithId(node[0], 'Disk',options.disk_id)
+        #if the flag --strict is set and the node wit the given id is not found
+        #then it will throw an error
+        if options.strict and diskNode == []:
+            raise ValueError, ('The node with id, '+options.disk_id+
+                                   ', not found.')
+        if options.node:
+            Ovf.rmNode(diskNode[0])
+        else:
+            if options.node:
+                Ovf.rmNode(diskNode)
+            else:
+                diskList = [(options.capacity,'ovf:capacity'),
+                            (options.format,'ovf:format'),
+                            (options.fileRef,'ovf:fileRef'),
+                            (options.populatedSize,'ovf:populatedSize'),
+                            (options.capacityAllocUnits,'ovf:capacityAllocationUnits'),
+                            (options.parentRef,'ovf:parentRef')]
 
-        if options.required and node[0].hasAttribute('ovf:required'):
-            node[0].removeAttribute('ovf:required')
-        for child in node[0].childNodes:
-            #remove attributes from the info or delete info
-            if child.node == 'Info':
-                if options.info:
-                    node[0].removeChild(child)
-                if options.infoID:
-                    child.removeAttribute('ovf:id')
-            if child.nodeName == 'Disk':
-                for key in diskDict:
-                    if (key[0] != None and
-                    (child.getAttribute('ovf:diskId')==options.disk_id)):
-                        if key[0] and child.hasAttribute(key[1]):
-                            child.removeAttribute(key[1])
+                diskAttribs = []
+                for attribs in diskList:
+                    if attribs[0] == True:
+                        diskAttribs.append(attribs[1])
 
+                Ovf.rmNodeAttributes(diskNode[0],diskAttribs,
+                                            options.strict)
 
 def rmNetworkSection(ovfFile, options):
     """
