@@ -21,12 +21,14 @@ from ovf.OvfReferencedFile import OvfReferencedFile
 from ovf import Ovf
 from ovf import validation
 
-def rmReferences(ovfFile, options):
+def rmReferencesHandler(ovfFile, options):
     """
-    This function will remove the 'References' section of the ovf.
+    This function will remove the 'References' section of the ovf OR specific
+    attributes within the nodes of that section.
     Note::
         The user will be able to remove the entire section or remove a file
         or remove attributes within a File.
+        Using flag strict will enable the errors to be shown.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -35,22 +37,29 @@ def rmReferences(ovfFile, options):
     @type options: Optparser object.
     """
     node  = Ovf.getNodes(ovfFile.envelope, 'References')
-    child = None
-    for child in node[0].childNodes:
-        if child.nodeName == "File":
-            if child.hasAttribute("ovf:id") and child.getAttribute("ovf:id") == options.file_id:
-                if options.section:
-                   node[0].removeChild(child)
-                   break
-                if options.size:
-                    if(child.hasAttribute('ovf:size')):
-                        child.removeAttribute('ovf:size')
-                if options.chunksize:
-                    if child.hasAttribute('ovf:chunkSize'):
-                        child.removeAttribute('ovf:chunkSize')
-                if options.compression:
-                    if node.hasAttribute('ovf:compression'):
-                        child.removeAttribute('ovf:compression')
+    if node == []:
+        raise ValueError, 'The References Section was not found.'
+
+    if options.section:
+         Ovf.rmNode(node[0])
+    else:
+        attributeList = [(options.size,'ovf:size'),
+                            (options.chunksize,'ovf:chunkSize'),
+                            (options.compression,'ovf:compression'),
+                            (options.href,"ovf:href")
+                            ]
+        fileNode = Ovf.getNodesWithId(node[0],'File',options.file_id)
+        if options.strict and fileNode == []:
+            raise ValueError, ('The node with id, '+options.file_id+
+                                   ', not found.')
+        if options.node:
+            Ovf.rmNode(fileNode[0])
+        else:
+            attribs = []
+            for attrib in attributeList:
+                if attrib[0] == True:
+                    attribs.append(attrib[1])
+            Ovf.rmNodeAttributes(fileNode[0], attribs, options.strict)
 
 def rmDiskSection(ovfFile, options):
     """
