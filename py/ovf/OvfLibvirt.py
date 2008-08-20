@@ -229,7 +229,7 @@ def bootElement(bootDict):
 
     elif(bootDict.has_key('devices') ^
          bootDict.has_key('kernel')):
-        os = document.createElement('os')
+        opSys = document.createElement('os')
 
         bootType = document.createElement('type')
         if bootDict.has_key('arch'):
@@ -237,39 +237,39 @@ def bootElement(bootDict):
         if bootDict.has_key('machine'):
             bootType.setAttribute('machine', bootDict['machine'])
         bootType.appendChild(document.createTextNode(bootDict['type']))
-        os.appendChild(bootType)
+        opSys.appendChild(bootType)
 
         if bootDict.has_key('loader'):
             loader = document.createElement('loader')
             loader.appendChild(document.createTextNode(bootDict['loader']))
-            os.appendChild(loader)
+            opSys.appendChild(loader)
 
     # BIOS
         if bootDict.has_key('devices'):
             for device in bootDict['devices']:
                 boot = document.createElement('boot')
                 boot.setAttribute('dev', device)
-                os.appendChild(boot)
+                opSys.appendChild(boot)
 
     # Kernel
         else:
             kernel = document.createElement('kernel')
             kernel.appendChild(document.createTextNode(bootDict['kernel']))
-            os.appendChild(kernel)
+            opSys.appendChild(kernel)
 
             if bootDict.has_key('initrd'):
                 initrd = document.createElement('initrd')
                 initrdText = document.createTextNode(bootDict['initrd'])
                 initrd.appendChild(initrdText)
-                os.appendChild(initrd)
+                opSys.appendChild(initrd)
 
             if bootDict.has_key('cmdline'):
                 cmdline = document.createElement('cmdline')
                 cmdlineText = document.createTextNode(bootDict['cmdline'])
                 cmdline.appendChild(cmdlineText)
-                os.appendChild(cmdline)
+                opSys.appendChild(cmdline)
 
-        bootList += (os,)
+        bootList += (opSys,)
 
     else:
         raise TypeError
