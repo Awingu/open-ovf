@@ -31,6 +31,8 @@ rm -f "${f}"
 disks=$(ls ${outd}/*.qcow2 2>/dev/null) ||
    fail "failed to find disks in ${outd}/*.qcow2"
 
+$mkovf --init -f "$f"
+
 n=1;
 for d in ${disks}; do
    size=$(ls -l "${d}" | awk '{print $5}')
@@ -98,7 +100,8 @@ $mkovf --property -f "$f" --classDesc org.qemu \
 
 
 $mkovf --virthw -f "$f" --id MyService --type qemu \
-   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic"
+   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic" \
+   --instanceID 1 --elementName qemu
  
 $mkovf --resource -f "$f" --caption "1 virtual CPU" \
    --description "Number of virtual CPUs" \
