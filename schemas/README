@@ -44,3 +44,9 @@ libxml2 failed to parse the schemas with these lines, however they did parse aft
 modifying them to:
 
 	<xs:restriction base="xs:anyType">
+
+--- modify ovf-envelope.xsd for local xml.xsd schema ---
+change
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+to
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
