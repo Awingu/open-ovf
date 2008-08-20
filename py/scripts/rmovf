@@ -160,10 +160,10 @@ def rmNetworkHandler(ovfFile, options):
                 netDesc = Ovf.getNodes(netNode, 'Description')
                 Ovf.rmNode(netDesc)
 
-def rmDeploymentOptions(ovfFile, options):
+def rmDeploymentHandler(ovfFile, options):
     """
-    This section will create the Deployment Options Section OR add a configuration to an existing
-    Deployment Options Section.
+    This function will remove the Deployment Options Section OR remove a
+    configuration from an existing Deployment Options Section.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -174,29 +174,40 @@ def rmDeploymentOptions(ovfFile, options):
     """
     node = Ovf.getNodes(ovfFile.envelope, 'DeploymentOptionSection')
     if options.section:
-        ovfFile.envelope.removeChild(node[0])
-    for child in node[0].childNodes:
-        if child.nodeName == 'Info':
-            if options.info:
-                node[0].removeChild(child)
-            elif options.infoID:
-                child.removeAttribute('ovf:msgid')
-        elif child.nodeName == 'Configuration':
-            if child.getAttribute('ovf:id') == options.configID:
-                if options.config:
-                    node[0].removeChild(child)
-                elif options.default:
-                    child.removeAttribute('ovf:default')
-                else:
-                    for configChild in child.childNodes:
-                        if options.label and configChild.nodeName == 'Label':
-                            child.removeChild(configChild)
-                        elif options.labelID and configChild.nodeName == 'Label':
-                            configChild.removeAttribute('ovf:msgid')
-                        if options.description and configChild.nodeName == 'Description':
-                            child.removeChild(configChild)
-                        elif options.descID and configChild.nodeName == 'Description':
-                            configChild.removeAttribute('ovf:msgid')
+         Ovf.rmNode(node[0])
+    else:
+        if options.info:
+            Ovf.rmNode(node[0].getElementsByTagName('Info')[0])
+        elif options.infoID:
+            attribute = ['ovf:msgid']
+            Ovf.rmNodeAttributes(node[0].getElementsByTagName('Info')[0],
+                                  attribute, options.strict)
+
+        configNode = Ovf.getNodesWithId(node[0], 'Configuration',
+                                        options.configID)
+        if configNode == []:
+            raise ValueError,("The Coinfiguration with id,"+options.configID
+                              +", was not found.")
+        if options.node:
+            Ovf.rmNode(configNode[0])
+        else:
+            if options.default:
+                configs = ["ovf:default"]
+                Ovf.rmNodeAttributes(configNode[0],configs,options.strict)
+            if options.label:
+                Ovf.rmNode(Ovf.getNodes(configNode[0],'Label')[0])
+
+            elif options.labelID:
+                labList = ['ovf:msgid']
+                Ovf.rmNodeAttributes(Ovf.getNodes(configNode[0],'Label')[0]
+                                     ,labList,options.strict)
+            if options.description:
+                Ovf.rmNode(Ovf.getNodes(configNode[0],'Description')[0])
+            elif options.descID:
+                desList = ['ovf:msgid']
+                Ovf.rmNodeAttributes(Ovf.getNodes(configNode[0],
+                                                  'Description')[0],
+                                                  desList,options.strict)
 
 def rmVirtualSysCollection(ovfFile, options):
     """
@@ -600,7 +611,7 @@ commands = {
       )
    },
   "net" : {
-      'func':rmDeploymentHandler,
+      'func':rmNetworkHandler,
       'help' : 'Remove a Network Section.',
       'args' : (
          { 'flags' : [ '-i','--netID' ],
@@ -625,17 +636,13 @@ commands = {
       )
    },
    "deploy" : {
-      'func':rmDeploymentOptions,
+      'func':rmDeploymentHandler,
       'help' : 'Remove a Deploymen Options Section.',
       'args' : (
          { 'flags' : [ '-i','--configID' ],
            'parms' : { 'dest' : 'configID', 'action':'store','help' : 'Defines'
                     +' the unique ID for the configuration within the OVF.' },
            'required': True},
-         { 'flags' : [ '--config' ],
-           'parms' : { 'dest' : 'config','help' : "If present this flag will"+
-            " mean that the configuration with the given id will be removed.",
-            'action':"store_true"}},
          { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe"+
                     "the section.", 'action':"store_true"}},
