@@ -121,6 +121,8 @@
 		<VirtualHardwareSection>
 			<Info>Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic</Info>
 			<System>
+				<vssd:ElementName>vmware</vssd:ElementName>
+				<vssd:InstanceID>1</vssd:InstanceID>
 				<vssd:VirtualSystemType>vmx-4</vssd:VirtualSystemType>
 			</System>
 			<Item>

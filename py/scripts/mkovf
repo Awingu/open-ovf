@@ -827,8 +827,8 @@ commands = {
            "parms" : { "dest" : "caption","help": "Caption used to describe"+
                        " the Virtual Hardwre."} },
          { "flags" : [ "-p", "--type" ],
-           "parms" : { "dest" : "type","help": "The type of the VirtualSystem"+
-                       " being described."} },
+           "parms" : { "dest" : "sysType","help": "The type of the"+
+                       "VirtualSystem being described."} },
          { "flags" : [ "-n", "--elementName" ],
            "parms" : { "dest" : "elementName","help": "A unique name for the"+
                        " hardware being described."},

@@ -152,7 +152,8 @@ $mkovf --resource -f "$f" --id vh0 --caption "1 virtual CPU" \
 
 $mkovf --resource -f "$f" --id vh0 --allocUnits MegaBytes \
    --caption "256 MB of memory" --description "Memory Size" \
-   --resourceID 2 --resourceType 4 --virtualQuantity 256
+   --resourceID 2 --resourceType 4 --virtualQuantity 256 \
+   --elementName "Memory"
 
 $mkovf --resource -f "$f" --id vh0 --automaticAllocation True \
    --caption "Ethernet adapter on 'VM Network'" --description "Ethernet" \
