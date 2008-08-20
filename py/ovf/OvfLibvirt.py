@@ -787,6 +787,13 @@ def getOvfMemory(virtualHardware, configId=None):
     Retrieves the maximum amount of memory (kB) to be allocated for the
     virtual machine from the Ovf file.
 
+    @note: DSP0004 v2.5.0 outlines the Programmatic Unit forms for
+    OVF. This pertains specifically to rasd:AllocationUnits, which accepts
+    both the current and deprecated forms. New implementations should not
+    use Unit Qualifiers as this form is deprecated.
+        - PUnit form, as in "byte * 2^20"
+        - PUnit form w/ Units Qualifier(deprecated), as in "MegaBytes"
+
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
 
@@ -806,21 +813,40 @@ def getOvfMemory(virtualHardware, configId=None):
             memoryQuantity = resource['rasd:VirtualQuantity']
             memoryUnits = resource['rasd:AllocationUnits']
 
-            # Calculate PUnit numerical factor
-            memoryUnits = memoryUnits.replace('^','**')
+            if(memoryUnits.startswith('byte') or
+                 memoryUnits.startswith('bit')):
+                # Calculate PUnit numerical factor
+                memoryUnits = memoryUnits.replace('^','**')
 
-            # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
-            memoryUnits = memoryUnits.split(' ', 1)
-            quantifier = memoryUnits[0]
-            if quantifier == 'byte':
-                memoryUnits[0] = '1'
-            elif quantifier == 'bit':
-                memoryUnits[0] = '0.125'
+                # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+                memoryUnits = memoryUnits.split(' ', 1)
+                quantifier = memoryUnits[0]
+                if quantifier == 'byte':
+                    memoryUnits[0] = '1'
+                elif quantifier == 'bit':
+                    memoryUnits[0] = '0.125'
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
+
+                memoryUnits = ' '.join(memoryUnits)
+                memoryFactor = eval(memoryUnits)
+
             else:
-                raise ValueError("Incompatible PUnit quantifier for memory.")
+                if memoryUnits.startswith('Kilo'):
+                    memoryFactor = 1
+                elif memoryUnits.startswith('Mega'):
+                    memoryFactor = 1024
+                elif memoryUnits.startswith('Giga'):
+                    memoryFactor = 2048
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
 
-            memoryUnits = ' '.join(memoryUnits)
-            memoryFactor = eval(memoryUnits)
+                if memoryUnits.endswith('Bytes'):
+                    memoryFactor *= 1
+                elif memoryUnits.endswith('Bits'):
+                    memoryFactor *= 0.125
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
 
             memory = str(int(memoryQuantity) * memoryFactor)
 
@@ -830,6 +856,13 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
     """
     Retrieves the amount of memory (kB) to be allocated for the virtual machine
     from the Ovf file.
+
+    @note: DSP0004 v2.5.0 outlines the Programmatic Unit forms for
+    OVF. This pertains specifically to rasd:AllocationUnits, which accepts
+    both the current and deprecated forms. New implementations should not
+    use Unit Qualifiers as this form is deprecated.
+        - PUnit form, as in "byte * 2^20"
+        - PUnit form w/ Units Qualifier(deprecated), as in "MegaBytes"
 
     @param virtualHardware: Ovf VirtualSystem Node
     @type virtualHardware: DOM Element
@@ -850,21 +883,40 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
             memoryQuantity = resource['rasd:VirtualQuantity']
             memoryUnits = resource['rasd:AllocationUnits']
 
-            # Calculate PUnit numerical factor
-            memoryUnits = memoryUnits.replace('^','**')
+            if(memoryUnits.startswith('byte') or
+                 memoryUnits.startswith('bit')):
+                # Calculate PUnit numerical factor
+                memoryUnits = memoryUnits.replace('^','**')
 
-            # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
-            memoryUnits = memoryUnits.split(' ', 1)
-            quantifier = memoryUnits[0]
-            if quantifier == 'byte':
-                memoryUnits[0] = '1'
-            elif quantifier == 'bit':
-                memoryUnits[0] = '0.125'
+                # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+                memoryUnits = memoryUnits.split(' ', 1)
+                quantifier = memoryUnits[0]
+                if quantifier == 'byte':
+                    memoryUnits[0] = '1'
+                elif quantifier == 'bit':
+                    memoryUnits[0] = '0.125'
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
+
+                memoryUnits = ' '.join(memoryUnits)
+                memoryFactor = eval(memoryUnits)
+
             else:
-                raise ValueError("Incompatible PUnit quantifier for memory.")
+                if memoryUnits.startswith('Kilo'):
+                    memoryFactor = 1
+                elif memoryUnits.startswith('Mega'):
+                    memoryFactor = 1024
+                elif memoryUnits.startswith('Giga'):
+                    memoryFactor = 2048
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
 
-            memoryUnits = ' '.join(memoryUnits)
-            memoryFactor = eval(memoryUnits)
+                if memoryUnits.endswith('Bytes'):
+                    memoryFactor *= 1
+                elif memoryUnits.endswith('Bits'):
+                    memoryFactor *= 0.125
+                else:
+                    raise ValueError("Incompatible PUnit quantifier for memory.")
 
             memory = str(int(memoryQuantity) * memoryFactor)
 
