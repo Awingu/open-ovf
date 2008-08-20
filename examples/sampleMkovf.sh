@@ -143,7 +143,8 @@ $mkovf --os -f "$f" --id MyLampService --info "Guest Operating System" \
    --description "Linux 2.6.x" --secID 103
 
 $mkovf --virthw -f "$f" --id MyLampService --type vmx-4 --secID vh0 \
-   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic"
+   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic" \
+   --instanceID 1 --elementName vmware
  
 $mkovf --resource -f "$f" --id vh0 --caption "1 virtual CPU" \
    --description "Number of virtual CPUs" \

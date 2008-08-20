@@ -202,10 +202,14 @@ def createVirtualHardware(ovfFile, options):
                                                            options.info,
                                                            options.infoID,
                                                            options.transport)
-    systemType = ovfFile.createSystemType(virtualHardware)
+    system = ovfFile.createSystem(virtualHardware)
 
-    ovfFile.defineSystemType(systemType, options.caption, options.description,
-                             options.instanceID, options.sysID, options.type)
+    systemDict = dict(Caption=options.caption,
+                      Description=options.description,
+                      VirtualSystemIdentifier=options.sysID,
+                      VirtualSystemType=options.sysType)
+
+    ovfFile.defineSystem(system, options.elementName, options.instanceID, systemDict)
 
 def createResources(ovfFile, options):
     """
@@ -799,32 +803,36 @@ commands = {
 
          { "flags" : [ "--instanceID" ],
            "parms" : { "dest" : "instanceID", "action":"store","help" :
-                      "Defines the ID of the instance of the System." } },
+                       "Defines the ID of the instance of the System." },
+           "required": True },
          { "flags" : [ "-s","--sysID" ],
            "parms" : { "dest" : "sysID", "action":"store","help" :
-                      "Defines the ID for the System. It should be the same"+
-                      " ID as the Virtual System the section is in." } },
+                       "Defines the ID for the System." } },
          { "flags" : [ "-m", "--info" ],
            "parms" : { "dest" : "info","help" : "The information to describe"+
-                    " the section."},
+                       " the section."},
            "required": True
          },
-        { "flags" : [ "-y","--infoID"],
+         { "flags" : [ "-y","--infoID"],
            "parms" : { "dest" : "infoID","help" : "The id of the section's"+
-                    " information."} },
-        { "flags" : [ "-t","--transport"],
+                       " information."} },
+         { "flags" : [ "-t","--transport"],
            "parms" : { "dest" : "transport","help" : "Transport that"+
-                      " specifies how properties are passed to the virtual"+
-                      " machine."} },
-        { "flags" : [ "-d", "--description" ],
+                       " specifies how properties are passed to the virtual"+
+                       " machine."} },
+         { "flags" : [ "-d", "--description" ],
            "parms" : { "dest" : "description","help": "The description for"+
-                      " the given configuration."} },
+                       " the given configuration."} },
          { "flags" : [ "-c", "--caption" ],
            "parms" : { "dest" : "caption","help": "Caption used to describe"+
-                    " the Virtual Hardwre."} },
-        { "flags" : [ "-p", "--type" ],
+                       " the Virtual Hardwre."} },
+         { "flags" : [ "-p", "--type" ],
            "parms" : { "dest" : "type","help": "The type of the VirtualSystem"+
-                    " being described."} },
+                       " being described."} },
+         { "flags" : [ "-n", "--elementName" ],
+           "parms" : { "dest" : "elementName","help": "A unique name for the"+
+                       " hardware being described."},
+           "required": True }
       )
    },
    "resource" : {

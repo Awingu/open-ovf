@@ -1553,67 +1553,53 @@ class OvfFile:
         node.appendChild(hardwareSection)
         return hardwareSection
 
-    def createSystemType(self, node):
+    def createSystem(self, node):
         """
-        This method will create a System child for the Virtual Hardware Section.
+        This method will create a System child for the VirtualHardwareSection.
 
-        NOTE::
-         This method can throw a TypeError if the node passed in is not of type VirtualHardwareSection.
+        @raise TypeError: if node name not equal to VirtualHardwareSection.
 
-        @raise TypeError: The error is thrown if the node passed in does not
-        have a node name of VirtualHardwareSection.
-
-        @param node: Place where the child will  be inserted.
-        @type node: DOM node object
+        @param node: VirtualHardwareSection Element
+        @type node: DOM Node object
 
         @return: DOM node of the system section
         """
 
         if "VirtualHardwareSection" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Virtual\
-             Hardware Section. The given node is not a Virtual Hardware\
-              Section."
+            raise TypeError("The node can only be appended to a"+
+                            "VirtualHardware Section. The given node is not"+
+                            "a VirtualHardwareSection.")
+
         systemNode = self.document.createElement("System")
         node.appendChild(systemNode)
         return systemNode
 
-    def defineSystemType(self, node, caption, description=None,
-                         instanceId=None, virtualSysIdent=None,
-                         virtualSysType=None):
+    def defineSystem(self, node, elementName, instanceId, systemDict=None):
         """
-        This method is used to create a virtual system type. This is used to uniquely
-        identify the family of virtual hardware that is required.
+        This method is used to define a system.
 
-        NOTE::
-            This method throws an error if the node passed in is not of type System.
-
-        @raise TypeError: The error is thrown if the node passed in does not
-        have a node name of System.
+        @raise TypeError: if node name not equal to System.
 
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
-
-        @param virtualSysIdent: Unique identifier for the family of virtual hardware that is required.
-        @type virtualSysIdent: String
         """
 
         if "System" != node.nodeName:
-            raise TypeError, "The node can only be appended to a System in a\
-             Virtual Hardware Section. The given node is not a System in a\
-              Virtual Hardware Section."
+            raise TypeError("The node can only be appended to a System in a"+
+                            "Virtual Hardware Section. The given node is not"+
+                            "a System in a Virtual Hardware Section.")
 
-        sysList = [("Caption", caption),
-                   ("Description", description),
-                   ("InstanceId", instanceId),
-                   ("VirtualSystemIdentifier", virtualSysIdent),
-                   ("VirtualSystemType",virtualSysType)]
+        systemDict['ElementName'] = elementName
+        systemDict['InstanceID'] = instanceId
 
-        for ent in sysList:
-            if ent[0] != None:
-                if ent[1] != None:
-                    child = self.document.createElement("vssd:" + ent[0])
-                    child.appendChild(self.document.createTextNode(ent[1]))
-                    node.appendChild(child)
+        keys = systemDict.keys()
+        keys.sort()
+
+        for tag in keys:
+            if systemDict[tag] != None:
+                child = self.document.createElement("vssd:" + tag)
+                child.appendChild(self.document.createTextNode(systemDict[tag]))
+                node.appendChild(child)
 
     def createValue(self, node, value, configuration):
         """

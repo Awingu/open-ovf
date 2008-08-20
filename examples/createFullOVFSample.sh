@@ -75,7 +75,8 @@ $mkovf --license -f "$f" --info "License agreement for the Virtual System." \
 $mkovf --virthw -f "$f" --id MyLampService --type vmx-4 --secID hw1 \
    --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic" \
    --infoID 7 --instanceID 1 --sysID MyLampService --transport iso \
-   --description "Description of the virtual hardware section." --type machine
+   --description "Description of the virtual hardware section." \
+   --elementName vmware
    
  
 $mkovf --resource -f "$f" --caption "1 virtual CPU" --id hw1 \
@@ -216,7 +217,8 @@ $mkovf --os -f "$f" --id AnotherLamp --info "Guest Operating System" \
    --description "Linux 2.6.x" --secID 103
 
 $mkovf --virthw -f "$f" --id AnotherLamp --type vmx-4 --secID hw2 \
-   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic"
+   --info "Virtual Hardware Requirements: 256Mb, 1 CPU, 1 disk, 1 nic" \
+   --elementName vmware --instanceID 1
  
 $mkovf --resource -f "$f" --caption "1 virtual CPU" --id hw2 \
    --description "Number of virtual CPUs" \

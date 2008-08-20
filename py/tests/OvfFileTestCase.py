@@ -536,41 +536,44 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertTrue(hw.nodeName == "VirtualHardwareSection")
 
-    def test_createSystemType(self):
+    def test_createSystem(self):
         self.ovfFile3.createEnvelope()
 
-        self.assertRaises(TypeError,self.ovfFile3.createSystemType,self.ovfFile3.envelope)
+        self.assertRaises(TypeError, self.ovfFile3.createSystem, self.ovfFile3.envelope)
         vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
-        sys = self.ovfFile3.createSystemType(hw)
+        sys = self.ovfFile3.createSystem(hw)
 
         self.assertTrue(sys.nodeName == "System")
 
-    def test_defineSystemType(self):
+    def test_defineSystem(self):
         self.ovfFile3.createEnvelope()
 
-        self.assertRaises(TypeError,self.ovfFile3.defineSystemType,self.ovfFile3.envelope, 'caption', 'description', 'instanceId', 'virtualSysIdent', 'virtualSysType')
+        name = 'elementName'
+        instanceId = 'instanceId'
+
+        systemDict = dict(Caption="test",
+                          Description="test protocol",
+                          VirtualSystemIdentifier="test id",
+                          VirtualSystemType="test type")
+
+        self.assertRaises(TypeError, self.ovfFile3.defineSystem,
+                          self.ovfFile3.envelope, name, instanceId)
 
         vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
-        sys = self.ovfFile3.createSystemType(hw)
-        caption = 'caption'
-        description = 'description'
-        instanceId = 'instanceId'
-        virtualSysIdent = 'virtualSysIdent'
-        virtualSysType = 'virtualSysType'
-        self.ovfFile3.defineSystemType(sys, caption, description, instanceId, virtualSysIdent, virtualSysType)
+        sys = self.ovfFile3.createSystem(hw)
 
-        list=[("Caption",caption),("Description",description),("InstanceId",instanceId),
-              ("VirtualSystemIdentifier",virtualSysIdent),("VirtualSystemType",virtualSysType)
-              ]
+        self.ovfFile3.defineSystem(sys, name, instanceId, systemDict)
 
         for node in self.ovfFile3.document.getElementsByTagName('System'):
             for child in node.childNodes:
-                for ent in list:
-                        for childData in child.childNodes:
-                            if 'vssd:'+ent[0] == child.nodeName:
-                                self.assertEquals(childData.data,ent[1])
+                if child.nodeType == 1: # Check if ELEMENT_NODE
+                    childName = child.nodeName.rsplit(':', 1).pop() # strip 'vssd:'
+                    if child.firstChild.data == systemDict[childName]:
+                        self.assertTrue(True)
+                    else:
+                        self.assertTrue(False)
 
     def test_createDescriptionChild(self):
         self.ovfFile3.createEnvelope()
