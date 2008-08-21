@@ -664,8 +664,14 @@ def main():
     if options.ovfVersion:
         print "OVF spec version: ", getVersion(ovfFile)
 
-
-    commands[command]['func'](ovfFile, options)
+    try:
+        commands[command]['func'](ovfFile, options)
+        ovfFile.writeFile(None, True)
+    except ValueError,inst:
+        print 'Param Error:'+inst[0]+"\n"
+    except Exception:
+        execTuple = sys.exc_info()
+        print 'Command failed:',execTuple[0], '-',execTuple[1]
 
 commands = {
    "efile" : {
