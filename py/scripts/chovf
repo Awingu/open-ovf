@@ -187,7 +187,7 @@ commands = {
 
    "efile" : {
       'func':chEfile,
-      'help' : "Modify an efile sectoin",
+      'help' : "Modify an efile section",
       'flagMap':({'id':'file_id','href':'href','compression':'compression',
                   'size':'size','chunksize':'chunksize'}),
       'args' : (
@@ -587,7 +587,7 @@ commands = {
    },
    "category" : {
       'func':chCategory,
-      'help' : 'Creates Creates the categroy that helps define a product\
+      'help' : 'Creates Creates the category that helps define a product\
        section.',
       'args' : (
         { 'flags' : ['-s','--classDesc'],
@@ -608,7 +608,7 @@ commands = {
    },
    "icon" : {
       'func':chIconType,
-      'help' : 'Creates Creates the categroy that helps define a product\
+      'help' : 'Creates Creates the category that helps define a product\
        section.',
       'args' : (
         { 'flags' : ['-n','--fileRef'],

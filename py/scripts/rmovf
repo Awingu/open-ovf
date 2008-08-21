@@ -550,7 +550,7 @@ def main():
 commands = {
    "efile" : {
       'func':rmReferencesHandler,
-      'help' : "Removes an efile sectoin",
+      'help' : "Removes an efile section",
       'args' : (
          { 'flags' : [ '-i','--ovfID' ],
            'parms' : { 'dest' : 'file_id',
@@ -952,7 +952,7 @@ commands = {
    },
    "category" : {
       'func':rmCategory,
-      'help' : 'Remove the categroy that helps define a product'+
+      'help' : 'Remove the category that helps define a product'+
                 ' section.',
       'args' : (
         { 'flags' : ['-s','--classDesc'],

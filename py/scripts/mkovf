@@ -621,7 +621,7 @@ commands = {
    },
    "efile" : {
       "func":createReferences,
-      "help" : "Create an efile sectoin",
+      "help" : "Create an efile section",
       "args" : (
          { "flags" : [ "-i","--ovfID" ],
            "parms" : { "dest" : "file_id",
@@ -1078,7 +1078,7 @@ commands = {
    },
    "category" : {
       "func":createCategory,
-      "help" : "Creates Creates the categroy that helps define a product"+
+      "help" : "Creates Creates the category that helps define a product"+
       " section.",
       "args" : (
         { "flags" : ["-s","--classDesc"],
@@ -1100,7 +1100,7 @@ commands = {
    },
    "icon" : {
       "func":createIconType,
-      "help" : "Creates the categroy that helps define a product section.",
+      "help" : "Creates the category that helps define a product section.",
       "args" : (
         { "flags" : ["-n","--fileRef"],
            "parms" : { "dest" : "fileRef","help" : "The file reference for"+
