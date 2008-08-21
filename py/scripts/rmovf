@@ -329,41 +329,57 @@ def rmDeploymentHandler(ovfFile, options):
                                       " with id, "+options.configID+
                                       ", was not found.")
 
-def rmVirtualSysCollection(ovfFile, options):
+def rmContentEntitiesHandler(ovfFile, options):
     """
-    This will create a Virtual system Colection or append a new Virtual System Collection
-    to an already existing one.
+    This function will remove a VirtualSystem OR a VirtualSystemCollectionand
+    all of the sections contained within that VirtualSystem.
+    @raise ValueError: The cases are:
+            - I{B{Case 1:}}The section with the given id is not present in
+             the ovf.
+            - I{B{Case 2:}}The Info node is flagged for removal but is not
+            found in the ovf.
 
     @param ovfFile: An OvfFile object.
-    @type ovfFile: OvfFile object.
+    @type ovfFile: OvfFile
 
+    @param options: The options from the optparser.
+    @type options: Optparser object.
     """
-    if options.id != None:
-        vscNode = findNode(ovfFile, 'VirtualSystemCollection', options.id, False,
-                           options.comment)
-        ovfFile.createVirtualSystemCollection(options.vscID, options.info,
-                                              options.infoID, vscNode)
+    try:
+        #regadless of what I put for the node name I get the correct node if I give
+        #it an id.
+        node = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystemCollection',
+                                 options.secID)[0]
+    except IndexError:
+        try:
+            node = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystem',
+                                 options.secID)[0]
+        except IndexError:
+            raise ValueError,("The VirtualSystemCollection or VirtualSystem with"+
+                          " id, "+options.secID+", was not found.")
+
+    if options.section:
+        Ovf.rmNode(node)
     else:
-        ovfFile.createVirtualSystemCollection(options.vscID, options.info,
-                                              options.infoID)
-
-def rmVirtualSystem(ovfFile, options):
-    """
-    This function will create a Virtual System. If the vid is not
-    specified the new element will be appended to the Envelope. The
-    vid can only be the ID for an existing Virtual System Collection.
-
-     @param ovfFile: An OvfFile object.
-    @type ovfFile: OvfFile object.
-    """
-    if options.id != None:
-        vscNode = findNode(ovfFile, "VirtualSystemCollection",
-                           options.id, False, options.comment)
-        ovfFile.createVirtualSystemSection(options.vsID, options.info, vscNode,
-                                           options.infoID)
-    else:
-        ovfFile.createVirtualSystemSection(options.vsID, options.info, None,
-                                         options.infoID)
+        #to remove the info the user can specify the id for the given info
+        #by using infoID. Alternatively the user can just remove all of the
+        #instances of the node Info by using the flag info
+        if options.info:
+            try:
+                if options.infoID:
+                    infoNode = Ovf.getNodesWithId(node,"Info",
+                                                  options.infoID)[0]
+                    Ovf.rmNode(infoNode)
+                else:
+                   infoNode = Ovf.getNodes(node,"Info")
+                   #the line below is to ensure that if the list
+                   #is empty that it would raise a IndexError
+                   infoNode[0]
+                   for child in infoNode:
+                       Ovf.rmNode(child)
+            except IndexError:
+                raise ValueError,("The Info for the DeploymentOptionSection"+
+                                  " was not found.")
 
 def rmVirtualHardware(ovfFile, options):
     """
@@ -794,35 +810,27 @@ commands = {
       )
    },
    "vsc" : {
-      'func':rmVirtualSysCollection,
+      'func':rmContentEntitiesHandler,
       'help' : 'Remove a Virtual System Collection',
       'args' : (
-         { 'flags' : [ '-i','--vscID' ],
-           'parms' : { 'dest' : 'vscID', 'action':'store','help' : 'Defines'+
-                    ' the unique ID for the Virtual System Collection within'+
-                    ' the OVF.'},'required':True},
          { 'flags' : [ '-m', '--info' ],
-           'parms' : { 'dest' : 'info','help' : "The information to describe"+
-                    "the section.", 'action':"store_true"}},
+           'parms' : { 'dest' : 'info','help' : "Remove the information that"+
+                      " describes the section.", 'action':"store_true"}},
         { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's"+
-                    " information.", 'action':"store_true"}},
+                    " information."}},
       )
    },
    "vs" : {
-      'func':rmVirtualSystem,
+      'func':rmContentEntitiesHandler,
       'help' : 'Remove a Virtual System.',
       'args' : (
-         { 'flags' : [ '-i','--vsID' ],
-           'parms' : { 'dest' : 'vsID', 'action':'store','help' : 'Defines the'
-                    +' unique ID for the Virtual System within the OVF.'},
-           'required': True},
          { 'flags' : [ '-m', '--info' ],
-           'parms' : { 'dest' : 'info','help' : "The information to describe"+
-                    "the section.", 'action':"store_true"} },
+           'parms' : { 'dest' : 'info','help' : "Remove the information that"+
+                      " describes the section.", 'action':"store_true"} },
         { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's"
-                    +" information.", 'action':"store_true"} },
+                    +" information."} },
       )
    },
    "virthw" : {
