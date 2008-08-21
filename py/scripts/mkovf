@@ -719,6 +719,9 @@ commands = {
                     " being created."},
            "required": True
          },
+         { "flags" : [ "-c", "--descID" ],
+           "parms" : { "dest" : "descID","help": "The ID for the description"+
+                    " of the network."}},
       )
    },
    "deploy" : {
