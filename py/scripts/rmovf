@@ -214,6 +214,17 @@ def rmDeploymentHandler(ovfFile, options):
     This function will remove the Deployment Options Section OR remove a
     configuration from an existing Deployment Options Section.
 
+    @raise ValueError: The cases are as follow:
+            - I{B{Case 1:}}The DeploymentOptionSection is not found.
+            - I{B{Case 2:}}The Info for the DeploymentOptionSection is not
+            found in the ovf.
+            - I{B{Case 3:}}The Configuration with the given id was not found
+            within the DeploymentOptionSection.
+            - I{B{Case 4:}}The Label for a given Configuration was not found
+            witin the ovf.
+            - I{B{Case 5:}}The Description for a given Configuration was not
+            found within the ovf.
+
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
 
@@ -221,42 +232,76 @@ def rmDeploymentHandler(ovfFile, options):
     @type options: Optparser object.
 
     """
-    node = Ovf.getNodes(ovfFile.envelope, 'DeploymentOptionSection')
+    try:
+        node = Ovf.getNodes(ovfFile.envelope, 'DeploymentOptionSection')[0]
+    except IndexError:
+        raise ValueError,"The DeploymentOptionSection was not found."
     if options.section:
-         Ovf.rmNode(node[0])
+         Ovf.rmNode(node)
     else:
+        #to remove the info the user can specify the id for the given info
+        #by using infoID. Alternatively the user can just remove all of the
+        #instances of the node Info by using the flag info
         if options.info:
-            Ovf.rmNode(node[0].getElementsByTagName('Info')[0])
-        elif options.infoID:
-            attribute = ['ovf:msgid']
-            Ovf.rmNodeAttributes(node[0].getElementsByTagName('Info')[0],
-                                  attribute, options.strict)
+            try:
+                if options.infoID:
+                    infoNode = Ovf.getNodesWithId(node,"Info",
+                                                  options.infoID)[0]
+                    Ovf.rmNode(infoNode)
+                else:
+                   infoNode = Ovf.getNodes(node,"Info")
+                    #the line below is to ensure that if the list
+                    #is empty that it would raise a IndexError
+                    infoNode[0]
+                    for child in infoNode:
+                       Ovf.rmNode(child)
+            except IndexError:
+                raise ValueError,("The Info for the DeploymentOptionSection"+
+                                  " was not found.")
 
-        configNode = Ovf.getNodesWithId(node[0], 'Configuration',
-                                        options.configID)
-        if configNode == []:
+        try:
+            configNode = Ovf.getNodesWithId(node, 'Configuration',
+                                        options.configID)[0]
+        except IndexError:
             raise ValueError,("The Coinfiguration with id,"+options.configID
                               +", was not found.")
         if options.node:
-            Ovf.rmNode(configNode[0])
+            Ovf.rmNode(configNode)
         else:
             if options.default:
                 configs = ["ovf:default"]
-                Ovf.rmNodeAttributes(configNode[0],configs,options.strict)
-            if options.label:
-                Ovf.rmNode(Ovf.getNodes(configNode[0],'Label')[0])
+                Ovf.rmNodeAttributes(configNode,configs,options.strict)
 
-            elif options.labelID:
-                labList = ['ovf:msgid']
-                Ovf.rmNodeAttributes(Ovf.getNodes(configNode[0],'Label')[0]
-                                     ,labList,options.strict)
+            if options.label:
+                try:
+                    if options.labelID:
+                        labNode = Ovf.getNodes(configNode,'Label',
+                                                 options.labelID)[0]
+                        Ovf.rmNode(labNode)
+                    else:
+                        labNode = Ovf.getNodes(configNode,"Label")
+
+                        labNode[0]#this is so that the exception can be thrown
+                        for child in labNode:
+                            Ovf.rmNode(child)
+                except IndexError:
+                    raise ValueError,("The Label for the Configuration with"+
+                                      " id, "+options.configID+", was not found")
             if options.description:
-                Ovf.rmNode(Ovf.getNodes(configNode[0],'Description')[0])
-            elif options.descID:
-                desList = ['ovf:msgid']
-                Ovf.rmNodeAttributes(Ovf.getNodes(configNode[0],
-                                                  'Description')[0],
-                                                  desList,options.strict)
+                try:
+                    if options.descID:
+                        configDesc = Ovf.getNodesWithId(configNode, 'Description',
+                                                      options.descID)[0]
+                        Ovf.rmNode(configDesc)
+                    else:
+                        configDesc = Ovf.getNodes(configNode,'Description')
+                        configDesc[0]
+                        for child in configDesc:
+                            Ovf.rmNode(child)
+                except IndexError:
+                    raise ValueError,("The Description for the Configuration,"+
+                                      " with id, "+options.configID+
+                                      ", was not found.")
 
 def rmVirtualSysCollection(ovfFile, options):
     """
@@ -688,26 +733,25 @@ commands = {
       'args' : (
          { 'flags' : [ '-i','--configID' ],
            'parms' : { 'dest' : 'configID', 'action':'store','help' : 'Defines'
-                    +' the unique ID for the configuration within the OVF.' },
-           'required': True},
+                     +' the unique ID for the configuration within the OVF.' }},
          { 'flags' : [ '-m', '--info' ],
            'parms' : { 'dest' : 'info','help' : "The information to describe"+
                     "the section.", 'action':"store_true"}},
          { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's"+
-                    " information." , 'action':"store_true"}},
+                    " information."}},
          { 'flags' : [ '-l', '--label' ],
            'parms' : { 'dest' : 'label',"help":"The label used to describe"+
                     "the configuration.", 'action':"store_true"}},
          { 'flags' : [ '-b', '--labelID' ],
            'parms' : { 'dest' : 'labelID','help': "The ID for the label"+
-                    "created.", 'action':"store_true"}},
+                    "created."}},
          { 'flags' : [ '-d', '--description' ],
            'parms' : { 'dest' : 'description','help': "The description for the"
                     +" given configuration.", 'action':"store_true"}},
          { 'flags' : [ '-c', '--descID' ],
            'parms' : { 'dest' : 'descID','help': "The ID for the description"
-                    +" of the configuration created.", 'action':"store_true"}},
+                    +" of the configuration created."}},
          { 'flags' : [ '-r', '--default' ],
            'parms' : { 'dest' : 'default','help': "Specifies if the"
                     +" configuration is a default one. This is a Boolean"+
