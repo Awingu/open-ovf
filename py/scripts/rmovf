@@ -79,6 +79,14 @@ def rmDiskHandler(ovfFile, options):
     NOTE::
         If the flag strict is set and the node with the given id does not exist
         then it will throw an error.
+        Using the flag info without specifying infoID will remove all the Info
+        nodes within the section.
+
+    @raise ValueError: The cases are as follow:
+            - I{B{Case 1:}}The DiskSection is not found in the ovf.
+            - I{B{Case 2:}}An Info is not found in the ovf and it is flagged to
+            be delted.
+            - I{B{Case 3:}}A Disk with a given id is not found within the ovf.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -86,45 +94,63 @@ def rmDiskHandler(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node = Ovf.getNodes(ovfFile.envelope, 'DiskSection')
-    if node == []:
+    try:
+        #Since there can only be one DiskSection i just need [0]
+        node = Ovf.getNodes(ovfFile.envelope, 'DiskSection')[0]
+    except IndexError:
         raise ValueError, 'The DiskSection Section was not found.'
 
     if options.section:
-         Ovf.rmNode(node[0])
+         Ovf.rmNode(node)
     else:
+        #to remove the info the user can specify the id for the given info
+        #by using infoID. Alternatively the user can just remove all of the
+        #instances of the node Info by using the flag info
+        if options.info:
+            try:
+                if options.infoID:
+                    infoNode = Ovf.getNodesWithId(node,"Info",
+                                                  options.infoID)[0]
+                    Ovf.rmNode(infoNode)
+                else:
+                    infoNode = Ovf.getNodes(node,"Info")
+                    #the line below is to ensure that if the list
+                    #is empty that it would raise a IndexError
+                    infoNode[0]
+                    for child in infoNode:
+                       Ovf.rmNode(child)
+            except IndexError:
+                raise ValueError,("The Info for the DiskSection was not"+
+                                  " found")
+
         #the required is part of the DiskSection node and not the individual
         #Disk nodes.
         if options.required:
             attribute = ['ovf:required']
-            Ovf.rmNodeAttributes(node[0],attribute)
-        #this will find the node with the given id.
-        diskNode = Ovf.getNodesWithId(node[0], 'Disk',options.disk_id)
-        #if the flag --strict is set and the node wit the given id is not found
-        #then it will throw an error
-        if options.strict and diskNode == []:
-            raise ValueError, ('The node with id, '+options.disk_id+
+            Ovf.rmNodeAttributes(node,attribute)
+        try:
+            #this will find the node with the given id.
+            diskNode = Ovf.getNodesWithId(node, 'Disk',options.disk_id)[0]
+        except IndexError:
+            raise ValueError, ('The Disk with id, '+options.disk_id+
                                    ', not found.')
         if options.node:
-            Ovf.rmNode(diskNode[0])
+            Ovf.rmNode(diskNode)
         else:
-            if options.node:
-                Ovf.rmNode(diskNode)
-            else:
-                diskList = [(options.capacity,'ovf:capacity'),
-                            (options.format,'ovf:format'),
-                            (options.fileRef,'ovf:fileRef'),
-                            (options.populatedSize,'ovf:populatedSize'),
-                            (options.capacityAllocUnits,'ovf:capacityAllocationUnits'),
-                            (options.parentRef,'ovf:parentRef')]
+            diskList = [(options.capacity,'ovf:capacity'),
+                        (options.format,'ovf:format'),
+                        (options.fileRef,'ovf:fileRef'),
+                        (options.populatedSize,'ovf:populatedSize'),
+                        (options.capacityAllocUnits,
+                         'ovf:capacityAllocationUnits'),
+                        (options.parentRef,'ovf:parentRef')]
 
-                diskAttribs = []
-                for attribs in diskList:
-                    if attribs[0] == True:
-                        diskAttribs.append(attribs[1])
+            diskAttribs = []
+            for attribs in diskList:
+                if attribs[0] == True:
+                    diskAttribs.append(attribs[1])
 
-                Ovf.rmNodeAttributes(diskNode[0],diskAttribs,
-                                            options.strict)
+            Ovf.rmNodeAttributes(diskNode,diskAttribs,options.strict)
 
 def rmNetworkHandler(ovfFile, options):
     """
@@ -672,33 +698,36 @@ commands = {
       'help' : 'Removes a disk section.',
       'args' : (
          { 'flags' : [ '-i','--diskID' ],
-           'parms' : { 'dest' : 'disk_id','help': 'The id for the disk.'},
-           'required':True },
+           'parms' : { 'dest' : 'disk_id','help': 'The id for the disk.'}},
          { 'flags' : [ '-c', '--capacity' ],
-           'parms' : { 'dest' : 'capacity','help' : 'The capacity of the given'+
-                    ' disk.','action':"store_true" }},
+           'parms' : { 'dest' : 'capacity','help' : 'Remove the capacity of'+
+                      ' the given disk.','action':"store_true" }},
          { 'flags' : [ '-F','--format' ],
-           'parms' : { 'dest' : 'format','help' : "Disk format.",'action':"store_true" }},
+           'parms' : { 'dest' : 'format','help' : "Remove disk format."
+                      ,'action':"store_true" }},
          { 'flags' : [ '-r', '--fileRef' ],
-           'parms' : { 'dest' : 'fileRef','help' : "File reference." ,'action':"store_true"}},
+           'parms' : { 'dest' : 'fileRef','help' : "Remove file reference."
+                       ,'action':"store_true"}},
          { 'flags' : [ '-s', '--size' ],
-           'parms' : { 'dest' : 'populatedSize','help': "Populated Size.",'action':"store_true" }},
+           'parms' : { 'dest' : 'populatedSize',
+                      'help': "Remove populated Size.",
+                      'action':"store_true" }},
          { 'flags' : [ '-u', '--capacityAlloc' ],
-           'parms' : { 'dest' : 'capacityAllocUnits','help' : "Capacity"+
-                    "allocation Units.",'action':"store_true" }},
+           'parms' : { 'dest' : 'capacityAllocUnits','help' : "Remove "+
+                      "capacity allocation Units.",'action':"store_true" }},
          { 'flags' : [ '-p', '--parentRef' ],
-           'parms' : { 'dest' : 'parentRef','help' : "Parent ref. In order to"+
-                    "specify this the parent must have already been"+
-                    " specified.",'action':"store_true" }},
+           'parms' : { 'dest' : 'parentRef','help' : "Remove parent ref."
+                      ,'action':"store_true" }},
         { 'flags' : [ '-m', '--info' ],
-           'parms' : { 'dest' : 'info','help' : "The information to describe"+
-                    "the section.",'action':"store_true" }},
+           'parms' : { 'dest' : 'info','help' : "Remove the information"+
+                      " that describes the section.",'action':"store_true" }},
         { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's"+
-                    "information.",'action':"store_true" }},
+                    "information."}},
         { 'flags' : [ '-q','--required'],
-           'parms' : { 'dest' : 'required','help' : "Defines if the section"+
-                    " is required or not. Boolean values only. ",'action':"store_true" },
+           'parms' : { 'dest' : 'required','help' : "Removes if the section"+
+                    " is required or not. Boolean values only. ",
+                    'action':"store_true" },
 
         }
       )
