@@ -29,6 +29,12 @@ def rmReferencesHandler(ovfFile, options):
         The user will be able to remove the entire section or remove a file
         or remove attributes within a File.
         Using flag strict will enable the errors to be shown.
+    @raise ValueError: The cases are as follow:
+            - I{B{Case1:}}The References section is not found
+            in the ovf.
+
+            -I{B{Case2:}}A File with a given id is not found in
+            the ovf.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -36,30 +42,34 @@ def rmReferencesHandler(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node  = Ovf.getNodes(ovfFile.envelope, 'References')
-    if node == []:
+    try:
+        #there can only be one References Section so that's why I get [0]
+        node  = Ovf.getNodes(ovfFile.envelope, 'References')[0]
+    except IndexError:
         raise ValueError, 'The References Section was not found.'
 
     if options.section:
-         Ovf.rmNode(node[0])
+         Ovf.rmNode(node)
     else:
         attributeList = [(options.size,'ovf:size'),
                             (options.chunksize,'ovf:chunkSize'),
                             (options.compression,'ovf:compression'),
                             (options.href,"ovf:href")
                             ]
-        fileNode = Ovf.getNodesWithId(node[0],'File',options.file_id)
-        if options.strict and fileNode == []:
+        try:
+            #there will only be one File with the given id.
+            fileNode = Ovf.getNodesWithId(node,'File',options.file_id)[0]
+        except IndexError:
             raise ValueError, ('The node with id, '+options.file_id+
                                    ', not found.')
         if options.node:
-            Ovf.rmNode(fileNode[0])
+            Ovf.rmNode(fileNode)
         else:
             attribs = []
             for attrib in attributeList:
                 if attrib[0] == True:
                     attribs.append(attrib[1])
-            Ovf.rmNodeAttributes(fileNode[0], attribs, options.strict)
+            Ovf.rmNodeAttributes(fileNode, attribs, options.strict)
 
 def rmDiskHandler(ovfFile, options):
     """
@@ -554,8 +564,7 @@ commands = {
       'args' : (
          { 'flags' : [ '-i','--ovfID' ],
            'parms' : { 'dest' : 'file_id',
-                      'help' : 'Defines the unique ID within the OVF.' },
-           'required': True
+                      'help' : 'Defines the unique ID within the OVF.' }
          },
          { 'flags' : [ '-n', '--href' ],
            'parms' : { 'dest' : 'href','help':'Remove the href for this file.'
