@@ -128,11 +128,21 @@ def rmDiskHandler(ovfFile, options):
 
 def rmNetworkHandler(ovfFile, options):
     """
-    This function removes a network section.
+    This function removes a network section if the user utilizes the flag
+    section. Alternatively the user can remove a specific Network using the
+    netowrkID flag and the node flag.
 
     NOTE::
         To remove an entire network use --node
         To remove the NetworkSection use --section
+
+    @raise ValueError: The cases are as follow:
+            - I{B{Case 1:}}The NetworkSection is not found.
+            - I{B{Case 2:}}The Info node for the NetworkSEction is not found
+            within the given ovf.
+            - I{B{Case 3:}}A Network with a given id was not found.
+            - I{B{Case 4:}}The Description for a Network with a given id was
+            not found.
 
     @param ovfFile: An OvfFile object.
     @type ovfFile: OvfFile
@@ -140,35 +150,64 @@ def rmNetworkHandler(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    node = Ovf.getNodes(ovfFile.envelope, "NetworkSection")
+    try:
+        node = Ovf.getNodes(ovfFile.envelope, "NetworkSection")[0]
+    except IndexError:
+        raise ValueError,("The NetworkSeciton was not found.")
     #need to get Network which is a child of node[0]
     if options.section:
-          Ovf.rmNode(node[0])
+          Ovf.rmNode(node)
     else:
+        #to remove the info the user can specify the id for the given info
+        #by using infoID. Alternatively the user can just remove all of the
+        #instances of the node Info by using the flag info
         if options.info:
-            Ovf.rmNode(node[0].getElementsByTagName('Info')[0])
-        elif options.infoID:
-            attribute = ['ovf:msgid']
-            Ovf.rmNodeAttributes(node[0].getElementsByTagName('Info')[0]
-                                        ,attribute,options.strict)
+            try:
+                if options.infoID:
+                    infoNode = Ovf.getNodesWithId(node,"Info",
+                                                  options.infoID)[0]
+                    Ovf.rmNode(infoNode)
+                else:
+                    infoNode = Ovf.getNodes(node,"Info")
+                    #the line below is to ensure that if the list
+                    #is empty that it would raise a IndexError
+                    infoNode[0]
+                    for child in infoNode:
+                       Ovf.rmNode(child)
+            except IndexError:
+                raise ValueError,("The Info for the NetworkSection was not"+
+                                  " found")
         #no need to go in here if there isn't a network id
         if options.networkID:
             try:
                 netNode = Ovf.getNodesWithId(ovfFile.envelope, 'Network',
                                          options.networkID)[0]
             except IndexError:
-                raise ValueError,("The given network with id, "+options.networkID+
+                raise ValueError,("The given network id, "+options.networkID+
                                   ", not found.")
 
             if options.node:
                 Ovf.rmNode(netNode)
-            if options.networkName:
-                netList = ['ovf:name']
-                Ovf.rmNodeAttributes(netNode,netList,options.strict)
+            else:
+                if options.networkName:
+                    netList = ['ovf:name']
+                    Ovf.rmNodeAttributes(netNode,netList,options.strict)
 
-            elif options.description:
-                netDesc = Ovf.getNodes(netNode, 'Description')
-                Ovf.rmNode(netDesc)
+                if options.description:
+                    try:
+                        if options.descID:
+                            netDesc = Ovf.getNodesWithId(netNode, 'Description',
+                                                      options.descID)[0]
+                            Ovf.rmNode(netDesc)
+                        else:
+                            netDesc = Ovf.getNodes(netNode,'Description')
+                            netDesc[0]
+                            for child in netDesc:
+                                Ovf.rmNode(child)
+                    except IndexError:
+                        raise ValueError,("The Description for the Network,"+
+                                          " with id, "+options.networkID+
+                                          ", was not found.")
 
 def rmDeploymentHandler(ovfFile, options):
     """
@@ -625,23 +664,22 @@ commands = {
       'args' : (
          { 'flags' : [ '-i','--netID' ],
            'parms' : { 'dest' : 'networkID', 'action':'store','help' :
-                    'Defines the unique ID for the network within the OVF.' },
-           'required':True},
-         { 'flags' : ['--network' ],
-           'parms' : { 'dest' : 'network','help': "Remove the network with"+
-                   "the id provided.", 'action':"store_true"}},
+                    "Defines the unique ID for the network within the OVF." }},
          { 'flags' : [ '-m', '--info' ],
-           'parms' : { 'dest' : 'info','help' : "The information to describe"+
-                    " the section.", 'action':"store_true" }},
+           'parms' : { 'dest' : 'info','help' : "Removes the information that"+
+                      " describes the section.", 'action':"store_true" }},
          { 'flags' : [ '-y','--infoID'],
            'parms' : { 'dest' : 'infoID','help' : "The id of the section's"+
-                    " information." , 'action':"store_true"}},
+                    " information."}},
          { 'flags' : [ '-e', '--networkName' ],
-           'parms' : { 'dest' : 'networkName',"help":"The name of the network"+
-                    "being created.", 'action':"store_true"}},
+           'parms' : { 'dest' : 'networkName',"help":"Remove the name of the"+
+                      " network.", 'action':"store_true"}},
          { 'flags' : [ '-d', '--description' ],
-           'parms' : { 'dest' : 'description','help': "Describe the network"+
-                    " being created.", 'action':"store_true"}},
+           'parms' : { 'dest' : 'description','help': "Remove the description"+
+                    " of the Network.", 'action':"store_true"}},
+        { "flags" : [ "-c", "--descID" ],
+           "parms" : { "dest" : "descID","help": "The ID for the description"+
+                    " of the network."}},
       )
    },
    "deploy" : {
