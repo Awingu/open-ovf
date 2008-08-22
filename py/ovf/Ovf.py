@@ -22,46 +22,39 @@ def rmNode(node):
     """
     This function will remove a node and all of its children.
 
-    NOTE::
-        If parentNode is None then it will use self.envelope.
-
-    @param node: The DOM node of the section to be deleted
-    @type node: DOM node
+    @param node: DOM Node to be deleted
+    @type node: DOM Node
     """
-    while node.firstChild != None:
-        node.removeChild(node.firstChild)
-
     node.parentNode.removeChild(node)
 
-def rmNodeAttributes(node,attributeList=[],strict=False):
+def rmNodeAttributes(node, attributeList=[], strict=False):
     """
     This function will remove the attributes for a given section.
     Passing False to strict will mean that no errors will be thrown
     if an attribute for the given node is not found.
 
-    @param node: The DOM node of the attribute to be deleted
-    @type node: DOM node
+    @param node: DOM Node where attributes will be deleted
+    @type node: DOM Node
 
-    @param strict: This will allow an error to be thrown if an attribute is not
-                    present. Default is False, no errors thrown.
-    @type strict: Boolean
+    @param strict: if True, checks for all attributes before removing
+    @type strict: boolean
 
-    @param attributeList: A list of attributes to be deleted.
-    @type attributeList: List in the following form:
-            attList =['ovf:size','ovf:href']
+    @param attributeList: A list of attributes to be deleted
+    @type attributeList: list of Strings
+
+    @raise ValueError: if strict=True and any attribute not present
     """
-    section = node
+    for attribute in attributeList:
+        if strict:
+            if not node.hasAttribute(attribute):
+                raise ValueError("The attribute, " + attribute +
+                                 ", does not exist.")
+        else:
+            node.removeAttribute(attribute)
 
-    if section == None:
-        raise ValueError, 'Node must be present.'
-
-    if attributeList != []:
+    if strict:
         for attribute in attributeList:
-            if section.hasAttribute(attribute):
-                section.removeAttribute(attribute)
-            elif strict:
-                raise ValueError, ("The attribute, "+attribute
-                                   +", does not exist.")
+            node.removeAttribute(attribute)
 
 def getDefaultConfiguration(ovfDoc):
     """
