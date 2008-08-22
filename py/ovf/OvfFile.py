@@ -446,43 +446,19 @@ class OvfFile:
         @param infoID: The id for the information comment
         @type infoID: String
         """
-        #TODO: node not used, for-loop code seems confusing.
-        createNet = True
-        for node in self.document.getElementsByTagName('NetworkSection'):
-            self.addNetwork(networkList)
-            createNet = False
-        if createNet:
-            ovfName = "ovf:name"
-            ovfId = "ovf:id"
+        netSections = self.document.getElementsByTagName('NetworkSection')
 
-            comment = self.document.createComment("Network Section")
-            self.envelope.appendChild(comment)
+        if netSections == []:
+            netNode = self.document.createElement("NetworkSection")
 
-            networkSectionChild = self.document.createElement("NetworkSection")
+            self.createInfo(netNode, infoComments, infoID)
+            self.envelope.appendChild(netNode)
+        else:
+            netNode = netSections[0]
 
-            #info for comments
-            self.createInfo(networkSectionChild, infoComments, infoID)
+        self.addNetwork(netNode, networkList)
 
-            for net in networkList:
-                networkChild = self.document.createElement("Network")
-                if net['networkName'] != None:
-                    networkChild.setAttribute(ovfName, net['networkName'])
-
-                if net['networkID'] != None:
-                    networkChild.setAttribute(ovfId, net['networkID'])
-
-                networkDescription = (self.document.
-                                           createElement("Description"))
-                descriptionChild = (self.document.
-                                    createTextNode(net['description']))
-                networkDescription.appendChild(descriptionChild)
-
-                networkChild.appendChild(networkDescription)
-                networkSectionChild.appendChild(networkChild)
-
-            self.envelope.appendChild(networkSectionChild)
-
-    def addNetwork(self, networkList):
+    def addNetwork(self, node, networkList):
         """
         This function will create and add a network to an already existing Network Section.
 
@@ -498,28 +474,27 @@ class OvfFile:
         """
         ovfName = "ovf:name"
         ovfId = "ovf:id"
-        netNode = None
 
-        netNode = self.document.getElementsByTagName("NetworkSection")[0]
-        for net in networkList:
-            networkChild = self.document.createElement("Network")
-            if net['networkName'] != None:
-                networkChild.setAttribute(ovfName, net['networkName'])
+        if node == None:
+            raise NotImplementedError("OVF requires one NetworkSection.")
+        else:
+            for net in networkList:
+                if(net['networkName'] == None or
+                   net['description'] == None):
+                    raise ValueError("Required network values not set.")
 
-            if net['networkID'] != None:
-                networkChild.setAttribute(ovfId, net['networkID'])
+                network = self.document.createElement("Network")
+                if net['networkID'] != None:
+                    network.setAttribute(ovfId, net['networkID'])
 
-            networkDescription = (self.document.
-                                       createElement("Description"))
-            descriptionChild = self.document.createTextNode(net['description'])
-            networkDescription.appendChild(descriptionChild)
+                network.setAttribute(ovfName, net['networkName'])
+                description = self.document.createElement("Description")
+                descriptionText = self.document.createTextNode(net['description'])
+                description.appendChild(descriptionText)
 
-            networkChild.appendChild(networkDescription)
-            if netNode != None:
-                netNode.appendChild(networkChild)
-            else:
-                raise NotImplementedError, "A Network Section was not found.\
-                 To add a Network the Network section must be present."
+                network.appendChild(description)
+
+                node.appendChild(network)
 
     def createDeploymentOptions(self, infoComments, infoID=None, ident=None):
         """
