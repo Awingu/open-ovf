@@ -201,14 +201,13 @@ def createVirtualHardware(ovfFile, options):
                                                            options.info,
                                                            options.infoID,
                                                            options.transport)
-    system = ovfFile.createSystem(virtualHardware)
 
     systemDict = dict(Caption=options.caption,
                       Description=options.description,
                       VirtualSystemIdentifier=options.sysID,
                       VirtualSystemType=options.sysType)
 
-    ovfFile.defineSystem(system, options.elementName, options.instanceID, systemDict)
+    ovfFile.createSystem(virtualHardware, options.elementName, options.instanceID, systemDict)
 
 def createResources(ovfFile, options):
     """

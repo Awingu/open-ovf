@@ -394,10 +394,14 @@ def rmVirtualHardware(ovfFile, options):
                                                            options.info,
                                                            options.infoID,
                                                            options.transport)
-    systemType = ovfFile.createSystemType(virtualHardware)
 
-    ovfFile.defineSystemType(systemType, options.caption, options.description,
-                             options.instanceID, options.sysID, options.type)
+    systemDict = dict(Caption=options.caption,
+                      Description=options.description,
+                      VirtualSystemIdentifier=options.sysID,
+                      VirtualSystemType=options.sysType)
+
+    ovfFile.createSystem(virtualHardware, options.elementName, options.instanceID, systemDict)
+
 
 def rmResources(ovfFile, options):
     """

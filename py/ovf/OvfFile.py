@@ -1448,7 +1448,7 @@ class OvfFile:
         node.appendChild(hardwareSection)
         return hardwareSection
 
-    def createSystem(self, node):
+    def createSystem(self, node, elementName, instanceId, systemDict=None):
         """
         This method will create a System child for the VirtualHardwareSection.
 
@@ -1459,31 +1459,10 @@ class OvfFile:
 
         @return: DOM node of the system section
         """
-
         if "VirtualHardwareSection" != node.nodeName:
-            raise TypeError("The node can only be appended to a"+
-                            "VirtualHardware Section. The given node is not"+
-                            "a VirtualHardwareSection.")
+            raise TypeError("Node tagName not VirtualHardwareSection.")
 
         systemNode = self.document.createElement("System")
-        node.appendChild(systemNode)
-        return systemNode
-
-    def defineSystem(self, node, elementName, instanceId, systemDict=None):
-        """
-        This method is used to define a system.
-
-        @raise TypeError: if node name not equal to System.
-
-        @param node: Place where the child will  be inserted.
-        @type node: DOM node object
-        """
-
-        if "System" != node.nodeName:
-            raise TypeError("The node can only be appended to a System in a"+
-                            "Virtual Hardware Section. The given node is not"+
-                            "a System in a Virtual Hardware Section.")
-
         systemDict['ElementName'] = elementName
         systemDict['InstanceID'] = instanceId
 
@@ -1494,7 +1473,9 @@ class OvfFile:
             if systemDict[tag] != None:
                 child = self.document.createElement("vssd:" + tag)
                 child.appendChild(self.document.createTextNode(systemDict[tag]))
-                node.appendChild(child)
+                systemNode.appendChild(child)
+
+        node.appendChild(systemNode)
 
     def createValue(self, node, value, configuration):
         """

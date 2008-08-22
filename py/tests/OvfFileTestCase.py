@@ -543,7 +543,7 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertTrue(sys.nodeName == "System")
 
-    def test_defineSystem(self):
+    def test_createSystem(self):
         self.ovfFile3.createEnvelope()
 
         name = 'elementName'
@@ -554,14 +554,12 @@ class OvfFileTestCase(unittest.TestCase):
                           VirtualSystemIdentifier="test id",
                           VirtualSystemType="test type")
 
-        self.assertRaises(TypeError, self.ovfFile3.defineSystem,
+        self.assertRaises(TypeError, self.ovfFile3.createSystem,
                           self.ovfFile3.envelope, name, instanceId)
 
         vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
-        sys = self.ovfFile3.createSystem(hw)
-
-        self.ovfFile3.defineSystem(sys, name, instanceId, systemDict)
+        self.ovfFile3.createSystem(hw, name, instanceId, systemDict)
 
         for node in self.ovfFile3.document.getElementsByTagName('System'):
             for child in node.childNodes:
