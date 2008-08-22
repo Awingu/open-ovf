@@ -114,17 +114,17 @@ class OvfFileTestCase(unittest.TestCase):
         self.assertEqual(self.ovfFile2.envelope.attributes['ovf:version'].value,version)
         self.assertEqual(self.ovfFile2.envelope.attributes['xml:lang'].value,lang)
 
-    def test_createRefSection(self):
-        """test_createRefSection: Testing OvfFile.createRefSection:"""
-        self.assertRaises(NotImplementedError,self.ovfFile3.createRefSection)#document is not created
+    def test_createReferences(self):
+        """test_createReferences: Testing OvfFile.createReferences:"""
+        self.assertRaises(NotImplementedError,self.ovfFile3.createReferences)#document is not created
 
         self.ovfFile3.files = None #for some reasson when ovfFile3 is created an obejct is added to ovfFile3.files
-        self.assertRaises(NotImplementedError,self.ovfFile3.createRefSection)
+        self.assertRaises(NotImplementedError,self.ovfFile3.createReferences)
         self.ovfFile3.createEnvelope()
         self.ovfFile3.files = self.ovfFile2.files
-        self.ovfFile3.createRefSection()
+        self.ovfFile3.createReferences()
         self.assertNotEquals(self.ovfFile3.document.getElementsByTagName('References'),None)
-        #all the createRefSection does is what is tested. The actual adding of the files is done in syncReferencedFilesToDom
+        #all the createReferences does is what is tested. The actual adding of the files is done in syncReferencedFilesToDom
         #that function is tested above.
 
     def test_createDiskSection(self):
@@ -188,16 +188,16 @@ class OvfFileTestCase(unittest.TestCase):
         self.assertRaises(TypeError,self.ovfFile3.createDeploymentOptions,"comment")
         self.assertEquals(dpl.nodeName, "DeploymentOptionSection")
 
-    def test_defineDeploymentOptions(self):
+    def test_addConfiguration(self):
         self.ovfFile3.createEnvelope()
         dpl = self.ovfFile3.createDeploymentOptions("some comments")
-        self.assertRaises(TypeError, self.ovfFile3.defineDeploymentOptions,self.ovfFile3.envelope, "1", "some", "description")
-        self.ovfFile3.defineDeploymentOptions(dpl, "1", "some", "description","3","4",True)
+        self.assertRaises(TypeError, self.ovfFile3.addConfiguration,self.ovfFile3.envelope, "1", "some", "description")
+        self.ovfFile3.addConfiguration(dpl, "1", "some", "description","3","4",True)
 
         for node in self.ovfFile3.document.getElementsByTagName('Configuration'):
             self.assertTrue(node.getAttribute("ovf:id") == '1')
 
-        self.assertRaises(NameError, self.ovfFile3.defineDeploymentOptions,dpl, "1", "some", "description","3","4",'True')
+        self.assertRaises(NameError, self.ovfFile3.addConfiguration,dpl, "1", "some", "description","3","4",'True')
 
     def test_createVirtualSystemCollection(self):
 
@@ -224,7 +224,7 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertEquals(rsc.nodeName, "ResourceAllocationSection")
 
-    def test_defineResourceAllocation(self):
+    def test_addResourceItem(self):
         self.ovfFile3.createEnvelope()
         vsc = self.ovfFile3.createVirtualSystemCollection("1", "No Info", "3")
         rsc = self.ovfFile3.createResourceAllocation(vsc, "some", "1", "adv,dac", "min")
@@ -267,9 +267,9 @@ class OvfFileTestCase(unittest.TestCase):
              "ResourceType":resourceType,"VirtualQuantity":virtualQuantity,"Weight":weight
          }
 
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         vhwNode = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
-        self.ovfFile3.defineResourceAllocation(vhwNode,refDefDict)
+        self.ovfFile3.addResourceItem(vhwNode,refDefDict)
 #                                     options.config, options.bound,
 #                                     options.required)
 
@@ -372,9 +372,9 @@ class OvfFileTestCase(unittest.TestCase):
         for node in nodes:
             self.assertEquals(node.tagName, 'Category')
 
-    def test_createPropertyProductSection(self):
+    def test_createProperty(self):
         self.ovfFile3.createEnvelope()
-        self.assertRaises(TypeError,self.ovfFile3.createPropertyProductSection,self.ovfFile3.envelope, 'key')
+        self.assertRaises(TypeError,self.ovfFile3.createProperty,self.ovfFile3.envelope, 'key')
         vsc = self.ovfFile3.createVirtualSystemCollection("1", "No Info", "3")
         prodDict = [("Product", "Red Hat Linux"),
                 ("Vendor","RedHat"),
@@ -385,10 +385,10 @@ class OvfFileTestCase(unittest.TestCase):
                 ("AppUrl", "http://someApp.com")]
         prod = self.ovfFile3.createProductSection(vsc,"This is the first product of the VM",
                                                  prodDict,"com.xen.tools", '1')
-        self.assertRaises(TypeError, self.ovfFile3.createPropertyProductSection,prod, "key", 'type', 'value', 'usrConfig', 'required')
-        self.assertRaises(TypeError, self.ovfFile3.createPropertyProductSection,prod, "key", 'type', 'value', False, 'required')
+        self.assertRaises(TypeError, self.ovfFile3.createProperty,prod, "key", 'type', 'value', 'usrConfig', 'required')
+        self.assertRaises(TypeError, self.ovfFile3.createProperty,prod, "key", 'type', 'value', False, 'required')
 
-        prop = self.ovfFile3.createPropertyProductSection(prod, 'key', 'type', 'value', True, False)
+        prop = self.ovfFile3.createProperty(prod, 'key', 'type', 'value', True, False)
         nodes = self.ovfFile3.document.getElementsByTagName('Property')
         for node in nodes:
             self.assertEquals(node.tagName, 'Property')
@@ -406,23 +406,23 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertEquals(prop.nodeName, "Property")
 
-    def test_createEULASection(self):
+    def test_createEulaSection(self):
         self.ovfFile3.createEnvelope()
         vsc= self.ovfFile3.createVirtualSystemCollection("1", "No Info", "3")
-        eula = self.ovfFile3.createEULASection("some info",vsc,"3")
+        eula = self.ovfFile3.createEulaSection("some info",vsc,"3")
 
         for node in self.ovfFile3.document.getElementsByTagName('EulaSection'):
             self.assertEquals(node.nodeName,"EulaSection")
 
         self.assertEquals(eula.nodeName, "EulaSection")
 
-    def test_defineLicenseSection(self):
+    def test_addLicense(self):
         self.ovfFile3.createEnvelope()
 
-        self.assertRaises(TypeError,self.ovfFile3.defineLicenseSection,self.ovfFile3.envelope, "license", 'msgID')
+        self.assertRaises(TypeError,self.ovfFile3.addLicense,self.ovfFile3.envelope, "license", 'msgID')
         vsc = self.ovfFile3.createVirtualSystemCollection("1", "No Info", "3")
-        eula = self.ovfFile3.createEULASection("some info",vsc, "3")
-        self.ovfFile3.defineLicenseSection(eula, "some", "2")
+        eula = self.ovfFile3.createEulaSection("some info",vsc, "3")
+        self.ovfFile3.addLicense(eula, "some", "2")
 
         nodes = self.ovfFile3.document.getElementsByTagName('License')
         for node in nodes:
@@ -441,20 +441,20 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertEquals(start.nodeName, "StartupSection")
 
-    def test_defineStartUpSection(self):
+    def test_addStartupItem(self):
         self.ovfFile3.createEnvelope()
-        self.assertRaises(TypeError,self.ovfFile3.defineStartUpSection,self.ovfFile3.envelope, '2', 'order')
+        self.assertRaises(TypeError,self.ovfFile3.addStartupItem,self.ovfFile3.envelope, '2', 'order')
 
         vsc = self.ovfFile3.createVirtualSystemCollection("1", "No Info", "3")
 
         start= self.ovfFile3.createStartupSection(vsc, "some info", "1")
 
-        self.assertRaises(TypeError,self.ovfFile3.defineStartUpSection,start, 'id', 'order', 'startDelay', 'False')
-        self.assertRaises(TypeError,self.ovfFile3.defineStartUpSection,start, 'id', 'order', 'startDelay', False, 'power')
-        self.assertRaises(TypeError,self.ovfFile3.defineStartUpSection,start,'id', 'order', 'startDelay', False, 'poweOn', 'stopDelay', 'on')
+        self.assertRaises(TypeError,self.ovfFile3.addStartupItem,start, 'id', 'order', 'startDelay', 'False')
+        self.assertRaises(TypeError,self.ovfFile3.addStartupItem,start, 'id', 'order', 'startDelay', False, 'power')
+        self.assertRaises(TypeError,self.ovfFile3.addStartupItem,start,'id', 'order', 'startDelay', False, 'poweOn', 'stopDelay', 'on')
 
 
-        self.ovfFile3.defineStartUpSection(start, 'id', 'order', 'startDelay', False, 'powerOn', 'stopDelay', 'powerOff')
+        self.ovfFile3.addStartupItem(start, 'id', 'order', 'startDelay', False, 'powerOn', 'stopDelay', 'powerOff')
 
         nodes = self.ovfFile3.document.getElementsByTagName('Item')
         for node in nodes:
@@ -475,13 +475,13 @@ class OvfFileTestCase(unittest.TestCase):
             self.assertEquals(node.getAttribute("ovf:stopDelay"), 'stopDelay')
             self.assertEquals(node.getAttribute("ovf:stopAction"), 'powerOff')
 
-    def test_createVirtualSystemSection(self):
+    def test_createVirtualSystem(self):
         self.ovfFile3.createEnvelope()
         vsc = self.ovfFile3.createVirtualSystemCollection("2", "No Info", "4")
-        eula = self.ovfFile3.createEULASection("some info", vsc,"3")
-        self.assertRaises(TypeError, self.ovfFile3.createVirtualSystemSection,'id', 'info', eula, 'infoID')
+        eula = self.ovfFile3.createEulaSection("some info", vsc,"3")
+        self.assertRaises(TypeError, self.ovfFile3.createVirtualSystem,'id', 'info', eula, 'infoID')
         #Make the actual section using ovfFile3
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
 
         for node in self.ovfFile3.document.getElementsByTagName('VirtualSystem'):
             self.assertTrue(node.nodeName == "VirtualSystem")
@@ -489,13 +489,13 @@ class OvfFileTestCase(unittest.TestCase):
 
         self.assertTrue(vs.nodeName == "VirtualSystem")
 
-    def test_createOSsection(self):
+    def test_createOperatingSystem(self):
         self.ovfFile3.createEnvelope()
 
-        self.assertRaises(TypeError,self.ovfFile3.createOSsection,self.ovfFile3.envelope, 'id', 'info', 'infoID')
+        self.assertRaises(TypeError,self.ovfFile3.createOperatingSystem,self.ovfFile3.envelope, 'id', 'info', 'infoID')
 
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
-        os = self.ovfFile3.createOSsection(vs, 'id', 'info', 'infoID','description','descID')
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
+        os = self.ovfFile3.createOperatingSystem(vs, 'id', 'info', 'infoID','description','descID')
         childPresent = False
         for node in self.ovfFile3.document.getElementsByTagName('OperatingSystemSection'):
             self.assertTrue(node.nodeName) == "OperatingSystemSection"
@@ -512,7 +512,7 @@ class OvfFileTestCase(unittest.TestCase):
     def test_createInstallSection(self):
         self.ovfFile3.createEnvelope()
         self.assertRaises(TypeError,self.ovfFile3.createInstallSection,self.ovfFile3.envelope, "info", "infoID")
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         self.assertRaises(TypeError,self.ovfFile3.createInstallSection,vs, 'info', 'infoID', 'initBoot', 'bootStopdelay')
         install = self.ovfFile3.createInstallSection(vs, "some info", "3", True, 'bootStopdelay')
 
@@ -527,7 +527,7 @@ class OvfFileTestCase(unittest.TestCase):
         self.ovfFile3.createEnvelope()
         self.assertRaises(TypeError, self.ovfFile3.createVirtualHardwareSection,self.ovfFile3.envelope, 'info', 'infoID', 'transport')
 
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs,'someID', 'info', 'infoID', 'transport')
 
         node = self.ovfFile3.document.getElementsByTagName('VirtualHardwareSection')
@@ -540,7 +540,7 @@ class OvfFileTestCase(unittest.TestCase):
         self.ovfFile3.createEnvelope()
 
         self.assertRaises(TypeError, self.ovfFile3.createSystem, self.ovfFile3.envelope)
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
         sys = self.ovfFile3.createSystem(hw)
 
@@ -560,7 +560,7 @@ class OvfFileTestCase(unittest.TestCase):
         self.assertRaises(TypeError, self.ovfFile3.defineSystem,
                           self.ovfFile3.envelope, name, instanceId)
 
-        vs = self.ovfFile3.createVirtualSystemSection("VS1", "some info", self.ovfFile3.envelope, "id3")
+        vs = self.ovfFile3.createVirtualSystem("VS1", "some info", self.ovfFile3.envelope, "id3")
         hw = self.ovfFile3.createVirtualHardwareSection(vs, 'info', 'infoID', 'transport')
         sys = self.ovfFile3.createSystem(hw)
 
@@ -575,25 +575,25 @@ class OvfFileTestCase(unittest.TestCase):
                     else:
                         self.assertTrue(False)
 
-    def test_createDescriptionChild(self):
+    def test_createDescription(self):
         self.ovfFile3.createEnvelope()
-        self.ovfFile3.createDescriptionChild(self.ovfFile3.envelope, 'description', 'msgID')
+        self.ovfFile3.createDescription(self.ovfFile3.envelope, 'description', 'msgID')
 
         for node in self.ovfFile3.document.getElementsByTagName('Description'):
             self.assertTrue(node.getAttribute("ovf:msgid") == "msgID")
             self.assertEquals(node.firstChild.data, 'description')
 
-    def test_createLabelChild(self):
+    def test_createLabel(self):
         self.ovfFile3.createEnvelope()
-        self.ovfFile3.createLabelChild(self.ovfFile3.envelope, 'label', 'msgID')
+        self.ovfFile3.createLabel(self.ovfFile3.envelope, 'label', 'msgID')
 
         for node in self.ovfFile3.document.getElementsByTagName('Label'):
             self.assertTrue(node.getAttribute("ovf:msgid") == "msgID")
             self.assertEquals(node.firstChild.data, 'label')
 
-    def test_createInfoChild(self):
+    def test_createInfo(self):
         self.ovfFile3.createEnvelope()
-        self.ovfFile3.createInfoChild(self.ovfFile3.envelope, 'infoComments', 'msgID')
+        self.ovfFile3.createInfo(self.ovfFile3.envelope, 'infoComments', 'msgID')
 
         for node in self.ovfFile3.document.getElementsByTagName('Info'):
             self.assertTrue(node.getAttribute("ovf:msgid") == "msgID")
@@ -616,12 +616,12 @@ class OvfFileTestCase(unittest.TestCase):
         for node in self.ovfFile3.document.getElementsByTagName('Annotation'):
             self.assertTrue(node.getAttribute("ovf:msgid") == "msgID")
 
-        eula = self.ovfFile3.createEULASection("some info", vsc,"3" )
+        eula = self.ovfFile3.createEulaSection("some info", vsc,"3" )
         self.assertRaises(TypeError,self.ovfFile3.createAnnotationSection,'annotation', 'info', eula, 'msgID')
 
-    def test_createCaptionChild(self):
+    def test_createCaption(self):
         self.ovfFile3.createEnvelope()
-        self.ovfFile3.createCaptionChild(self.ovfFile3.envelope, 'caption')
+        self.ovfFile3.createCaption(self.ovfFile3.envelope, 'caption')
 
         for node in self.ovfFile3.document.getElementsByTagName('Caption'):
             self.assertEquals(node.firstChild.data, 'caption')

@@ -183,7 +183,7 @@ class OvfFile:
         else:
             self.envelope = self.document.DOCUMENT_NODE
 
-    def createRefSection(self):
+    def createReferences(self):
         """
         This will create the referenced files section. If the section already
         exists it will append new files to the already existing section.
@@ -262,7 +262,7 @@ class OvfFile:
         @type sectionReq: String
         ""        """
         if self.envelope.getElementsByTagName('DiskSection') != []:
-            self.addNewDisk(diskDictList)
+            self.addDisk(diskDictList)
 
         #if there is only a new disk to be added don't allow to create another
         # disk section
@@ -298,7 +298,7 @@ class OvfFile:
                      boolean."
 
             #info for comments
-            self.createInfoChild(diskSectionChild, infoComments, infoID)
+            self.createInfo(diskSectionChild, infoComments, infoID)
 
             #this list is to keep track of which files have already been added
             #it is a constraint that if a child file is to be added a parent
@@ -349,7 +349,7 @@ class OvfFile:
 
             self.envelope.appendChild(diskSectionChild)
 
-    def addNewDisk(self, diskDictList):
+    def addDisk(self, diskDictList):
         """
         This section will add a new disc to an already existing Disk section.
         If there isn't a disk section present a NotImplementedError will be
@@ -531,7 +531,7 @@ class OvfFile:
             networkSectionChild = self.document.createElement("NetworkSection")
 
             #info for comments
-            self.createInfoChild(networkSectionChild, infoComments, infoID)
+            self.createInfo(networkSectionChild, infoComments, infoID)
 
             for net in networkList:
                 networkChild = self.document.createElement("Network")
@@ -541,13 +541,13 @@ class OvfFile:
                 if net['networkID'] != None:
                     networkChild.setAttribute(ovfId, net['networkID'])
 
-                networkDescriptionChild = (self.document.
+                networkDescription = (self.document.
                                            createElement("Description"))
                 descriptionChild = (self.document.
                                     createTextNode(net['description']))
-                networkDescriptionChild.appendChild(descriptionChild)
+                networkDescription.appendChild(descriptionChild)
 
-                networkChild.appendChild(networkDescriptionChild)
+                networkChild.appendChild(networkDescription)
                 networkSectionChild.appendChild(networkChild)
 
 
@@ -579,12 +579,12 @@ class OvfFile:
             if net['networkID'] != None:
                 networkChild.setAttribute(ovfId, net['networkID'])
 
-            networkDescriptionChild = (self.document.
+            networkDescription = (self.document.
                                        createElement("Description"))
             descriptionChild = self.document.createTextNode(net['description'])
-            networkDescriptionChild.appendChild(descriptionChild)
+            networkDescription.appendChild(descriptionChild)
 
-            networkChild.appendChild(networkDescriptionChild)
+            networkChild.appendChild(networkDescription)
             if netNode != None:
                 netNode.appendChild(networkChild)
             else:
@@ -625,13 +625,13 @@ class OvfFile:
             deployOptElement.setAttribute("ovf:id", id)
         #create info child
         node = deployOptElement
-        self.createInfoChild(node, infoComments, infoID)
+        self.createInfo(node, infoComments, infoID)
 
         self.envelope.appendChild(deployOptElement)
 
         return deployOptElement
 
-    def defineDeploymentOptions(self, node, id, label, description, labID=None,
+    def addConfiguration(self, node, id, label, description, labID=None,
                                 desID=None, default=None):
         """
         This method will help describe the deployment options.
@@ -694,16 +694,16 @@ class OvfFile:
         #since a document can contain multiple labels, it is neccesary to have\
         # an id to distinguish them
         if labID != None:
-            self.createLabelChild(configElement, label, labID)
+            self.createLabel(configElement, label, labID)
         else:
-            self.createLabelChild(configElement, label)
+            self.createLabel(configElement, label)
 
         # just like the label id, the description id is used to distinguish\
         # descriptions
         if desID != None:
-            self.createDescriptionChild(configElement, description, desID)
+            self.createDescription(configElement, description, desID)
         else:
-            self.createDescriptionChild(configElement, description)
+            self.createDescription(configElement, description)
 
         node.appendChild(configElement)
 
@@ -752,7 +752,7 @@ class OvfFile:
         contentElement.setAttribute(ovfid, id)
 
 
-        self.createInfoChild(contentElement, info, infoID)
+        self.createInfo(contentElement, info, infoID)
         if node != None:
 
             if (node.nodeName == 'VirtualSystemCollection' or
@@ -826,11 +826,11 @@ class OvfFile:
             else:
                 resAllocNode.setAttribute(ovfBound, bound)
 
-        self.createInfoChild(resAllocNode, info, infoID)
+        self.createInfo(resAllocNode, info, infoID)
         node.appendChild(resAllocNode)
         return resAllocNode
 
-    def defineResourceAllocation(self, node, refsDefDict, config=None,
+    def addResourceItem(self, node, refsDefDict, config=None,
                                  bound=None, required=None):
         """
         This method will create a DOM element that can be used to describe virtual
@@ -981,7 +981,7 @@ class OvfFile:
             sectionElement.setAttribute(prodInstance, instance)
         if id != None:
             sectionElement.setAttribute("ovf:id", id)
-        self.createInfoChild(sectionElement, info, infoID)
+        self.createInfo(sectionElement, info, infoID)
 
         for curr in prodList:
             if curr[1] != None:
@@ -1048,8 +1048,8 @@ class OvfFile:
         categoryNode.appendChild(categoryTextNode)
         node.appendChild(categoryNode)
 
-    def createPropertyProductSection(self, node, key, type=None, value=None,
-                                     usrConfig=None, required=None, id=None):
+    def createProperty(self, node, key, type=None, value=None, usrConfig=None,
+                       required=None, id=None):
         """
         This method will create the property section of a product description.
 
@@ -1122,7 +1122,7 @@ class OvfFile:
 
         return propertyElement
 
-    def createEULASection(self, info, node, infoID=None, id=None):
+    def createEulaSection(self, info, node, infoID=None, id=None):
         """
         This method will create the EULA section of the ovf. If a node
         is not specified the EULA section created will be appended to the
@@ -1154,7 +1154,7 @@ class OvfFile:
         ovfEula = "EulaSection"
 
         eulaSec = self.document.createElement(ovfEula)
-        self.createInfoChild(eulaSec, info, infoID)
+        self.createInfo(eulaSec, info, infoID)
 
         if id != None:
             eulaSec.setAttribute("ovf:id", id)
@@ -1163,7 +1163,7 @@ class OvfFile:
 
         return eulaSec
 
-    def defineLicenseSection(self, node, license, msgID=None):
+    def addLicense(self, node, license, msgID=None):
         """
         This method is to create the license in the
         EULA section.
@@ -1221,14 +1221,14 @@ class OvfFile:
             raise TypeError, "The node can only be appended to a Virtual\
              System Collection Section."
         startupNode = self.document.createElement(ovfstartUp)
-        self.createInfoChild(startupNode, info, infoID)
+        self.createInfo(startupNode, info, infoID)
 
         if id != None:
             startupNode.setAttribute("ovf:id", id)
         node.appendChild(startupNode)
         return startupNode
 
-    def defineStartUpSection(self, node, id, order, startDelay=None,
+    def addStartupItem(self, node, id, order, startDelay=None,
                              waitForGuest=None, startAction=None,
                              stopDelay=None, stopAction=None):
         """
@@ -1347,7 +1347,7 @@ class OvfFile:
 
         node.appendChild(itemNode)
 
-    def createVirtualSystemSection(self, id, info, node=None, infoID=None):
+    def createVirtualSystem(self, id, info, node=None, infoID=None):
         """
         This method will create a VirtualSystem.
 
@@ -1393,7 +1393,7 @@ class OvfFile:
                       a Virtual System Collection Section"
         contentElement = self.document.createElement(virtualSys)
         contentElement.setAttribute(ovfid, id)
-        self.createInfoChild(contentElement, info, infoID)
+        self.createInfo(contentElement, info, infoID)
         if node == None:
             self.envelope.appendChild(contentElement)
         else:
@@ -1401,8 +1401,8 @@ class OvfFile:
 
         return contentElement
 
-    def createOSsection(self, node, id, info, infoID=None, description=None,
-                        descriptionID=None):
+    def createOperatingSystem(self, node, id, info, infoID=None, description=None,
+                              descriptionID=None):
         """
         This method creates the operating systems section for a Virtual System.
 
@@ -1437,13 +1437,13 @@ class OvfFile:
             raise TypeError, "The node can only be appended to a Virtual\
              System Section. The given node is not a Virtual System Section."
         osNode = self.document.createElement(osType)
-        self.createInfoChild(osNode, info, infoID)
+        self.createInfo(osNode, info, infoID)
 
         if id != None:
             osNode.setAttribute(ovfID, id)
 
         if description != None:
-            self.createDescriptionChild(osNode, description, descriptionID)
+            self.createDescription(osNode, description, descriptionID)
 
         node.appendChild(osNode)
         return osNode
@@ -1487,7 +1487,7 @@ class OvfFile:
              System Section. The given node is not a Virtual System Section"
 
         installNode = self.document.createElement(installType)
-        self.createInfoChild(installNode, info, infoID)
+        self.createInfo(installNode, info, infoID)
 
         if id != None:
             installNode.setAttribute("ovf:id", id)
@@ -1542,7 +1542,7 @@ class OvfFile:
              System Section. The given node is not a Virtual System Section."
 
         hardwareSection = self.document.createElement(ovfHardwareSec)
-        self.createInfoChild(hardwareSection, info, infoID)
+        self.createInfo(hardwareSection, info, infoID)
 
         if id != None:
             hardwareSection.setAttribute(ovfID, id)
@@ -1631,7 +1631,7 @@ class OvfFile:
 
         node.appendChild(valNode)
 
-    def createDescriptionChild(self, node, description, msgID=None):
+    def createDescription(self, node, description, msgID=None):
         """
         This method will create a description that can be appended to any node.
 
@@ -1652,7 +1652,7 @@ class OvfFile:
 
         node.appendChild(descriptionElement)
 
-    def createLabelChild(self, node, label, msgID=None):
+    def createLabel(self, node, label, msgID=None):
         """
         This method will create a label that can be appended to a node.
 
@@ -1672,7 +1672,7 @@ class OvfFile:
             labelElement.setAttribute("ovf:msgid", msgID)
 
         node.appendChild(labelElement)
-    def createInfoChild(self, node, infoComments, msgID=None):
+    def createInfo(self, node, infoComments, msgID=None):
         """
         This method will insert an info into a node. This is a helper function.
 
@@ -1762,7 +1762,7 @@ class OvfFile:
 
         if info != None:
             #create info
-            self.createInfoChild(sectionElement, info)
+            self.createInfo(sectionElement, info)
 
         annotationElement = self.document.createElement("Annotation")
         annotationTextChild = self.document.createTextNode(annotation)
@@ -1773,7 +1773,7 @@ class OvfFile:
             annotationElement.setAttribute("ovf:msgid", msgID)
         node.appendChild(sectionElement)
 
-    def createCaptionChild(self, node, caption):
+    def createCaption(self, node, caption):
         """
         This method will create a caption element that can be appended as a child of a
         given node.

@@ -106,7 +106,7 @@ def chProductSection(ovfFile, options):
     """
     This function will change the product section.
     """
-def chPropertyProductSection(ovfFile, options):
+def chProperty(ovfFile, options):
     """
     This function will change the property child of a product section.
     """
@@ -127,7 +127,7 @@ def chStartup(ovfFile, options):
     """
     This function will change the startup section.
     """
-def chOSsection(ovfFile, options):
+def chOperatingSystem(ovfFile, options):
     """
     This function will change the OS section.
     """
@@ -538,7 +538,7 @@ commands = {
       ),
    },
    "property" : {
-      'func':chPropertyProductSection,
+      'func':chProperty,
       'help' : "Creates a Property for the Product Section. ",
       'args' : (
         { 'flags' : [ '-r', '--req' ],
@@ -700,7 +700,7 @@ commands = {
    },
 
    "os" : {
-      'func':chOSsection,
+      'func':chOperatingSystem,
       'help' : 'Creates the operating systems section for a Virtual System.',
       'args' : (
          { 'flags' : [ '-i','--descriptionID' ],

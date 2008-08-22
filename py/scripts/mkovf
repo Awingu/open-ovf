@@ -61,7 +61,7 @@ def createReferences(ovfFile, options):
                                options.file_id, options.chunksize)
 
     ovfFile.addReferencedFile(refObj)
-    ovfFile.createRefSection()
+    ovfFile.createReferences()
 
 def createDiskSection(ovfFile, options):
     """
@@ -131,10 +131,9 @@ def createDeploymentOptions(ovfFile, options):
                                                      options.secID)
     if options.comment != None:
         ovfFile.createComment(options.comment, deploymentSect)
-    ovfFile.defineDeploymentOptions(deploymentSect, options.configID,
-                                    options.label, options.description,
-                                    options.labelID, options.descID,
-                                    default)
+    ovfFile.addConfiguration(deploymentSect, options.configID, options.label,
+                             options.description, options.labelID,
+                             options.descID, default)
 
 def createVirtualSysCollection(ovfFile, options):
     """
@@ -174,10 +173,10 @@ def createVirtualSystem(ovfFile, options):
         vscNode = Ovf.getNodesWithId(ovfFile.envelope,
                                        'VirtualSystemCollection',
                                        options.id )[0]
-        ovfFile.createVirtualSystemSection(options.vsID, options.info, vscNode,
+        ovfFile.createVirtualSystem(options.vsID, options.info, vscNode,
                                            options.infoID)
     else:
-        ovfFile.createVirtualSystemSection(options.vsID, options.info, None,
+        ovfFile.createVirtualSystem(options.vsID, options.info, None,
                                          options.infoID)
 
 def createVirtualHardware(ovfFile, options):
@@ -257,9 +256,9 @@ def createResources(ovfFile, options):
               "PoolID":options.poolID, "Reservation":options.reservation,"ResourceSubType":options.resourceSubtype,
              "ResourceType":options.resourceType,"VirtualQuantity":options.virtualQuantity,"Weight":options.weight
          }
-    ovfFile.defineResourceAllocation(vhwNode[0], refDefDict,
-                                     options.config, options.bound,
-                                     options.required)
+    ovfFile.addResourceItem(vhwNode[0], refDefDict,
+                            options.config, options.bound,
+                            options.required)
 
 def createResourceAlloc(ovfFile, options):
     """
@@ -372,7 +371,7 @@ def createCategory(ovfFile, options):
         raise NotImplementedError, errMsg
     ovfFile.createCategory(prodNode, options.category)
 
-def createPropertyProductSection(ovfFile, options):
+def createProperty(ovfFile, options):
     """
     For the product section this function will create a property section.
     NOTE::
@@ -393,18 +392,18 @@ def createPropertyProductSection(ovfFile, options):
             " and " + options.instance + " was not found."
         raise NotImplementedError, errMsg
 
-    prop = ovfFile.createPropertyProductSection(prodNode, options.key,
-                                                options.type,options.value,
-                                                options.userConfig,
-                                                options.required,
-                                                options.secID)
+    prop = ovfFile.createProperty(prodNode, options.key,
+                                  options.type,options.value,
+                                  options.userConfig,
+                                  options.required,
+                                  options.secID)
 
 
     if options.description != None:
-        ovfFile.createDescriptionChild(prop, options.description,
+        ovfFile.createDescription(prop, options.description,
                                        options.descID)
     if options.label != None:
-        ovfFile.createLabelChild(prop, options.label, options.labelID)
+        ovfFile.createLabel(prop, options.label, options.labelID)
 
 def createEulaSection(ovfFile, options):
     """
@@ -423,9 +422,9 @@ def createEulaSection(ovfFile, options):
     elif Ovf.isVirtualSystemCollection(ovfFile.document, options.id):
         node = Ovf.getNodesWithId(ovfFile.envelope,
                                   'VirtualSystemCollection', options.id)[0]
-    eula = ovfFile.createEULASection(options.info, node, options.infoID,
+    eula = ovfFile.createEulaSection(options.info, node, options.infoID,
                                      options.secID)
-    ovfFile.defineLicenseSection(eula, options.agreement, options.licenseID)
+    ovfFile.addLicense(eula, options.agreement, options.licenseID)
 
 
 def createStartup(ovfFile, options):
@@ -443,12 +442,12 @@ def createStartup(ovfFile, options):
                                  options.id)[0]
     startupNode = ovfFile.createStartupSection(vscNode, options.info,
                                                options.infoID,options.secID)
-    ovfFile.defineStartUpSection(startupNode, options.entityName,
+    ovfFile.addStartupItem(startupNode, options.entityName,
                                  options.order, options.startDelay,
                                  options.waitForGuest, options.startAction,
                                  options.stopDelay, options.stopAction)
 
-def createOSsection(ovfFile, options):
+def createOperatingSystem(ovfFile, options):
     """
     This function creates the Operating System for a Virtual System.
 
@@ -460,7 +459,7 @@ def createOSsection(ovfFile, options):
     """
     vsNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystem',
                                 options.id)[0]
-    ovfFile.createOSsection(vsNode, options.secID, options.info,
+    ovfFile.createOperatingSystem(vsNode, options.secID, options.info,
                             options.infoID, options.description,
                             options.descriptionID)
 
@@ -1025,7 +1024,7 @@ commands = {
       ),
    },
    "property" : {
-      "func":createPropertyProductSection,
+      "func":createProperty,
       "help" : "Creates a Property for the Product Section. ",
       "args" : (
         { "flags" : [ "-r", "--req" ],
@@ -1203,7 +1202,7 @@ commands = {
       ),
    },
    "os" : {
-      "func":createOSsection,
+      "func":createOperatingSystem,
       "help" : "Creates the operating systems section for a Virtual System.",
       "args" : (
          { "flags" : [ "-i","--descriptionID" ],

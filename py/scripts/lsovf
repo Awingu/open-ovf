@@ -321,7 +321,7 @@ def getLicense(ovfFile, options):
                         print child.firstChild.data,
                 print
 
-def getStartUp(ovfFile, options):
+def getStartup(ovfFile, options):
     """
     This function will get the startup section within an OVF.
     """
@@ -568,7 +568,7 @@ commands = {
       )
    },
    "startup" : {
-      'func': getStartUp,
+      'func': getStartup,
       'help' : "List the startup section for either a Virtual System or a\
                Virtual System Collection. ",
       'args' : (

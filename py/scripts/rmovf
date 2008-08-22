@@ -275,7 +275,7 @@ def rmDeploymentHandler(ovfFile, options):
                                                   options.infoID)[0]
                     Ovf.rmNode(infoNode)
                 else:
-                   infoNode = Ovf.getNodes(node,"Info")
+                    infoNode = Ovf.getNodes(node,"Info")
                     #the line below is to ensure that if the list
                     #is empty that it would raise a IndexError
                     infoNode[0]
@@ -434,9 +434,8 @@ def rmResources(ovfFile, options):
               "PoolID":options.poolID, "Reservation":options.reservation,"ResourceSubType":options.resourceSubtype,
              "ResourceType":options.resourceType,"VirtualQuantity":options.virtualQuantity,"Weight":options.weight
          }
-    ovfFile.defineResourceAllocation(vhwNode, refDefDict,
-                                     options.config, options.bound,
-                                     options.required)
+    ovfFile.addResourceItem(vhwNode, refDefDict, options.config,
+                            options.bound, options.required)
 
 def rmResourceAlloc(ovfFile, options):
     """
@@ -499,7 +498,7 @@ def rmCategory(ovfFile, options):
         raise NotImplementedError, errMsg
     ovfFile.createCategory(prodNode, options.category)
 
-def rmPropertyProductSection(ovfFile, options):
+def rmProperty(ovfFile, options):
     """
     For the product section this function will create a property section.
     """
@@ -513,7 +512,7 @@ def rmPropertyProductSection(ovfFile, options):
             " and " + options.instance + " was not found."
         raise NotImplementedError, errMsg
 
-    prop = ovfFile.createPropertyProductSection(prodNode, options.key,
+    prop = ovfFile.createProperty(prodNode, options.key,
                                                 options.type,options.value,
                                                 options.userConfig,
                                                 options.required,
@@ -521,19 +520,19 @@ def rmPropertyProductSection(ovfFile, options):
 
 
     if options.description != None:
-        ovfFile.createDescriptionChild(prop, options.description,
+        ovfFile.createDescription(prop, options.description,
                                        options.descID)
     if options.label != None:
-        ovfFile.createLabelChild(prop, options.label, options.labelID)
+        ovfFile.createLabel(prop, options.label, options.labelID)
 
 def rmEulaSection(ovfFile, options):
     """
     This function will create the EULA section.
     """
     node = findNode(ovfFile, None, options.id, True, options.comment)
-    eula = ovfFile.createEULASection(options.info, node, options.infoID,
+    eula = ovfFile.createEulaSection(options.info, node, options.infoID,
                                      options.secID)
-    ovfFile.defineLicenseSection(eula, options.agreement, options.licenseID)
+    ovfFile.addLicense(eula, options.agreement, options.licenseID)
 
 
 def rmStartup(ovfFile, options):
@@ -543,18 +542,18 @@ def rmStartup(ovfFile, options):
     vscNode = findNode(ovfFile, None, options.id, True, options.comment)
     startupNode = ovfFile.createStartupSection(vscNode, options.info,
                                                options.infoID,options.secID)
-    ovfFile.defineStartUpSection(startupNode, options.entityName,
-                                 options.order, options.startDelay,
-                                 options.waitForGuest, options.startAction,
-                                 options.stopDelay, options.stopAction)
+    ovfFile.addStartupItem(startupNode, options.entityName,
+                           options.order, options.startDelay,
+                           options.waitForGuest, options.startAction,
+                           options.stopDelay, options.stopAction)
 
-def rmOSsection(ovfFile, options):
+def rmOperatingSystem(ovfFile, options):
     """
     This function creates the Operating System for a Virtual System.
     """
     vsNode = findNode(ovfFile, "VirtualSystem", options.id, False,
                       options.comment)
-    ovfFile.createOSsection(vsNode, options.secID, options.info,
+    ovfFile.createOperatingSystem(vsNode, options.secID, options.info,
                             options.infoID, options.description,
                             options.descriptionID)
 
@@ -1043,7 +1042,7 @@ commands = {
       ),
    },
    "property" : {
-      'func':rmPropertyProductSection,
+      'func':rmProperty,
       'help' : "Remove a Property for the Product Section. ",
       'args' : (
         { 'flags' : [ '-r', '--req' ],
@@ -1194,7 +1193,7 @@ commands = {
       ),
    },
    "os" : {
-      'func':rmOSsection,
+      'func':rmOperatingSystem,
       'help' : 'Remove the operating systems section for a Virtual System.',
       'args' : (
          { 'flags' : [ '-i','--descriptionID' ],
