@@ -138,7 +138,7 @@ class OvfFile:
             break
 
         while ref.firstChild != None:
-           ref.removeChild(ref.firstChild).unlink()
+            ref.removeChild(ref.firstChild).unlink()
         for currFile in  self.files:
             ref.appendChild(currFile.toElement())
 
@@ -550,8 +550,8 @@ class OvfFile:
                 networkChild.appendChild(networkDescription)
                 networkSectionChild.appendChild(networkChild)
 
-
             self.envelope.appendChild(networkSectionChild)
+
     def addNetwork(self, networkList):
         """
         This function will create and add a network to an already existing Network Section.
@@ -591,7 +591,7 @@ class OvfFile:
                 raise NotImplementedError, "A Network Section was not found.\
                  To add a Network the Network section must be present."
 
-    def createDeploymentOptions(self, infoComments, infoID=None, id=None):
+    def createDeploymentOptions(self, infoComments, infoID=None, ident=None):
         """
         This method creates a deployment options section. The section specifies
         a discrete set of intended resource configurations.
@@ -621,8 +621,8 @@ class OvfFile:
                                 createElement("DeploymentOptionSection"))
         else:
             raise TypeError, "The deployment section is already described."
-        if id != None:
-            deployOptElement.setAttribute("ovf:id", id)
+        if ident != None:
+            deployOptElement.setAttribute("ovf:id", ident)
         #create info child
         node = deployOptElement
         self.createInfo(node, infoComments, infoID)
@@ -631,7 +631,7 @@ class OvfFile:
 
         return deployOptElement
 
-    def addConfiguration(self, node, id, label, description, labID=None,
+    def addConfiguration(self, node, ident, label, description, labID=None,
                                 desID=None, default=None):
         """
         This method will help describe the deployment options.
@@ -648,8 +648,8 @@ class OvfFile:
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
 
-        @param id: The id for the given configuration.
-        @type id: String
+        @param ident: The id for the given configuration.
+        @type ident: String
 
         @param label: The label to describe the configuration
         @type label: String
@@ -675,13 +675,13 @@ class OvfFile:
               DeploymentOptionSection."
         for child in node.childNodes:
             if child.nodeName == "Configuration":
-                if id == child.getAttribute("ovf:id"):
-                    raise NameError, "The id "+id+" for the configuration has\
+                if ident == child.getAttribute("ovf:id"):
+                    raise NameError, "The id "+ident+" for the configuration has\
                      already been implemented. The id for each configuration\
                       has to be unique."
 
         configElement = self.document.createElement("Configuration")
-        configElement.setAttribute("ovf:id", id)
+        configElement.setAttribute("ovf:id", ident)
 
         if default != None:
             if default == True:
@@ -707,7 +707,7 @@ class OvfFile:
 
         node.appendChild(configElement)
 
-    def createVirtualSystemCollection(self, id, info, infoID=None, node=None):
+    def createVirtualSystemCollection(self, ident, info, infoID=None, node=None):
         """
         This method creates a Virtual System Collection. A Virtual System Collection
         is a container of multiple content elements, which themselves might be Virtual
@@ -720,8 +720,8 @@ class OvfFile:
         @raise TypeError: It is thrown if the node passed in does not have
         the node name of VirtualSystemCollection or Envelope.
 
-        @param id: The id for that Virtual System Collection
-        @type id: String
+        @param ident: The id for that Virtual System Collection
+        @type ident: String
 
         @param info: The information that will be attached to the Virtual System Collection
         @type info: String
@@ -744,13 +744,12 @@ class OvfFile:
         for child in vscNode.childNodes:
             if child.nodeName == "VirtualSystemCollection":
                 if id == child.getAttribute(ovfid):
-                    raise NameError, "The id "+id+" for the Virtual System\
+                    raise NameError, "The id "+ident+" for the Virtual System\
                      Collection has already been implemented. The id for each\
                       Virtual System Collection has to be unique."
 
         contentElement = self.document.createElement("VirtualSystemCollection")
-        contentElement.setAttribute(ovfid, id)
-
+        contentElement.setAttribute(ovfid, ident)
 
         self.createInfo(contentElement, info, infoID)
         if node != None:
@@ -768,7 +767,7 @@ class OvfFile:
         return contentElement
 
     def createResourceAllocation(self, node, info, infoID=None, config=None,
-                                 bound=None, id=None):
+                                 bound=None, ident=None):
         """
         This method will create a resource allocation section.
 
@@ -815,8 +814,8 @@ class OvfFile:
         ovfResAlloc = "ResourceAllocationSection"
         resAllocNode = self.document.createElement(ovfResAlloc)
 
-        if id != None:
-            resAllocNode.setAttribute("ovf:id", id)
+        if ident != None:
+            resAllocNode.setAttribute("ovf:id", ident)
         if config != None:
             resAllocNode.setAttribute(ovfConfig, config)
         if bound != None:
@@ -918,7 +917,8 @@ class OvfFile:
                 itemChild.appendChild(child)
         node.appendChild(itemChild)
 
-    def createProductSection(self, node, info, prodList,classDesc, instance,id=None,infoID=None):
+    def createProductSection(self, node, info, prodList, classDesc, instance,
+                             ident=None, infoID=None):
         """
         This method will create the product section.
 
@@ -956,8 +956,8 @@ class OvfFile:
         @param instance: The instance of this product section
         @type instance: String
 
-        @param id: The id for the section.
-        @type id: String
+        @param ident: The id for the section.
+        @type ident: String
 
         @param infoID: The id for the information of the section.
         @type infoID: String
@@ -979,8 +979,8 @@ class OvfFile:
             sectionElement.setAttribute(ovfClass, classDesc)
         if instance != None:
             sectionElement.setAttribute(prodInstance, instance)
-        if id != None:
-            sectionElement.setAttribute("ovf:id", id)
+        if ident != None:
+            sectionElement.setAttribute("ovf:id", ident)
         self.createInfo(sectionElement, info, infoID)
 
         for curr in prodList:
@@ -1048,8 +1048,8 @@ class OvfFile:
         categoryNode.appendChild(categoryTextNode)
         node.appendChild(categoryNode)
 
-    def createProperty(self, node, key, type=None, value=None, usrConfig=None,
-                       required=None, id=None):
+    def createProperty(self, node, key, prodType=None, value=None, usrConfig=None,
+                       required=None, ident=None):
         """
         This method will create the property section of a product description.
 
@@ -1067,8 +1067,8 @@ class OvfFile:
         @param key: Unique identifier
         @type key: String
 
-        @param type: Type of the product
-        @type type: String
+        @param prodType: Type of the product
+        @type prodType: String
 
         @param value: Used to provide default values to the property
         @type value: String
@@ -1095,10 +1095,10 @@ class OvfFile:
         ovfRequired = "ovf:required"
 
         propertyElement.setAttribute(ovfKey, key)
-        if id != None:
-            propertyElement.setAttribute("ovf:id", id)
-        if type != None:
-            propertyElement.setAttribute(ovfType, type)
+        if ident != None:
+            propertyElement.setAttribute("ovf:id", ident)
+        if prodType != None:
+            propertyElement.setAttribute(ovfType, prodType)
         if value != None:
             propertyElement.setAttribute(ovfValue, value)
         if usrConfig != None:
@@ -1122,7 +1122,7 @@ class OvfFile:
 
         return propertyElement
 
-    def createEulaSection(self, info, node, infoID=None, id=None):
+    def createEulaSection(self, info, node, infoID=None, ident=None):
         """
         This method will create the EULA section of the ovf. If a node
         is not specified the EULA section created will be appended to the
@@ -1140,8 +1140,8 @@ class OvfFile:
         @param node: The node to which the section will be attached to.
         @type node: DOM Element
 
-        @param id: The id for the seciton.
-        @type id: String
+        @param ident: The id for the seciton.
+        @type ident: String
 
         @return: DOM node of the EULA section
         """
@@ -1156,14 +1156,14 @@ class OvfFile:
         eulaSec = self.document.createElement(ovfEula)
         self.createInfo(eulaSec, info, infoID)
 
-        if id != None:
-            eulaSec.setAttribute("ovf:id", id)
+        if ident != None:
+            eulaSec.setAttribute("ovf:id", ident)
 
         node.appendChild(eulaSec)
 
         return eulaSec
 
-    def addLicense(self, node, license, msgID=None):
+    def addLicense(self, node, text, msgID=None):
         """
         This method is to create the license in the
         EULA section.
@@ -1174,8 +1174,8 @@ class OvfFile:
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
 
-        @param license: The legal terms for using a particular entity.
-        @type license: String
+        @param text: The legal terms for using a particular entity.
+        @type text: String
 
         @param msgID: The id of the given message.
         @type msgID: String
@@ -1190,7 +1190,7 @@ class OvfFile:
 
         #putting the license content in this fashion <License>some license
         # agreement</License>
-        licTextNode = self.document.createTextNode(license)
+        licTextNode = self.document.createTextNode(text)
         licNode.appendChild(licTextNode)
         #since there can be multiple license the way to distinguish them is
         # by the id
@@ -1198,7 +1198,7 @@ class OvfFile:
             licNode.setAttribute("ovf:msgid", msgID)
         node.appendChild(licNode)
 
-    def createStartupSection(self, node, info, infoID=None, id=None):
+    def createStartupSection(self, node, info, infoID=None, ident=None):
         """
         This method will create the startup section for either a Virtual System or a
         Virtual System Collection.
@@ -1223,12 +1223,12 @@ class OvfFile:
         startupNode = self.document.createElement(ovfstartUp)
         self.createInfo(startupNode, info, infoID)
 
-        if id != None:
-            startupNode.setAttribute("ovf:id", id)
+        if ident != None:
+            startupNode.setAttribute("ovf:id", ident)
         node.appendChild(startupNode)
         return startupNode
 
-    def addStartupItem(self, node, id, order, startDelay=None,
+    def addStartupItem(self, node, ident, order, startDelay=None,
                              waitForGuest=None, startAction=None,
                              stopDelay=None, stopAction=None):
         """
@@ -1257,8 +1257,8 @@ class OvfFile:
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
 
-        @param id: The entity name within a collection
-        @type id: String
+        @param ident: The entity name within a collection
+        @type ident: String
 
         @param order: Specifies the startup order, starting from 0. Items with same
                       order identifier may be started up concurrently. The order is reversed
@@ -1294,7 +1294,7 @@ class OvfFile:
             raise TypeError("The node can only be appended to a StartupSection")
 
         itemNode = self.document.createElement("Item")
-        itemNode.setAttribute(ovfId, id)
+        itemNode.setAttribute(ovfId, ident)
         itemNode.setAttribute(ovfOrder, order)
 
         if (startDelay != None or waitForGuest != None or startAction != None
@@ -1347,7 +1347,7 @@ class OvfFile:
 
         node.appendChild(itemNode)
 
-    def createVirtualSystem(self, id, info, node=None, infoID=None):
+    def createVirtualSystem(self, ident, info, node=None, infoID=None):
         """
         This method will create a VirtualSystem.
 
@@ -1357,8 +1357,8 @@ class OvfFile:
         @raise TypeError: It is thrown if the node passed in does not have
         the node name of VirtualSystemCollection or Envelope.
 
-        @param id: The id for that virtual system
-        @type id: String
+        @param ident: The id for that virtual system
+        @type ident: String
 
         @param node: Place where the Virtual System child will be inserted.
         @type node: DOM node object
@@ -1381,8 +1381,8 @@ class OvfFile:
             vscNode = node
 
         for child in self.document.getElementsByTagName(virtualSys):
-            if id == child.getAttribute(ovfid):
-                raise NameError, "The id "+id+" for the Virtual System has\
+            if ident == child.getAttribute(ovfid):
+                raise NameError, "The id "+ident+" for the Virtual System has\
                  already been implemented. The id for each Virtual System has\
                   to be unique."
         if node != None:
@@ -1392,7 +1392,7 @@ class OvfFile:
                      Virtual System Collection Section. The given node is not\
                       a Virtual System Collection Section"
         contentElement = self.document.createElement(virtualSys)
-        contentElement.setAttribute(ovfid, id)
+        contentElement.setAttribute(ovfid, ident)
         self.createInfo(contentElement, info, infoID)
         if node == None:
             self.envelope.appendChild(contentElement)
@@ -1401,7 +1401,7 @@ class OvfFile:
 
         return contentElement
 
-    def createOperatingSystem(self, node, id, info, infoID=None, description=None,
+    def createOperatingSystem(self, node, ident, info, infoID=None, description=None,
                               descriptionID=None):
         """
         This method creates the operating systems section for a Virtual System.
@@ -1412,8 +1412,8 @@ class OvfFile:
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
 
-        @param id: The valid values are defined by the CIM_OperatingSystem.OsType
-        @type id: String
+        @param ident: The valid values are defined by the CIM_OperatingSystem.OsType
+        @type ident: String
 
         @param info: The information ,<Info>,comments for the section.
         @type info: String
@@ -1439,8 +1439,8 @@ class OvfFile:
         osNode = self.document.createElement(osType)
         self.createInfo(osNode, info, infoID)
 
-        if id != None:
-            osNode.setAttribute(ovfID, id)
+        if ident != None:
+            osNode.setAttribute(ovfID, ident)
 
         if description != None:
             self.createDescription(osNode, description, descriptionID)
@@ -1449,7 +1449,7 @@ class OvfFile:
         return osNode
 
     def createInstallSection(self, node, info, infoID=None, initBoot=None,
-                             bootStopDelay=None, id=None):
+                             bootStopDelay=None, ident=None):
         """
         This method creates the install section used to describe a virtual system collection.
 
@@ -1489,8 +1489,8 @@ class OvfFile:
         installNode = self.document.createElement(installType)
         self.createInfo(installNode, info, infoID)
 
-        if id != None:
-            installNode.setAttribute("ovf:id", id)
+        if ident != None:
+            installNode.setAttribute("ovf:id", ident)
         if initBoot != None:
             if initBoot == True:
                 installNode.setAttribute(ovfInitBoot,"true")
@@ -1505,7 +1505,7 @@ class OvfFile:
         node.appendChild(installNode)
         return installNode
 
-    def createVirtualHardwareSection(self, node, id, info, infoID=None,
+    def createVirtualHardwareSection(self, node, ident, info, infoID=None,
                                      transport=None):
         """
         This method creates the VirtualHardwareSection which is required to be present
@@ -1518,8 +1518,8 @@ class OvfFile:
         @param node: Place where the child will  be inserted.
         @type node: DOM node object
 
-        @param id: Unique identifier within the OVF.
-        @type id: String
+        @param ident: Unique identifier within the OVF.
+        @type ident: String
 
         @param transport: It specifies how properties are passed to the virtual machine.
         @type transport: String
@@ -1544,8 +1544,8 @@ class OvfFile:
         hardwareSection = self.document.createElement(ovfHardwareSec)
         self.createInfo(hardwareSection, info, infoID)
 
-        if id != None:
-            hardwareSection.setAttribute(ovfID, id)
+        if ident != None:
+            hardwareSection.setAttribute(ovfID, ident)
 
         if transport != None:
             hardwareSection.setAttribute(ovfTransport, transport)
