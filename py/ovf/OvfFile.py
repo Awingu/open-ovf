@@ -213,7 +213,7 @@ class OvfFile:
             self.envelope.appendChild(refsChild)
         self.syncReferencedFilesToDom()
 
-    def createDiskSection(self, diskDictList, infoComments, infoID=None,
+    def createDiskSection(self, diskList, infoComments, infoID=None,
                           sectionID=None, sectionReq=None):
         """
         This method will create the disk section of the OVF. This section of
@@ -239,10 +239,10 @@ class OvfFile:
         @raise ValueError: If a disk with a parentRef is added but the parent
                             disk with the given id does not exist.
 
-        @param diskDictList: Is a list of dictionaries that contains the
+        @param diskList: Is a list of dictionaries that contains the
                             information of the individual disks.
 
-        @type diskDictList: List of dictionaries of disks.
+        @type diskList: List of dictionaries of disks.
             - The dictionaries MUST contain:
                 - dict['diskId']
                 - dict['fileRef']
@@ -260,96 +260,33 @@ class OvfFile:
 
         @param sectionReq: If this section is required enter 'true' or 'false'
         @type sectionReq: String
-        ""        """
-        if self.envelope.getElementsByTagName('DiskSection') != []:
-            self.addDisk(diskDictList)
+        """
+        ovfId = "ovf:id"
+        ovfRequired = "ovf:required"
+        diskSections = self.envelope.getElementsByTagName('DiskSection')
 
-        #if there is only a new disk to be added don't allow to create another
-        # disk section
-        else:
-            ovfid = "ovf:id"
-            ovfRequired = "ovf:required"
-            ovfCapacity = "ovf:capacity"
-            ovfDiskId = "ovf:diskId"
-            ovfPopulated = "ovf:populatedSize"
-            ovfFormat = "ovf:format"
-            ovfFileRef = "ovf:fileRef"
-            ovfCapacityAllocUnits = "ovf:capacityAllocationUnits"
-            ovfParentRef = "ovf:parentRef"
-
-            comment = self.document.createComment("Meta Data description")
-            self.envelope.appendChild(comment)
-
-            comment = self.document.createComment("Disk Section")
-            self.envelope.appendChild(comment)
-
-
-            diskSectionChild = self.document.createElement("DiskSection")
-
+        if diskSections == []:
+            diskNode = self.document.createElement("DiskSection")
             if sectionID != None: #if the param is None don't add the attribute
-                diskSectionChild.setAttribute(ovfid, sectionID)
+                diskNode.setAttribute(ovfId, sectionID)
             if sectionReq != None:
                 if sectionReq == False:
-                    diskSectionChild.setAttribute(ovfRequired, 'false')
+                    diskNode.setAttribute(ovfRequired, 'false')
                 elif sectionReq == True:
-                    diskSectionChild.setAttribute(ovfRequired, 'true')
+                    diskNode.setAttribute(ovfRequired, 'true')
                 else:
                     raise TypeError, "The param 'sectionReq' must be a\
                      boolean."
 
             #info for comments
-            self.createInfo(diskSectionChild, infoComments, infoID)
+            self.createInfo(diskNode, infoComments, infoID)
+        else:
+            diskNode = diskSections[0]
 
-            #this list is to keep track of which files have already been added
-            #it is a constraint that if a child file is to be added a parent
-            # must have already being added into the disk section
-            fileAdded = []
+        self.addDisk(diskNode, diskList)
+        self.envelope.appendChild(diskNode)
 
-            for child in self.document.getElementsByTagName('Disk'):
-                if child.hasAttribute(ovfDiskId):
-                    fileAdded.append(child.getAttribute(ovfDiskId))
-
-            for disk in diskDictList:
-                diskChild = self.document.createElement("Disk")
-                if disk['diskId'] != None:
-                    diskChild.setAttribute(ovfDiskId, disk['diskId'])
-                else:
-                    raise AttributeError,"Disk ID required."
-
-                if disk['fileRef'] != None:
-                    diskChild.setAttribute(ovfFileRef, disk['fileRef'])
-
-                if disk['capacity'] != None:
-                    diskChild.setAttribute(ovfCapacity, disk['capacity'])
-                else:
-                    raise AttributeError,"Disk capacity required."
-
-                if disk['populatedSize'] != None:
-                    diskChild.setAttribute(ovfPopulated, disk['populatedSize'])
-
-                if disk['format'] != None:
-                    diskChild.setAttribute(ovfFormat, disk['format'])
-                else:
-                    raise AttributeError, "Format required."
-
-                if disk['capacityAllocUnits'] != None:
-                    diskChild.setAttribute(ovfCapacityAllocUnits,
-                                           disk['capacityAllocUnits'])
-                if disk['parentRef'] != None:
-                    if disk['parentRef'] in fileAdded:
-                        diskChild.setAttribute(ovfParentRef, disk['parentRef'])
-                    else:
-                        raise ValueError,"In order to add a child disk the\
-                         parent must be defined first. Also verify that\
-                          parentRef matches parent's fileId."
-
-                fileAdded.append(disk['diskId'])
-
-                diskSectionChild.appendChild(diskChild)
-
-            self.envelope.appendChild(diskSectionChild)
-
-    def addDisk(self, diskDictList):
+    def addDisk(self, node, diskDictList):
         """
         This section will add a new disc to an already existing Disk section.
         If there isn't a disk section present a NotImplementedError will be
@@ -384,8 +321,6 @@ class OvfFile:
         @param diskDictList: A list of dictionaries that contains the information of the
                             individual disks.
         """
-        diskNode = None
-        sectionPresent = False
         ovfCapacity = "ovf:capacity"
         ovfDiskId = "ovf:diskId"
         ovfPopulated = "ovf:populatedSize"
@@ -397,106 +332,101 @@ class OvfFile:
         # disk.
         diskToModify = None
 
-        diskNode = self.envelope.getElementsByTagName("DiskSection")[0]
-        if diskNode != None:
-            sectionPresent = True
-        #this list is to keep track of which files have already been added
-        #it is a constraint that if a child file is to be added a parent must
-        # have already being added into the disk section
-        fileAdded = []
-        #the way the loop works below is you will first look in the list of\
-        # dictionaries  (diskDictList) the next for loop will get the childs\
-        # in the Disk section, then if you find a disk with the same id as one\
-        # of the disks in the list passed in you will set it up to 'update'\
-        # that specific disk rather than create a new one.
-        for child in self.document.getElementsByTagName('Disk'):
-            if child.hasAttribute(ovfDiskId):
-                fileAdded.append(child.getAttribute(ovfDiskId))
+        if node == None:
+            raise NotImplementedError("OVF requires one DiskSection.")
+        else:
+            #this list is to keep track of which files have already been added
+            #it is a constraint that if a child file is to be added a parent must
+            # have already being added into the disk section
+            fileAdded = []
+            #the way the loop works below is you will first look in the list of
+            # dictionaries  (diskDictList) the next for loop will get the children
+            # in the DiskSection, then if you find a disk with the same diskId as one
+            # of the disks in the list passed in you will set it up to 'update'
+            # that specific disk rather than create a new one.
+            for child in self.document.getElementsByTagName('Disk'):
+                if child.hasAttribute(ovfDiskId):
+                    fileAdded.append(child.getAttribute(ovfDiskId))
 
-        for disk in diskDictList:
-            for child in diskNode.childNodes:
-                if child.nodeName == 'Disk':
-                    if child.getAttribute(ovfDiskId) == disk['diskId']:
-                        newDisk = False
-                        diskToModify = child
-                        fileAdded.append(disk['diskId'])
+            for disk in diskDictList:
+                for child in node.childNodes:
+                    if child.nodeName == 'Disk':
+                        if child.getAttribute(ovfDiskId) == disk['diskId']:
+                            newDisk = False
+                            diskToModify = child
+                            fileAdded.append(disk['diskId'])
 
-            if newDisk:
-                diskChild = self.document.createElement("Disk")
-            if disk['diskId'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfDiskId)
-                    diskToModify.setAttribute(ovfDiskId, disk['diskId'])
-                else:
-                    diskChild.setAttribute(ovfDiskId, disk['diskId'])
-            else:
-                raise AttributeError,"Disk ID required."
-
-            if disk['fileRef'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfFileRef)
-                    diskToModify.setAttribute(ovfFileRef, disk['fileRef'])
-                else:
-                    diskChild.setAttribute(ovfFileRef, disk['fileRef'])
-
-            if disk['capacity'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfCapacity)
-                    diskToModify.setAttribute(ovfCapacity, disk['capacity'])
-                else:
-                    diskChild.setAttribute(ovfCapacity, disk['capacity'])
-            else:
-                raise AttributeError,"Disk capacity required."
-
-            if disk['populatedSize'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfPopulated)
-                    diskToModify.setAttribute(ovfPopulated,
-                                              disk['populatedSize'])
-                else:
-                    diskChild.setAttribute(ovfPopulated, disk['populatedSize'])
-
-            if disk['format'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfFormat)
-                    diskToModify.setAttribute(ovfFormat, disk['format'])
-                else:
-                    diskChild.setAttribute(ovfFormat, disk['format'])
-            else:
-                raise AttributeError, "Format required."
-
-            if disk['capacityAllocUnits'] != None:
-                if not newDisk:
-                    diskToModify.removeAttribute(ovfCapacityAllocUnits)
-                    diskToModify.setAttribute(ovfCapacityAllocUnits,
-                                              disk['capacityAllocUnits'])
-                else:
-                    diskChild.setAttribute(ovfCapacityAllocUnits,
-                                           disk['capacityAllocUnits'])
-
-            if disk['parentRef'] != None:
-                if disk['parentRef'] in fileAdded:
-                    if not newDisk:#is is already in there then just modify it
-                        diskToModify.removeAttribute(ovfParentRef)
-                        diskToModify.setAttribute(ovfParentRef,
-                                                  disk['parentRef'])
-                    else:
-                        diskChild.setAttribute(ovfParentRef,
-                                               disk['parentRef'])
-                else:
-                    raise ValueError,"In order to add a child disk the parent\
-                     must be defined first. Also verify that parentRef matches\
-                      parent's fileId."
-
-            fileAdded.append(disk['diskId'])
-
-
-            if not sectionPresent:
-                raise NotImplementedError, "A Disk section must be present to\
-                 add a new disk. No disk section found."
-            else:
                 if newDisk:
-                    diskNode.appendChild(diskChild)
+                    diskChild = self.document.createElement("Disk")
+                if disk['diskId'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfDiskId)
+                        diskToModify.setAttribute(ovfDiskId, disk['diskId'])
+                    else:
+                        diskChild.setAttribute(ovfDiskId, disk['diskId'])
+                else:
+                    raise AttributeError,"Disk ID required."
+
+                if disk['fileRef'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfFileRef)
+                        diskToModify.setAttribute(ovfFileRef, disk['fileRef'])
+                    else:
+                        diskChild.setAttribute(ovfFileRef, disk['fileRef'])
+
+                if disk['capacity'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfCapacity)
+                        diskToModify.setAttribute(ovfCapacity, disk['capacity'])
+                    else:
+                        diskChild.setAttribute(ovfCapacity, disk['capacity'])
+                else:
+                    raise AttributeError,"Disk capacity required."
+
+                if disk['populatedSize'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfPopulated)
+                        diskToModify.setAttribute(ovfPopulated,
+                                                  disk['populatedSize'])
+                    else:
+                        diskChild.setAttribute(ovfPopulated, disk['populatedSize'])
+
+                if disk['format'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfFormat)
+                        diskToModify.setAttribute(ovfFormat, disk['format'])
+                    else:
+                        diskChild.setAttribute(ovfFormat, disk['format'])
+                else:
+                    raise AttributeError, "Format required."
+
+                if disk['capacityAllocUnits'] != None:
+                    if not newDisk:
+                        diskToModify.removeAttribute(ovfCapacityAllocUnits)
+                        diskToModify.setAttribute(ovfCapacityAllocUnits,
+                                                  disk['capacityAllocUnits'])
+                    else:
+                        diskChild.setAttribute(ovfCapacityAllocUnits,
+                                               disk['capacityAllocUnits'])
+
+                if disk['parentRef'] != None:
+                    if disk['parentRef'] in fileAdded:
+                        if not newDisk:#is is already in there then just modify it
+                            diskToModify.removeAttribute(ovfParentRef)
+                            diskToModify.setAttribute(ovfParentRef,
+                                                      disk['parentRef'])
+                        else:
+                            diskChild.setAttribute(ovfParentRef,
+                                                   disk['parentRef'])
+                    else:
+                        raise ValueError,"In order to add a child disk the parent\
+                         must be defined first. Also verify that parentRef matches\
+                          parent's fileId."
+
+                fileAdded.append(disk['diskId'])
+
+                if newDisk:
+                    node.appendChild(diskChild)
 
     def createNetworkSection(self, networkList, infoComments, infoID=None):
         """
