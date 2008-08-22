@@ -78,16 +78,6 @@ class OvfFile:
         if allowAppend:
             self.files.append(refFileObj)
 
-    def getReferencedFiles(self):
-        """
-        Return a list of OvfReferencedFiles for this object
-
-        @return: a list of files referenced in this OvfFile
-        @rtype: List of OvfReferencedFile
-
-        """
-        return(self.files)
-
     def setFilesFromOvfFileReferences(self):
         """
         Set 'files' list based on contents of the ovfFile. The method gets the

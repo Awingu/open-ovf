@@ -264,7 +264,7 @@ class OvfSet:
                 os.unlink(ovfName)
             raise
 
-        files = self.getOvfFile().getReferencedFiles()
+        files = self.getOvfFile().files
 
         for currFile in files:
             tar.add(currFile.path, currFile.href.encode('ascii'))
@@ -290,7 +290,7 @@ class OvfSet:
             ovf.close()
 
             #Write referenced files to path
-            for each in self.ovfFile.getReferencedFiles():
+            for each in self.ovfFile.files:
                 refFile = path + each.href
                 if not os.path.isfile(refFile):
                     dirPath = refFile[:refFile.rfind('/')]

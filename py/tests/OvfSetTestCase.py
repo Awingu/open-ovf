@@ -127,7 +127,7 @@ class WriteTestCase(unittest.TestCase):
             "first entry in tar must be <name>.ovf")
 
         objmembers = [ tarmembers[0] ]
-        for ref in self.ovfSetObject.getOvfFile().getReferencedFiles():
+        for ref in self.ovfSetObject.getOvfFile().files:
             objmembers.append(ref.href)
 
         # if a .mf is present it must be second file

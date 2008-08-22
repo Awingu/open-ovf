@@ -53,12 +53,9 @@ class OvfFileTestCase(unittest.TestCase):
         assert self.ovfFile2.files != [], "files list not created"
 
     def test_getReferencedFiles(self):
+         assert self.ovfFile.files != [], "files aren't empty"
 
-         files = self.ovfFile.getReferencedFiles()
-         assert files != [], "files not created"
-         assert self.ovfFile.files != [], "files are empty"
-
-         files2 = self.ovfFile2.getReferencedFiles()
+         files2 = self.ovfFile2.files
          #it should only contain 1 OvfRef.. file in that list and that is the .ovf file
          #print files2[0].href
          assert len(files2) <= 1, "files were created, they were not suppsed to be created"
