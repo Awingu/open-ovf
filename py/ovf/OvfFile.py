@@ -429,6 +429,8 @@ class OvfFile:
                 - dict['networkID']
                 - dict['networkName']
                 - dict['description']
+            - Optional entry for a dictionary:
+                - dict['descID']
 
         @param infoComments: These are the comments that describe all the networks.
         @type infoComments: String
@@ -461,6 +463,8 @@ class OvfFile:
                 - dict['networkID']
                 - dict['networkName']
                 - dict['description']
+            - Optional entry for a dictionary:
+                - dict['descID']
         """
         ovfName = "ovf:name"
         ovfId = "ovf:id"
@@ -478,11 +482,11 @@ class OvfFile:
                     network.setAttribute(ovfId, net['networkID'])
 
                 network.setAttribute(ovfName, net['networkName'])
-                description = self.document.createElement("Description")
-                descriptionText = self.document.createTextNode(net['description'])
-                description.appendChild(descriptionText)
 
-                network.appendChild(description)
+                if net.has_key('descID'): descID=net['descID']
+                else: descID=None
+
+                self.createDescription(network, net['description'],descID)
 
                 node.appendChild(network)
 
