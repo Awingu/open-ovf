@@ -12,6 +12,7 @@
 """OvfLibvirt"""
 
 from xml.dom.minidom import Document
+import warnings
 import os.path
 import sched
 import time
@@ -833,11 +834,11 @@ def getOvfMemory(virtualHardware, configId=None):
 
             else:
                 if memoryUnits.startswith('Kilo'):
-                    memoryFactor = 1
+                    memoryFactor = 1024**0
                 elif memoryUnits.startswith('Mega'):
-                    memoryFactor = 1024
+                    memoryFactor = 1024**1
                 elif memoryUnits.startswith('Giga'):
-                    memoryFactor = 2048
+                    memoryFactor = 1024**2
                 else:
                     raise ValueError("Incompatible PUnit quantifier for memory.")
 
@@ -847,6 +848,8 @@ def getOvfMemory(virtualHardware, configId=None):
                     memoryFactor *= 0.125
                 else:
                     raise ValueError("Incompatible PUnit quantifier for memory.")
+                warnings.warn("DSP0004 v2.5.0: use PUnit Qualifiers",
+                              DeprecationWarning)
 
             memory = str(int(memoryQuantity) * memoryFactor)
 
