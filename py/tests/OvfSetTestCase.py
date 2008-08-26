@@ -47,7 +47,7 @@ class SimpleTestCase(unittest.TestCase):
         """Testing OvfSet.toString"""
         self.ovfSetObject.name = 'ourOVF'
         self.ovfSetObject.mode = "r"
-        self.ovfSetObject.archiveFormat = "Dir"
+        self.ovfSetObject.archiveFormat = OvfSet.FORMAT_DIR
         self.ovfSetObject.archivePath = "tests/"
         self.ovfSetObject.archiveSavePath = "tests/archive/"
 

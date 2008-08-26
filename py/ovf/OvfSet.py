@@ -19,6 +19,9 @@ import OvfLibvirt
 import OvfReferencedFile
 import OvfManifest
 
+FORMAT_DIR = "Dir"
+FORMAT_TAR = "Tar"
+
 class OvfSet(object):
     """
     This is the base OvfSet class. It represents an OVF Set, either as a tar
@@ -28,7 +31,7 @@ class OvfSet(object):
     name    = None  #: the package name of this object (the name of .ovf
                     #: without extension)
     ovfFile = None        #: The OvfFile object
-    archiveFormat = "Dir" #: The archive type of this (default save type)
+    archiveFormat = FORMAT_DIR #: The archive type of this (default save type)
     archivePath = None    #: The write path of the archive
     archiveSavePath = None #: The Save Path for the archive (differs from archivePath for tar)
     __tmpdir__ = None     #: the temporary dir if tar (cleaned up in __del__)
@@ -106,13 +109,13 @@ class OvfSet(object):
 
         exists = True
         if os.path.isdir(path):
-            self.archiveFormat = "Dir"
+            self.archiveFormat = FORMAT_DIR
         elif os.path.isfile(path):
             if tarfile.is_tarfile(path):
-                self.archiveFormat = "Tar"
+                self.archiveFormat = FORMAT_TAR
             else:
                 # this file is not a tar file, assume that this is a .ovf
-                self.archiveFormat = "Dir"
+                self.archiveFormat = FORMAT_DIR
         elif os.path.exists(path):
             raise IOError("unsupported file type for " + path)
         else:
@@ -120,13 +123,13 @@ class OvfSet(object):
             if mode == "r":
                 raise IOError("cannot open for read " + path)
             if path.endswith("/") or path.endswith("\\"):
-                self.archiveFormat = "Dir"
+                self.archiveFormat = FORMAT_DIR
             elif path.endswith(".ovf") or path.endswith(".OVF"):
-                self.archiveFormat = "Dir"
+                self.archiveFormat = FORMAT_DIR
             else:
-                self.archiveFormat = "Tar"
+                self.archiveFormat = FORMAT_TAR
 
-        if exists == True and self.archiveFormat == "Tar":
+        if exists == True and self.archiveFormat == FORMAT_TAR:
             # Here, for now, we make a temporary copy
             tmpd = tempfile.mkdtemp()
             self.__tmpdir__ = tmpd
@@ -144,7 +147,7 @@ class OvfSet(object):
                 ti = tf.next()
             self.archivePath = tmpd
             self.archiveSavePath = path
-        elif exists == True and self.archiveFormat == "Dir":
+        elif exists == True and self.archiveFormat == FORMAT_DIR:
             # for existing, if it is a file path=dirname(path)
             if os.path.isfile(path):
                 self.archivePath = os.path.dirname(path)
@@ -155,19 +158,19 @@ class OvfSet(object):
             else:
                 self.archivePath = path
             self.archiveSavePath = self.archivePath
-        elif exists == False and self.archiveFormat == "Tar":
+        elif exists == False and self.archiveFormat == FORMAT_TAR:
             # for non-existant file, this is the file (.ova)
             self.archivePath = path
             self.archiveSavePath = self.archivePath
             self.setName(os.path.basename(path)[0:(len(os.path.basename(path))-4)])
-        elif exists == False and self.archiveFormat == "Dir":
+        elif exists == False and self.archiveFormat == FORMAT_DIR:
             # for non-existant dir, this is a dir (not .ovf)
             self.archivePath = path
             self.archiveSavePath = self.archivePath
         else:
             raise IOError("shouldn't be here")
 
-        if ( not os.path.isfile(path) and self.archiveFormat == "Dir" and
+        if ( not os.path.isfile(path) and self.archiveFormat == FORMAT_DIR and
              exists == True ) or self.__tmpdir__ != None:
             name = False
             for curFile in os.listdir(self.archivePath):
@@ -231,12 +234,12 @@ class OvfSet(object):
         Write the object to disk
 
         @raise ValueError: The error is thrown if the format parameter is not
-        a Dir or Tar.
+        FORMAT_DIR or FORMAT_TAR.
 
         @type  path: String
         @param path: path to save the file to.  Default is self.archivePath
         @type  format: String
-        @param format: one of "Dir" or "Tar" or None. Default is self.archiveFormat
+        @param format: one of FORMAT_DIR or FORMAT_TAR or None. Default is self.archiveFormat
         @rtype: Boolean
         @return: success or failure of write
         """
@@ -245,9 +248,9 @@ class OvfSet(object):
                 format = self.archiveFormat
             if path == None:
                 path = self.archiveSavePath
-            if format == "Dir":
+            if format == FORMAT_DIR:
                 return self.writeAsDir(path)
-            elif format == "Tar":
+            elif format == FORMAT_TAR:
                 return self.writeAsTar(path)
             else:
                 raise ValueError
