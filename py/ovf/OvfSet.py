@@ -27,7 +27,6 @@ class OvfSet(object):
 
     name    = None  #: the package name of this object (the name of .ovf
                     #: without extension)
-    certificate = None    #: The OvfCertificate object
     ovfFile = None        #: The OvfFile object
     archiveFormat = "Dir" #: The archive type of this (default save type)
     archivePath = None    #: The write path of the archive
@@ -51,6 +50,9 @@ class OvfSet(object):
         """
 
         self.mode = mode
+
+        self.manifest = None
+        self.certificate = None
 
         if path != None:
             self.initializeFromPath(path, mode)
@@ -188,11 +190,11 @@ class OvfSet(object):
             self.ovfFile = OvfFile.OvfFile(basepath + ".ovf")
             if os.path.isfile(basepath + ".mf"):
                 # we have a manifest
-                pass
+                self.manifest = basepath + ".mf"
 
             if os.path.isfile(basepath + ".cert"):
                 # we have a certificate
-                pass
+                self.certificate = basepath + ".cert"
 
     def toString(self):
         """Overrides toString for OvfSet"""
