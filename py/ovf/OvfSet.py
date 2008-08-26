@@ -19,7 +19,7 @@ import OvfLibvirt
 import OvfReferencedFile
 import OvfManifest
 
-class OvfSet:
+class OvfSet(object):
     """
     This is the base OvfSet class. It represents an OVF Set, either as a tar
     archive or as a directory layout
@@ -27,7 +27,6 @@ class OvfSet:
 
     name    = None  #: the package name of this object (the name of .ovf
                     #: without extension)
-    mode = "r"      #: read/write mode of object
     certificate = None    #: The OvfCertificate object
     ovfFile = None        #: The OvfFile object
     archiveFormat = "Dir" #: The archive type of this (default save type)
@@ -50,8 +49,6 @@ class OvfSet:
         @type  mode: String
         @param mode: mode for open, either 'r' or 'w'
         """
-        if not ( mode == "r" or mode == "w" ):
-            raise TypeError("mode must be r or w")
 
         self.mode = mode
 
@@ -65,6 +62,25 @@ class OvfSet:
         if self.__tmpdir__ == None:
             return
         shutil.rmtree(self.__tmpdir__)
+
+    def _getMode(self):
+        """read/write mode of object"""
+        return self._mode
+
+    def _setMode(self, value):
+        """Set mode.
+        @param value: must be 'r' or 'w'
+        @type value: str
+
+        @raise ValueError: if trying to set to anything
+                           diffent then 'r' or 'w'
+        """
+        if value in ['r', 'w']:
+            self._mode = value
+        else:
+            raise ValueError("mode must be r or w")
+
+    mode = property(_getMode, _setMode)
 
     def initializeFromPath(self, path, mode="r"):
         """
