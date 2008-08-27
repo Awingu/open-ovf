@@ -688,6 +688,8 @@ def main():
         ovfFile.writeFile(None, True)
     except ValueError,inst:
         print 'Param Error:'+inst[0]+"\n"
+    except cli.MultipleNodeError, n:
+        print n
     except Exception:
         execTuple = sys.exc_info()
         print 'Command failed:',execTuple[0], '-',execTuple[1]
