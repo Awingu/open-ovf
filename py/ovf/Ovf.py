@@ -68,6 +68,111 @@ def getDefaultConfiguration(ovfDoc):
 
     return None
 
+def isElement(elem):
+    """
+    Returns a function that accepts a DOM Element and returns the data from 
+    a child element with the uniquely specified tag name.
+
+    @param elem: child Element
+    @type elem: DOM Element
+
+    @param childTagName: Element tag name
+    @type childTagName: String
+
+    @return: function for getting child data
+    @rtype: lambda function
+    @todo: fix docstring
+    """
+    if elem.nodeType == Node.ELEMENT_NODE:
+        return True
+    else:
+        return False
+
+def hasChildText(elem, childTagName, value):
+    """
+    Returns a function that accepts a DOM Element and returns the data from 
+    a child element with the uniquely specified tag name.
+
+    @param elem: child Element
+    @type elem: DOM Element
+
+    @param childTagName: Element tag name
+    @type childTagName: String
+
+    @return: function for getting child data
+    @rtype: lambda function
+    """
+    elemList = elem.getElementsByTagName(childTagName)
+    if len(elemList) > 0:
+        for child in elemList:
+            if child.hasChildNodes():
+                if child.firstChild.nodeType == Node.TEXT_NODE:
+                    if child.firstChild.data == value:
+                        return True
+        return False
+    else:
+        return False
+
+def hasParentAttribute(elem, attrName, value):
+    """
+    Return value for given attribute of the parent of given XML DOM Element.
+    XML DOM Element passed into returned lambda function.
+
+    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
+
+    @note: lambda arg(xmlElement): type - DOM Element
+
+    @param attrName: attribute name
+    @type attrName: String
+
+    @return: function that returns parent attribute value
+    @rtype: lambda function
+    """
+    if isElement(elem):
+        return (elem.parentNode.getAttribute(attrName) == value)
+    else:
+        return False
+
+def hasAttribute(elem, attrName, value):
+    """
+    Return value for given attribute of the parent of given XML DOM Element.
+    XML DOM Element passed into returned lambda function.
+
+    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
+
+    @note: lambda arg(xmlElement): type - DOM Element
+
+    @param attrName: attribute name
+    @type attrName: String
+
+    @return: function that returns parent attribute value
+    @rtype: lambda function
+    """
+    if isElement(elem):
+        return (elem.getAttribute(attrName) == value)
+    else:
+        return False
+
+def hasTagName(elem, value):
+    """
+    Return value for given attribute of the parent of given XML DOM Element.
+    XML DOM Element passed into returned lambda function.
+
+    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
+
+    @note: lambda arg(xmlElement): type - DOM Element
+
+    @param tagName: tag name
+    @type tagName: String
+
+    @return: function that returns parent attribute value
+    @rtype: lambda function
+    """
+    if isElement(elem):
+        return (elem.tagName == value)
+    else:
+        return False
+
 def getNodes(ovfNode, *criteria):
     """
     Returns a list of nodes from an XML DOM Document.
