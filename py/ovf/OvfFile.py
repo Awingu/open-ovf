@@ -188,15 +188,15 @@ class OvfFile:
                 class has not been initialized.
         """
         if self.document == None:
-            raise NotImplementedError, "The document has not been initialized.\
-             Please create a document. Create envelope."
+            raise NotImplementedError,("The document has not been initialized"+
+             ".Please create a document. Create envelope.")
 
         if self.files == None:
-            raise NotImplementedError, "The files list must contain at least\
-             one reference."
+            raise NotImplementedError,("The files list must contain at least"+
+             " one reference.")
         if self.envelope.getElementsByTagName('References') == []:
-            comment = self.document.createComment("Reference of all external\
-             files")
+            comment = self.document.createComment("Reference of all external"+
+             " files")
             self.envelope.appendChild(comment)
 
             refsChild = self.document.createElement("References")
@@ -265,8 +265,8 @@ class OvfFile:
                 elif sectionReq == True:
                     diskNode.setAttribute(ovfRequired, 'true')
                 else:
-                    raise TypeError, "The param 'sectionReq' must be a\
-                     boolean."
+                    raise TypeError,("The param 'sectionReq' must be a"+
+                    " boolean.")
 
             #info for comments
             self.createInfo(diskNode, infoComments, infoID)
@@ -409,9 +409,10 @@ class OvfFile:
                             diskChild.setAttribute(ovfParentRef,
                                                    disk['parentRef'])
                     else:
-                        raise ValueError,"In order to add a child disk the parent\
-                         must be defined first. Also verify that parentRef matches\
-                          parent's fileId."
+                        raise ValueError,("In order to add a child disk the"+
+                                          " parent must be defined first."+
+                                          " Also verify that parentRef"+
+                                          " matches parent's fileId.")
 
                 fileAdded.append(disk['diskId'])
 
@@ -569,15 +570,16 @@ class OvfFile:
         """
 
         if 'DeploymentOptionSection' != node.nodeName:
-            raise TypeError, "The node can only be appended to a\
-             DeploymentOptionSection. The given node is not a\
-              DeploymentOptionSection."
+            raise TypeError,("The node can only be appended to a"+
+             " DeploymentOptionSection. The given node is not a"+
+            " DeploymentOptionSection.")
         for child in node.childNodes:
             if child.nodeName == "Configuration":
                 if ident == child.getAttribute("ovf:id"):
-                    raise NameError, "The id "+ident+" for the configuration has\
-                     already been implemented. The id for each configuration\
-                      has to be unique."
+                    raise NameError,("The id "+ident+" for the configuration"+
+                                     " has already been implemented. The id"+
+                                     " for each configuration has to be"+
+                                     " unique.")
 
         configElement = self.document.createElement("Configuration")
         configElement.setAttribute("ovf:id", ident)
@@ -588,8 +590,8 @@ class OvfFile:
             elif default == False:
                 configElement.setAttribute("ovf:default", "false")
             else:
-                raise TypeError, "The input for default is incorrect. It needs\
-                 a boolean."
+                raise TypeError,("The input for default is incorrect. It"+
+                                 " needs a boolean.")
         #since a document can contain multiple labels, it is neccesary to have\
         # an id to distinguish them
         if labID != None:
@@ -643,9 +645,9 @@ class OvfFile:
         for child in vscNode.childNodes:
             if child.nodeName == "VirtualSystemCollection":
                 if id == child.getAttribute(ovfid):
-                    raise NameError, "The id "+ident+" for the Virtual System\
-                     Collection has already been implemented. The id for each\
-                      Virtual System Collection has to be unique."
+                    raise NameError, ("The id "+ident+" for the Virtual System"+
+                     "Collection has already been implemented. The id for"+
+                     " each Virtual System Collection has to be unique.")
 
         contentElement = self.document.createElement("VirtualSystemCollection")
         contentElement.setAttribute(ovfid, ident)
@@ -657,9 +659,9 @@ class OvfFile:
                 node.nodeName == 'Envelope'):
                 node.appendChild(contentElement)
             else:
-                raise TypeError, "A Virtual System Collection can only be\
-                 appended to another Virtual System Collection or the\
-                  Envelope."
+                raise TypeError, ("A Virtual System Collection can only be"+
+                 " appended to another Virtual System Collection or the"+
+                  " Envelope.")
         else:
             self.envelope.appendChild(contentElement)
 
@@ -707,8 +709,8 @@ class OvfFile:
 
         if "VirtualSystemCollection" != node.nodeName:
             if "VirtualSystem" != node.nodeName:
-                raise TypeError, "The node can only be appended to a Virtual\
-                     System Collection Section or Virtual System."
+                raise TypeError,("The node can only be appended to a Virtual"+
+                     "SystemCollection Section or Virtual System.")
 
         ovfResAlloc = "ResourceAllocationSection"
         resAllocNode = self.document.createElement(ovfResAlloc)
@@ -719,8 +721,8 @@ class OvfFile:
             resAllocNode.setAttribute(ovfConfig, config)
         if bound != None:
             if bound != 'min' and bound != 'max' and bound != 'normal':
-                raise TypeError, "The bound input for a Resource allocation\
-                 can ONLY be 'min' OR 'max' OR 'normal'"
+                raise TypeError,("The bound input for a Resource allocation"+
+                 "can ONLY be 'min' OR 'max' OR 'normal'")
             else:
                 resAllocNode.setAttribute(ovfBound, bound)
 
@@ -796,7 +798,8 @@ class OvfFile:
             itemChild.setAttribute(ovfConfig, config)
         if bound != None:
             if bound != 'min' and bound != 'max' and bound != 'normal':
-                raise TypeError, "The bound input for a Resource allocation can ONLY be 'min' OR 'max' OR 'normal'"
+                raise TypeError, ("The bound input for a Resource allocation"+
+                                  " can ONLY be 'min' OR 'max' OR 'normal'")
             else:
                 itemChild.setAttribute(ovfBound, bound)
         if required != None:
@@ -865,8 +868,8 @@ class OvfFile:
         """
         if ("VirtualSystemCollection" != node.nodeName):
             if "VirtualSystem" != node.nodeName:
-                raise TypeError, "The node can only be appended to a Virtual\
-                 System Collection Section or Virtual System."
+                raise TypeError,("The node can only be appended to a Virtual"+
+                 "SystemCollection Section or Virtual System.")
         ovfClass = "ovf:class"
         prodInstance = "ovf:instance"
         productSect = "ProductSection"
@@ -983,8 +986,8 @@ class OvfFile:
         """
 
         if "ProductSection" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Product\
-             Section. The given node is not a Product Section"
+            raise TypeError,("The node can only be appended to a Product"+
+             "Section. The given node is not a Product Section.")
 
         propertyElement = self.document.createElement("Property")
         ovfKey = "ovf:key"
@@ -1014,8 +1017,8 @@ class OvfFile:
             elif required == False:
                 propertyElement.setAttribute(ovfRequired, "false")
             else:
-                raise TypeError, "The input 'required' must be of type\
-                 Boolean."
+                raise TypeError,("The input 'required' must be of type"+
+                 " Boolean.")
 
         node.appendChild(propertyElement)
 
@@ -1047,8 +1050,8 @@ class OvfFile:
 
         if "VirtualSystemCollection" != node.nodeName:
             if "VirtualSystem" != node.nodeName:
-                raise TypeError, "The node can only be appended to a Virtual\
-                     System Collection Section."
+                raise TypeError,("The node can only be appended to a Virtual"+
+                     " System Collection Section.")
 
         ovfEula = "EulaSection"
 
@@ -1083,8 +1086,8 @@ class OvfFile:
         #the license element can only be created as sub-child of the EULA
         # section
         if "EulaSection" != node.nodeName:
-            raise TypeError, "The node can only be appended to a EULA Section.\
-             The given node is not a EULA Section."
+            raise TypeError,("The node can only be appended to a EULA Section"+
+             ". The given node is not a EULA Section.")
         licNode = self.document.createElement("License")
 
         #putting the license content in this fashion <License>some license
@@ -1117,8 +1120,8 @@ class OvfFile:
 
         ovfstartUp = "StartupSection"
         if "VirtualSystemCollection" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Virtual\
-             System Collection Section."
+            raise TypeError,("The node can only be appended to a Virtual"+
+             "SystemCollection Section.")
         startupNode = self.document.createElement(ovfstartUp)
         self.createInfo(startupNode, info, infoID)
 
@@ -1224,8 +1227,8 @@ class OvfFile:
                 if startAction == "powerOn" or startAction == "none":
                     itemNode.setAttribute(ovfStartAction, startAction)
                 else:
-                    raise TypeError, "The startAction input must be either\
-                     'powerOn' or 'none' "
+                    raise TypeError,("The startAction input must be either"+
+                     " 'powerOn' or 'none'.")
             else:
                 itemNode.setAttribute(ovfStartAction, "powerOn")
 
@@ -1240,7 +1243,10 @@ class OvfFile:
                     stopAction == "none"):
                     itemNode.setAttribute(ovfStopAction, stopAction)
                 else:
-                    raise TypeError("The ONLY valid input values are 'powerOff', 'guestShutdown' or 'none'. None of those values where present.")
+                    raise TypeError,("The ONLY valid input values are"+
+                                     " 'powerOff', 'guestShutdown' or "+
+                                     "'none'. None of those values where"+
+                                     " present.")
             else:
                 itemNode.setAttribute(ovfStopAction, "powerOff")
 
@@ -1281,15 +1287,15 @@ class OvfFile:
 
         for child in self.document.getElementsByTagName(virtualSys):
             if ident == child.getAttribute(ovfid):
-                raise NameError, "The id "+ident+" for the Virtual System has\
-                 already been implemented. The id for each Virtual System has\
-                  to be unique."
+                raise NameError,("The id "+ident+" for the Virtual System has"+
+                 " already been implemented. The id for each Virtual System"+
+                 " has to be unique.")
         if node != None:
             if "VirtualSystemCollection" != node.nodeName:
                 if node.nodeName != "Envelope":
-                    raise TypeError, "The node can only be appended to a\
-                     Virtual System Collection Section. The given node is not\
-                      a Virtual System Collection Section"
+                    raise TypeError,("The node can only be appended to a"+
+                    " Virtual System Collection Section. The given node is"+
+                    " not a Virtual System Collection Section")
         contentElement = self.document.createElement(virtualSys)
         contentElement.setAttribute(ovfid, ident)
         self.createInfo(contentElement, info, infoID)
@@ -1333,8 +1339,8 @@ class OvfFile:
         ovfID = "ovf:id"
 
         if "VirtualSystem" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Virtual\
-             System Section. The given node is not a Virtual System Section."
+            raise TypeError,("The node can only be appended to a Virtual"+
+             "System Section. The given node is not a Virtual System Section.")
         osNode = self.document.createElement(osType)
         self.createInfo(osNode, info, infoID)
 
@@ -1382,8 +1388,8 @@ class OvfFile:
         installType = "InstallSection"
 
         if "VirtualSystem" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Virtual\
-             System Section. The given node is not a Virtual System Section"
+            raise TypeError,("The node can only be appended to a Virtual"+
+             "System Section. The given node is not a Virtual System Section")
 
         installNode = self.document.createElement(installType)
         self.createInfo(installNode, info, infoID)
@@ -1396,8 +1402,8 @@ class OvfFile:
             elif initBoot == False:
                 installNode.setAttribute(ovfInitBoot,"false")
             else:
-                raise TypeError, "The parameter for the initboot in the\
-                 install section needs to be a Boolean."
+                raise TypeError,("The parameter for the initboot in the"+
+                 " install section needs to be a Boolean.")
 
         if bootStopDelay != None:
             installNode.setAttribute(stopDelay, bootStopDelay)
@@ -1437,8 +1443,8 @@ class OvfFile:
         ovfID = "ovf:id"
 
         if "VirtualSystem" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Virtual\
-             System Section. The given node is not a Virtual System Section."
+            raise TypeError,("The node can only be appended to a Virtual"+
+             "System Section. The given node is not a Virtual System Section.")
 
         hardwareSection = self.document.createElement(ovfHardwareSec)
         self.createInfo(hardwareSection, info, infoID)
@@ -1500,8 +1506,8 @@ class OvfFile:
 
         """
         if "Property" != node.nodeName:
-            raise TypeError, "The node can only be appended to a Property\
-             Element. The given node is not a Property Element."
+            raise TypeError,("The node can only be appended to a Property"+
+             " Element. The given node is not a Property Element.")
 
         ovfValue = "ovf:value"
         ovfConfig = "ovf:configuration"
@@ -1630,9 +1636,9 @@ class OvfFile:
             if node != self.envelope:
                 if "VirtualSystem" != node.nodeName:
                     if "VirtualSystemCollection" != node.nodeName:
-                        raise TypeError, "The node can only be appended to a\
-                         Virtual System Section or Virtual System Collection\
-                          Section."
+                        raise TypeError,("The node can only be appended to a"+
+                         " Virtual System Section or VirtualSystem"+
+                         "Collection Section.")
 
         annotationSect = "AnnotationSection"
 
