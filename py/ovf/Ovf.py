@@ -60,7 +60,9 @@ def getDefaultConfiguration(ovfDoc):
     """
     Returns identifier for the default configuration
     """
-    deploySection = getNodes(ovfDoc, 'DeploymentOptions')
+    deploySection = getNodes(ovfDoc,
+                             (hasTagName, 'DeploymentOptionSection'))
+
     if deploySection != []:
         deployDict = getDict(deploySection[0])
         if deployDict['children'] != []:
@@ -373,7 +375,9 @@ def isVirtualSystem(ovfDoc, ovfId):
     @return: True or False
     @rtype: boolean
     """
-    return(getNodes(ovfDoc,'VirtualSystem', { 'ovf:id':ovfId }) != [])
+    return (getNodes(ovfDoc,
+                    (hasTagName, 'VirtualSystem'),
+                    (hasAttribute, 'ovf:id', ovfId)) != [])
 
 def isVirtualSystemCollection(ovfDoc, ovfId):
     """
@@ -389,8 +393,9 @@ def isVirtualSystemCollection(ovfDoc, ovfId):
     @return: True or False
     @rtype: boolean
     """
-    return(getNodes(ovfDoc,'VirtualSystemCollection',
-                    { 'ovf:id':ovfId }) != [])
+    return (getNodes(ovfDoc,
+                    (hasTagName, 'VirtualSystemCollection'),
+                    (hasAttribute, 'ovf:id', ovfId)) != [])
 
 def isConfiguration(ovfDoc, configId):
     """
@@ -408,7 +413,7 @@ def isConfiguration(ovfDoc, configId):
     @raise ValueError: ConfigId doesn't match any in DeploymentOptions
     @raise NotImplementedError: DeploymentOptions not defined
     """
-    deploy = getNodes(ovfDoc, 'DeploymentOptions')
+    deploy = getNodes(ovfDoc, (hasTagName, 'DeploymentOptionSection'))
     if deploy != []:
         configList = getDict(deploy[0])['children']
         while configList != []:

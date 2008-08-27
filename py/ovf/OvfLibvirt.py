@@ -12,6 +12,7 @@
 """OvfLibvirt"""
 
 from xml.dom.minidom import Document
+from xml.dom import NotFoundErr
 import warnings
 import os.path
 import sched
@@ -992,21 +993,29 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            diskList = Ovf.getDict(Ovf.getNodes(ovf, 'DiskSection')[0],
-                                   configId)['children']
+            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'DiskSection'))
+            if len(section) == 1:
+                diskList = Ovf.getDict(section[0], configId)['children']
 
-            for child in diskList:
-                if child['ovf:diskId'] == resourceId:
-                    hostResource = 'ovf://file/' + child['ovf:fileRef']
-                    resourceId = hostResource.rsplit('/', 1).pop()
+                for child in diskList:
+                    if child['ovf:diskId'] == resourceId:
+                        hostResource = 'ovf://file/' + child['ovf:fileRef']
+                        resourceId = hostResource.rsplit('/', 1).pop()
+            else:
+                raise NotFoundErr("Invalid DiskSection, implemented " +
+                                  len(section) + " times.")
 
         if hostResource.startswith('ovf://file/'):
-            refList = Ovf.getDict(Ovf.getNodes(ovf, 'References')[0],
-                               configId)['children']
+            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'NetworkSection'))
+            if len(section) == 1:
+                refList = Ovf.getDict(section[0], configId)['children']
 
-            for child in refList:
-                if child['ovf:id'] == resourceId:
-                    source = os.path.abspath(child['ovf:href'])
+                for child in refList:
+                    if child['ovf:id'] == resourceId:
+                        source = os.path.abspath(child['ovf:href'])
+            else:
+                raise NotFoundErr("Invalid NetworkSection, implemented " +
+                                  len(section) + " times.")
 
         if source == None:
             raise ValueError(hostResource)
@@ -1078,7 +1087,8 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     @todo: needs work, very basic, assumes hypervisor type
     """
     # Get VirtualHardwareSection
-    virtualHardwareSection = Ovf.getNodes(virtualSys, 'VirtualHardwareSection')
+    virtualHardwareSection = Ovf.getNodes(virtualSys,
+                                          (hasTagName, 'VirtualHardwareSection'))
 
     if virtualHardwareSection == []:
         raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
@@ -1158,7 +1168,7 @@ def getOvfLibvirt(ovf, configId=None):
         configId = Ovf.getDefaultConfiguration(ovf)
 
     # For each system, create libvirt domain description
-    for system in Ovf.getNodes(ovf, 'VirtualSystem'):
+    for system in Ovf.getNodes(ovf, (Ovf.hasTagName, 'VirtualSystem')):
         ovfId = system.getAttribute('ovf:id')
         domains[ovfId] = getOvfDomain(ovf, system, ovfId, configId)
 
@@ -1181,7 +1191,7 @@ def getOvfStartup(ovf):
     systems = startupDict['entities']
 
     # Create a list of all startup sections
-    startupSections = Ovf.getNodes(ovf, 'StartupSection')
+    startupSections = Ovf.getNodes(ovf, (Ovf.hasTagName, 'StartupSection'))
 
     # Create an entry in startup dictionary for each entry in Startup sections
     for section in startupSections:
@@ -1208,7 +1218,7 @@ def getOvfStartup(ovf):
             systems[sysId] = virtualSys
 
     # Create a default entry for each system not in a startup section
-    for each in Ovf.getNodes(ovf, 'VirtualSystem'):
+    for each in Ovf.getNodes(ovf, (Ovf.hasTagName, 'VirtualSystem')):
         sysId = each.getAttribute('ovf:id')
 
         # If parentNode is Envelope, set as root system

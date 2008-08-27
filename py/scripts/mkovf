@@ -148,8 +148,9 @@ def createVirtualSysCollection(ovfFile, options):
 
     """
     if options.id != None:
-        vscNode = Ovf.getNodesWithId(ovfFile.envelope,
-                                     'VirtualSystemCollection', options.id)[0]
+        vscNode = Ovf.getNodes(ovfFile.envelope,
+                               (Ovf.hasTagName, 'VirtualSystemCollection'),
+                               (Ovf.hasAttribute, 'ovf:id', options.id))[0]
 
         ovfFile.createVirtualSystemCollection(options.vscID, options.info,
                                               options.infoID, vscNode)
@@ -170,9 +171,10 @@ def createVirtualSystem(ovfFile, options):
     @type options: Optparser object.
     """
     if options.id != None:
-        vscNode = Ovf.getNodesWithId(ovfFile.envelope,
-                                       'VirtualSystemCollection',
-                                       options.id )[0]
+        vscNode = Ovf.getNodes(ovfFile.envelope,
+                               (Ovf.hasTagName, 'VirtualSystemCollection'),
+                               (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
         ovfFile.createVirtualSystem(options.vsID, options.info, vscNode,
                                            options.infoID)
     else:
@@ -194,8 +196,10 @@ def createVirtualHardware(ovfFile, options):
     @type options: Optparser object.
     """
 
-    vscNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystem',
-                                 options.id)[0]
+    vscNode = Ovf.getNodes(ovfFile.envelope,
+                           (Ovf.hasTagName, 'VirtualSystem'),
+                           (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     virtualHardware = ovfFile.createVirtualHardwareSection(vscNode,
                                                            options.secID,
                                                            options.info,
@@ -227,10 +231,15 @@ def createResources(ovfFile, options):
     @type options: Optparser object.
     """
 
-    vhwNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualHardwareSection', options.id)
+    vhwNode = Ovf.getNodes(ovfFile.envelope,
+                           (Ovf.hasTagName, 'VirtualHardwareSection'),
+                           (Ovf.hasAttribute, 'ovf:id', options.id))
+
     if not vhwNode:
-        vhwNode = Ovf.getNodesWithId(ovfFile.envelope,
-                                     'ResourceAllocationSection', options.id)
+        vhwNode = Ovf.getNodes(ovfFile.envelope,
+                               (Ovf.hasTagName, 'ResourceAllocationSection'),
+                               (Ovf.hasAttribute, 'ovf:id', options.id))
+
         if not vhwNode:
             raise NotImplementedError, "The section with id, "+options.id+", was not found."
 
@@ -274,8 +283,10 @@ def createResourceAlloc(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    vscNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystemCollection',
-                                 options.id)[0]
+    vscNode = Ovf.getNodes(ovfFile.envelope,
+                           (Ovf.hasTagName, 'VirtualSystemCollection'),
+                           (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     ovfFile.createResourceAllocation(vscNode, options.info, options.infoID,
                                      options.config, options.bound,
                                      options.secID)
@@ -292,11 +303,14 @@ def createAnnotationSection(ovfFile, options):
     @type options: Optparser object.
     """
     if Ovf.isVirtualSystem(ovfFile.document, options.id):
-        vscNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystem',
-                                     options.id)[0]
+        vscNode = Ovf.getNodes(ovfFile.envelope,
+                               (Ovf.hasTagName, 'VirtualSystem'),
+                               (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     elif Ovf.isVirtualSystemCollection(ovfFile.document, options.id):
-        vscNode = Ovf.getNodesWithId(ovfFile.envelope,
-                                     'VirtualSystemCollection', options.id)[0]
+        vscNode = Ovf.getNodes(ovfFile.envelope,
+                               (Ovf.hasTagName, 'VirtualSystemCollection'),
+                               (Ovf.hasAttribute, 'ovf:id', options.id))[0]
 
     ovfFile.createAnnotationSection(options.annotation, options.info, vscNode,
                                     options.infoID)
@@ -312,11 +326,15 @@ def createProductSection(ovfFile, options):
     @type options: Optparser object.
     """
     if Ovf.isVirtualSystem(ovfFile.document, options.id):
-        node = Ovf.getNodesWithId(ovfFile.envelope,
-                                  'VirtualSystem', options.id)[0]
+        node = Ovf.getNodes(ovfFile.envelope,
+                            (Ovf.hasTagName, 'VirtualSystem'),
+                            (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     elif Ovf.isVirtualSystemCollection(ovfFile.document, options.id):
-        node = Ovf.getNodesWithId(ovfFile.envelope,
-                                  'VirtualSystemCollection', options.id)[0]
+        node = Ovf.getNodes(ovfFile.envelope,
+                            (Ovf.hasTagName, 'VirtualSystemCollection'),
+                            (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     prodList = [("Product", options.product),
                 ("Vendor", options.vendor),
                 ("Version", options.productVersion),
@@ -416,11 +434,15 @@ def createEulaSection(ovfFile, options):
     @type options: Optparser object.
     """
     if Ovf.isVirtualSystem(ovfFile.document, options.id):
-        node = Ovf.getNodesWithId(ovfFile.envelope,
-                                  'VirtualSystem', options.id)[0]
+        node = Ovf.getNodes(ovfFile.envelope,
+                            (Ovf.hasTagName, 'VirtualSystem'),
+                            (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     elif Ovf.isVirtualSystemCollection(ovfFile.document, options.id):
-        node = Ovf.getNodesWithId(ovfFile.envelope,
-                                  'VirtualSystemCollection', options.id)[0]
+        node = Ovf.getNodes(ovfFile.envelope,
+                            (Ovf.hasTagName, 'VirtualSystemCollection'),
+                            (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     eula = ovfFile.createEulaSection(options.info, node, options.infoID,
                                      options.secID)
     ovfFile.addLicense(eula, options.agreement, options.licenseID)
@@ -437,8 +459,10 @@ def createStartup(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    vscNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystemCollection',
-                                 options.id)[0]
+    vscNode = Ovf.getNodes(ovfFile.envelope,
+                           (Ovf.hasTagName, 'VirtualSystemCollection'),
+                           (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     startupNode = ovfFile.createStartupSection(vscNode, options.info,
                                                options.infoID,options.secID)
     ovfFile.addStartupItem(startupNode, options.entityName,
@@ -456,8 +480,10 @@ def createOperatingSystem(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    vsNode = Ovf.getNodesWithId(ovfFile.envelope, 'VirtualSystem',
-                                options.id)[0]
+    vsNode = Ovf.getNodes(ovfFile.envelope,
+                          (Ovf.hasTagName, 'VirtualSystem'),
+                          (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     ovfFile.createOperatingSystem(vsNode, options.secID, options.info,
                             options.infoID, options.description,
                             options.descriptionID)
@@ -472,8 +498,10 @@ def createInstallSection(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    vsNode = Ovf.getNodesWithId(ovfFile.document, 'VirtualSystem',
-                                options.id)[0]
+    vsNode = Ovf.getNodes(ovfFile.document,
+                          (Ovf.hasTagName, 'VirtualSystem'),
+                          (Ovf.hasAttribute, 'ovf:id', options.id))[0]
+
     ovfFile.createInstallSection(vsNode, options.info, options.infoID,
                                  options.initBoot, options.bootStopdelay,
                                  options.secID)
