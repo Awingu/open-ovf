@@ -72,18 +72,14 @@ def getDefaultConfiguration(ovfDoc):
 
 def isElement(elem):
     """
-    Returns a function that accepts a DOM Element and returns the data from 
-    a child element with the uniquely specified tag name.
+    Returns a boolean value, after testing if the DOM Node argument is of
+    nodeType ELEMENT_NODE.
 
-    @param elem: child Element
-    @type elem: DOM Element
+    @param elem: node
+    @type elem: DOM Node
 
-    @param childTagName: Element tag name
-    @type childTagName: String
-
-    @return: function for getting child data
-    @rtype: lambda function
-    @todo: fix docstring
+    @return: truth value
+    @rtype: boolean
     """
     if elem.nodeType == Node.ELEMENT_NODE:
         return True
@@ -92,17 +88,20 @@ def isElement(elem):
 
 def hasChildText(elem, childTagName, value):
     """
-    Returns a function that accepts a DOM Element and returns the data from 
-    a child element with the uniquely specified tag name.
+    Returns a boolean value, after testing if the DOM Node argument has a
+    child element with the given tagName and text.
 
-    @param elem: child Element
-    @type elem: DOM Element
+    @param elem: node
+    @type elem: DOM Node
 
-    @param childTagName: Element tag name
+    @param childTagName: child Element tag name
     @type childTagName: String
 
-    @return: function for getting child data
-    @rtype: lambda function
+    @param value: text
+    @type value: String
+
+    @return: truth value
+    @rtype: boolean
     """
     elemList = elem.getElementsByTagName(childTagName)
     if len(elemList) > 0:
@@ -117,18 +116,20 @@ def hasChildText(elem, childTagName, value):
 
 def hasParentAttribute(elem, attrName, value):
     """
-    Return value for given attribute of the parent of given XML DOM Element.
-    XML DOM Element passed into returned lambda function.
+    Returns a boolean value, after testing if the parent of the DOM Node
+    argument has an attribute with the given value.
 
-    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
+    @param elem: node
+    @type elem: DOM Node
 
-    @note: lambda arg(xmlElement): type - DOM Element
-
-    @param attrName: attribute name
+    @param attrName: parent attribute name
     @type attrName: String
 
-    @return: function that returns parent attribute value
-    @rtype: lambda function
+    @param value: parent attribute value
+    @type value: String
+
+    @return: truth value
+    @rtype: boolean
     """
     if isElement(elem):
         return (elem.parentNode.getAttribute(attrName) == value)
@@ -137,18 +138,20 @@ def hasParentAttribute(elem, attrName, value):
 
 def hasAttribute(elem, attrName, value):
     """
-    Return value for given attribute of the parent of given XML DOM Element.
-    XML DOM Element passed into returned lambda function.
+    Returns a boolean value, after testing if the DOM Node argument
+    has an attribute with the given value.
 
-    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
-
-    @note: lambda arg(xmlElement): type - DOM Element
+    @param elem: node
+    @type elem: DOM Node
 
     @param attrName: attribute name
     @type attrName: String
 
-    @return: function that returns parent attribute value
-    @rtype: lambda function
+    @param value: attribute value
+    @type value: String
+
+    @return: truth value
+    @rtype: boolean
     """
     if isElement(elem):
         return (elem.getAttribute(attrName) == value)
@@ -157,18 +160,17 @@ def hasAttribute(elem, attrName, value):
 
 def hasTagName(elem, value):
     """
-    Return value for given attribute of the parent of given XML DOM Element.
-    XML DOM Element passed into returned lambda function.
+    Returns a boolean value, after testing if the DOM Node argument has a
+    tag name with the given value.
 
-    e.g. getParentAttribute('ovf:id')(<DOM Element: VirtualHardwareSection>)
+    @param elem: node
+    @type elem: DOM Node
 
-    @note: lambda arg(xmlElement): type - DOM Element
+    @param value: tag name
+    @type value: String
 
-    @param tagName: tag name
-    @type tagName: String
-
-    @return: function that returns parent attribute value
-    @rtype: lambda function
+    @return: truth value
+    @rtype: boolean
     """
     if isElement(elem):
         return (elem.tagName == value)
@@ -177,7 +179,15 @@ def hasTagName(elem, value):
 
 def getNodes(ovfNode, *criteria):
     """
-    Returns a list of nodes from an XML DOM Document.
+    Returns a list of nodes from an XML DOM Document, that meet a
+    variable number of criteria functions.
+
+    All functions must take at least one argument, and that argument,
+    the first argument, must be a DOM Node. The function must return a
+    boolean value. The signature of the function must be of the form,
+    function(node, arg1, arg2...), and return True or False.
+
+    @note: 'criteria' tuples must be of the form, (function, *args)
 
     @param ovfNode: OVF document or element
     @type ovfNode: DOM Node
