@@ -186,18 +186,15 @@ class MultipleNodeError(Exception):
         for node in nodeList:
             info = '\n Node '+str(i)+': '
             try:
-                data = Ovf.getNodes(node, 'Info')[0].firstChild.data
-                info += str(i) + data
+                info += Ovf.getNodes(node, 'Info')[0].firstChild.data
             except IndexError:
                 try:
-                    data = (Ovf.getNodes(node, 'rasd:ElementName')[0].
-                            firstChild.data)
-                    info += data
+                    info += (Ovf.getNodes(node, 'rasd:ElementName')[0].
+                             firstChild.data)
                 except IndexError:
                     try:
-                        data = (Ovf.getNodes(node, 'vssd:ElementName')[0]
-                                .firstChild.data)
-                        info += data
+                        info += (Ovf.getNodes(node, 'vssd:ElementName')[0]
+                                 .firstChild.data)
                     except IndexError:#we look for attributes to print
                         for key in node.attributes.keys():
                            info += key
