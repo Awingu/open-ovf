@@ -68,59 +68,36 @@ def getDefaultConfiguration(ovfDoc):
 
     return None
 
-def getNodes(ovfNode, tagName, attrList = { }):
+def getNodes(ovfNode, *criteria):
     """
-    Returns a list of nodes from an OVF whose tagname is tagName 
-    and that have attributes matching attrList.
+    Returns a list of nodes from an XML DOM Document.
 
-    @param ovfNode: document or element to search
+    @param ovfNode: OVF document or element
     @type ovfNode: DOM Node
 
-    @param tagName: tag name of a node
-    @type tagName: String
+    @param criteria: filters for limiting results, processed in order
+    @type criteria: variable length list of tuples
 
-    @param attrList: dictionary of attributes that returned list must contain
-    @type  attrList: dictionary
-
-    @return: list of nodes
-    @rtype: list of DOM nodes
+    @return: descendent Nodes that meet criteria
+    @rtype: list of DOM Nodes
     """
-    matches = [ ]
-    for element in ovfNode.getElementsByTagName(tagName):
-        matches.append(element)
-        for key, val in attrList.items():
-            if element.getAttribute(key) != val:
-                matches.pop()
+    ret = []
+
+    for child in ovfNode.childNodes:
+        passed = True
+        for tup in criteria:
+            function = tup[0]
+            if not function(child, *tup[1:]):
+                passed = False
                 break
-    return(matches)
 
-def getNodesWithId(ovfNode, tagName, id = None):
-    """
-    return a list of nodes that have attribute 
-        ( ovf:id | ovf:msgid | ovf:diskId ) == id
-    if id is 'None', all nodes matching tagName will be returned
+        if passed:
+            ret.append(child)
 
-    @param ovfNode: document or element to search
-    @type ovfNode: DOM Node
+        if child.hasChildNodes():
+            ret.extend(getNodes(child, *criteria))
 
-    @param tagName: tag name of a node
-    @type  tagName: String
-
-    @param id: id
-    @type  id: String
-
-    @return: list of nodes
-    @rtype: list of DOM nodes
-    """
-    if(id == None):
-        return(getNodes(ovfNode, tagName))
-    else:
-        t = getNodes(ovfNode,tagName)
-        return([ x for x in getNodes(ovfNode,tagName)
-                   if x.getAttribute('ovf:id') == id or
-                      x.getAttribute('ovf:msgid') == id or
-                      x.getAttribute('ovf:diskId') == id
-               ])
+    return ret
 
 def getContentEntities(ovfNode, ovfId=None):
     """
