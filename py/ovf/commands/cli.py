@@ -13,6 +13,7 @@
 
 import sys
 from optparse import OptionParser
+from ovf import Ovf
 
 GENERIC_USAGE = "usage: %prog command -f <Ovf file path> [options]"
 
@@ -165,4 +166,50 @@ class CLI:
         options, pArgs = self._parseSubcommand(cmd, args[1:])
 
         return cmd, options, pArgs
+class MultipleNodeError(Exception):
+    """
+    This error class will be used to print information about multiple
+    similar nodes being found.
+    """
+    def __init__(self,nodeList,baseMessage=None):
+        """
+        Create the objects for the class.
+        """
+        self.baseMessage = baseMessage
+        self.nodeList = nodeList
+
+        if baseMessage == None:
+            baseMessage =("More than 1 Node was found please use"+
+                      " --node-number flag to specify which node.")
+        i = 0
+        errMsg = baseMessage
+        for node in nodeList:
+            info = '\n Node '+str(i)+': '
+            try:
+                data = Ovf.getNodes(node, 'Info')[0].firstChild.data
+                info += str(i) + data
+            except IndexError:
+                try:
+                    data = (Ovf.getNodes(node, 'rasd:ElementName')[0].
+                            firstChild.data)
+                    info += data
+                except IndexError:
+                    try:
+                        data = (Ovf.getNodes(node, 'vssd:ElementName')[0]
+                                .firstChild.data)
+                        info += data
+                    except IndexError:#we look for attributes to print
+                        for key in node.attributes.keys():
+                           info += key
+                           info += '=' + str(node.attributes[key].value) + ' '
+            i += 1
+            errMsg += info
+
+        self.message = errMsg
+
+    def __str__(self):
+        """
+        This function will return the error message.
+        """
+        return self.message
 
