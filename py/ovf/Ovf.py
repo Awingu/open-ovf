@@ -308,9 +308,10 @@ def getElementsById(ovfNode, tagName, identValue):
     return getElementsByTagName(ovfNode, tagName,
                                 (hasAttribute, attrName, identValue))
 
-def getContentEntities(ovfNode, ovfId=None):
+def getContentEntities(ovfNode, ovfId=None, vs=True, vsc=True):
     """
-    Returns a list of OVF Entities, optionally restricted by id.
+    Returns a list of OVF Entities, optionally restricted by id and
+    Entity_Type.
 
     @param ovfNode: OVF document or element
     @type ovfNode: DOM Node
@@ -318,16 +319,25 @@ def getContentEntities(ovfNode, ovfId=None):
     @param ovfId: VirtualSystem or VirtualSystemCollection id
     @type ovfId: String
 
+    @param vs: search with tagName VirtualSystem
+    @type vs: boolean
+
+    @param vsc: search with tagName VirtualSystemCollection
+    @type vsc: boolean
+
     @return: list of entities
     @rtype: list of DOM nodes
     """
-    entities = ovfNode.getElementsByTagName('VirtualSystem')
-    entities.extend(ovfNode.getElementsByTagName('VirtualSystemCollection'))
+    ents = []
+    if vs:
+        ents.extend(ovfNode.getElementsByTagName('VirtualSystem'))
+    if vsc:
+        ents.extend(ovfNode.getElementsByTagName('VirtualSystemCollection'))
 
     if ovfId == None:
-        return entities
+        return ents
     else:
-        return [entity for entity in entities
+        return [entity for entity in ents
                 if entity.getAttribute('ovf:id') == ovfId]
 
 def getDict(ovfSection, configId=None):
