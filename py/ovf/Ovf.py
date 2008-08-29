@@ -177,7 +177,7 @@ def hasTagName(elem, value):
     else:
         return False
 
-def getNodes(ovfNode, *criteria):
+def getChildNodes(ovfNode, tagName, *criteria):
     """
     Returns a list of nodes from an XML DOM Document, that meet a
     variable number of criteria functions.
@@ -195,7 +195,7 @@ def getNodes(ovfNode, *criteria):
     @param criteria: filters for limiting results, processed in order
     @type criteria: variable length list of tuples
 
-    @return: descendent Nodes that meet criteria
+    @return: child Nodes that meet criteria
     @rtype: list of DOM Nodes
     """
     ret = []
@@ -211,10 +211,63 @@ def getNodes(ovfNode, *criteria):
         if passed:
             ret.append(child)
 
+    return ret
+
+def getNodes(ovfNode, *criteria):
+    """
+    Returns a list of nodes from an XML DOM Document, that meet a
+    variable number of criteria functions. Wrapper to getChildNodes,
+    that recursively descends descendents.
+
+    All functions must take at least one argument, and that argument,
+    the first argument, must be a DOM Node. The function must return a
+    boolean value. The signature of the function must be of the form,
+    function(node, arg1, arg2...), and return True or False.
+
+    @note: 'criteria' tuples must be of the form, (function, *args)
+
+    @param ovfNode: OVF document or element
+    @type ovfNode: DOM Node
+
+    @param criteria: filters for limiting results, processed in order
+    @type criteria: variable length list of tuples
+
+    @return: descendent Nodes that meet criteria
+    @rtype: list of DOM Nodes
+    """
+    ret = getChildNodes(ovfNode, *criteria)
+    for child in ovfNode.childNodes:
         if child.hasChildNodes():
             ret.extend(getNodes(child, *criteria))
 
     return ret
+
+def getElementsByTagName(ovfNode, tagName, *criteria):
+    """
+    Wrapper to L{getNodes}, that recursively descends descendents with built
+    in tagName filter. Returns a list of nodes from an XML DOM Document,
+    that also meet a variable number of additional criteria functions.
+
+    All functions must take at least one argument, and that argument,
+    the first argument, must be a DOM Node. The function must return a
+    boolean value. The signature of the function must be of the form,
+    function(node, arg1, arg2...), and return True or False.
+
+    @note: 'criteria' tuples must be of the form, (function, *args)
+
+    @param ovfNode: OVF document or element
+    @type ovfNode: DOM Node
+
+    @param tagName: restrict by tagName
+    @type tagName: String
+
+    @param criteria: filters for limiting results, processed in order
+    @type criteria: variable length list of tuples
+
+    @return: descendent Nodes that meet criteria
+    @rtype: list of DOM Nodes
+    """
+    return getNodes(ovfNode, (hasTagName, tagName), *criteria)
 
 def getContentEntities(ovfNode, ovfId=None):
     """
