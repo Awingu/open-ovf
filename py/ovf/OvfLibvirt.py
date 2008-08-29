@@ -993,7 +993,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'DiskSection'))
+            section = Ovf.getElementsByTagName(ovf, 'DiskSection')
             if len(section) == 1:
                 diskList = Ovf.getDict(section[0], configId)['children']
 
@@ -1006,7 +1006,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
                                   len(section) + " times.")
 
         if hostResource.startswith('ovf://file/'):
-            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'References'))
+            section = Ovf.getElementsByTagName(ovf, 'References')
             if len(section) == 1:
                 refList = Ovf.getDict(section[0], configId)['children']
 
@@ -1014,7 +1014,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
                     if child['ovf:id'] == resourceId:
                         source = os.path.abspath(child['ovf:href'])
             else:
-                raise NotFoundErr("Invalid NetworkSection, implemented " +
+                raise NotFoundErr("Invalid References, implemented " +
                                   len(section) + " times.")
 
         if source == None:
@@ -1087,9 +1087,8 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     @todo: needs work, very basic, assumes hypervisor type
     """
     # Get VirtualHardwareSection
-    virtualHardwareSection = Ovf.getNodes(virtualSys,
-                                          (Ovf.hasTagName,
-                                           'VirtualHardwareSection'))
+    virtualHardwareSection = Ovf.getElementsByTagName(ovfNode,
+                                                      'VirtualHardwareSection')
 
     if virtualHardwareSection == []:
         raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
