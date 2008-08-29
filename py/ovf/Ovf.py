@@ -269,6 +269,45 @@ def getElementsByTagName(ovfNode, tagName, *criteria):
     """
     return getNodes(ovfNode, (hasTagName, tagName), *criteria)
 
+def getElementsById(ovfNode, tagName, identValue):
+    """
+    Wrapper to L{getElementsByTagName} that takes in an identifier, and
+    based on an element's tagName, calls L{getElementsByTagName} with
+    appropriate filter.
+
+    @param ovfNode: OVF document or element
+    @type ovfNode: DOM Node
+
+    @param tagName: tag name
+    @type tagName: String
+
+    @param identValue: value for identifier
+    @type identValue: String
+
+    @return: descendent Nodes that meet criteria
+    @rtype: list of DOM Nodes
+    """
+    if(tagName == "File" or
+       tagName == "Configuration"):
+        attrName = "ovf:id"
+    elif tagName == "Disk":
+        attrName = "ovf:diskId"
+    elif tagName == "Property":
+        attrName = "ovf:key"
+    elif(tagName == "Info" or
+         tagName == "Description" or
+         tagName == "Label" or
+         tagName == "Category" or
+         tagName == "Annotation" or
+         tagName == "Product" or
+         tagName == "Vendor" or
+         tagName == "License" or
+         tagName == "Msg"):
+        attrName = "ovf:msgid"
+
+    return getElementsByTagName(ovfNode, tagName,
+                                (hasAttribute, attrName, identValue))
+
 def getContentEntities(ovfNode, ovfId=None):
     """
     Returns a list of OVF Entities, optionally restricted by id.
