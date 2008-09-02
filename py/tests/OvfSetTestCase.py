@@ -75,7 +75,7 @@ class SimpleTestCase(unittest.TestCase):
             if each.href == 'Ubuntu1.vmdk':
                 each.checksum = "wrongChecksum!!!"
             else:
-                self.ovfSetObject.ovfFile.files.pop(0)
+                self.ovfSetObject.ovfFile.files.remove(each)
         self.assertFalse(self.ovfSetObject.verifyManifest(self.path + 'ourOVF.mf'))
         self.assertRaises(IOError, self.ovfSetObject.verifyManifest, '!')
 
