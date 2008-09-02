@@ -623,7 +623,9 @@ class OvfFileTestCase(unittest.TestCase):
 
     def test_getReferencedFilesFromOvf(self):
         files2 = []
-        files = OvfFile.getReferencedFilesFromOvf(self.fileName)
+        files = OvfFile.getReferencedFilesFromOvf(self.document.documentElement,
+                                                  self.fileName)
+
 
         #file1 "Ubuntu1.vmdk"
         filePath = self.path+"/"+"Ubuntu1.vmdk"

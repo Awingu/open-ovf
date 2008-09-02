@@ -10,7 +10,7 @@
 # Marcos Cintron (IBM) - initial implementation
 ##############################################################################
 from xml.dom.minidom import parse, Document
-import os
+import os.path
 
 import OvfReferencedFile
 import Ovf
@@ -40,10 +40,10 @@ class OvfFile:
         """
         if path != None:
             self.path = path
-            self.setFilesFromOvfFileReferences()
             self.document = parse(self.path)
             self.document.normalize()
             self.envelope = self.document.documentElement
+            self.setFilesFromOvfFileReferences()
             self.version = OVF_VERSION
 
     def addReferencedFile(self, refFileObj):
@@ -84,7 +84,8 @@ class OvfFile:
         files in the Reference section in the OVF and sets them to the files
         list.
         """
-        self.files = getReferencedFilesFromOvf(self.path)
+        self.files = getReferencedFilesFromOvf(self.envelope,
+                                               os.path.dirname(self.path))
 
     def writeFile(self, fileObj=None, pretty=True, encoding=None):
         """
@@ -1678,91 +1679,41 @@ class OvfFile:
 
         node.appendChild(captionElement)
 
-def getReferencedFilesFromOvf(fileName, path=None):
+def getReferencedFilesFromOvf(envelope, path=None):
     """
     Return a list of OvfReferencedFile objects that are referenced
     in the References section of an Ovf file
 
-    @type  fileName: string
-    @param fileName: basename.ovf
+    @type  envelope: the ovf envelope element in a DOM tree
+    @param envelope: DOM element
     @type  path:     string
-    @param path:     file path to use as base for path element of objects defaults to
-    dirname(fileName)
-    @rtype :  list of OvfReferencedFile
-    @return: an OvfReferencedFile list object
+    @param path:     file path to use as base for path element of objects
+    defaults to dirname(self.path)
+    @rtype :  list of OvfReferencedFile representing items in 'File' nodes
+    @return:  list of an OvfReferencedFile objects
     """
 
-    if os.path.isfile(fileName):
-        document = parse(fileName)#parse the file
-        document.normalize()
+    attrs = ( 'id', 'href', 'size', 'chunkSize', 'compression' )
+    map = { 'id':'file_id', 'chunkSize':'chunksize' }
 
-        if path == None:
-            path = fileName
+    list = []
+    for node in envelope.getElementsByTagName('File'):
 
-        checksum = None
-        checksumStamp = None
-        files = []
-        mfObj = None
-        certObj = None
-        temp = []
+        cur = { 'checksum':None, 'checksumStamp':None }
+        for attr in attrs:
+            if map.has_key(attr): key = map[attr]
+            else: key = attr
 
-        for node in document.getElementsByTagName('File'):#this will get the element with the tag: File
-
-            fileID = node.attributes["ovf:id"].value
-            fileHref = node.attributes["ovf:href"].value
-
-            filePath = Ovf.href2abspath(fileHref, path)
-
-            #since some of the values are not required we must check that they are present
-            if "ovf:size" in node.attributes.keys():
-                fileSize = node.attributes["ovf:size"].value
+            if node.hasAttribute("ovf:" + attr):
+                cur[key] = node.attributes["ovf:" + attr].value
             else:
-                fileSize = None
+                cur[key] = None
 
-            if "ovf:chunkSize" in node.attributes.keys():
-                fileChunkSize = node.attributes["ovf:chunkSize"].value
-            else:
-                fileChunkSize = None
+        if cur["href"] and path:
+            cur["path"] = Ovf.href2abspath(cur["href"], path)
+        else:
+            cur["path"] = None
 
-            if "ovf:compression" in node.attributes.keys():
-                fileCompression = node.attributes["ovf:compression"].value
-            else:
-                fileCompression = None
+        list.append(OvfReferencedFile.OvfReferencedFile(**cur))
 
-
-            if fileHref.endswith(".mf"):
-                mfObj = OvfReferencedFile.OvfReferencedFile(filePath,
-                                                            fileHref,
-                                                            checksum,
-                                                            checksumStamp,
-                                                            fileSize,
-                                                            fileCompression,
-                                                            fileID,fileChunkSize)
-            elif fileHref.endswith(".cert"):
-                certObj = OvfReferencedFile.OvfReferencedFile(filePath,
-                                                            fileHref,
-                                                            checksum,
-                                                            checksumStamp,
-                                                            fileSize,
-                                                            fileCompression,
-                                                            fileID,fileChunkSize)
-            else:
-                refObj = OvfReferencedFile.OvfReferencedFile(filePath,
-                                                            fileHref,
-                                                            checksum,
-                                                            checksumStamp,
-                                                            fileSize,
-                                                            fileCompression,
-                                                            fileID,fileChunkSize)
-                temp.append(refObj)
-
-        if mfObj != None:
-            files.append(mfObj)
-        if certObj != None:
-            files.append(certObj)
-
-        for i in temp:
-            files.append(i)
-            #if os.path.isfile(fileHref):#check that the files listed in the xml are actually there
-
-        return files
+    return list
