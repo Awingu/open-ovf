@@ -1006,7 +1006,7 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
                                   len(section) + " times.")
 
         if hostResource.startswith('ovf://file/'):
-            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'NetworkSection'))
+            section = Ovf.getNodes(ovf, (Ovf.hasTagName, 'References'))
             if len(section) == 1:
                 refList = Ovf.getDict(section[0], configId)['children']
 
@@ -1088,7 +1088,8 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     """
     # Get VirtualHardwareSection
     virtualHardwareSection = Ovf.getNodes(virtualSys,
-                                          (hasTagName, 'VirtualHardwareSection'))
+                                          (Ovf.hasTagName,
+                                           'VirtualHardwareSection'))
 
     if virtualHardwareSection == []:
         raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
@@ -1132,10 +1133,13 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
         #devices = addDevice(deviceSection, networkSection)
 
         #devices - graphics
-        graphics = graphicsElement('vnc', 'localhost', '5911')
+        graphics = graphicsElement('vnc', 'localhost', '-1')
+
+        #devices - console
+        console = consoleElement('pty', '0')
 
         #devices
-        devices = devicesElement(disk, graphics)
+        devices = devicesElement(disk, graphics, console)
 
         #domain
         domain = domainElement('kqemu')
