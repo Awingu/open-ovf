@@ -30,7 +30,7 @@ class OvfManifestTestCase(unittest.TestCase):
     img1 = 'Ubuntu1.vmdk'
     img2 = 'Ubuntu-0.vmdk'
 
-    ovfSum = '5b47e3fe7e6d727c274de9d926b085467c9d8856'
+    ovfSum = '992888d1f63470a51a1a552414daa396b23be641'
    # mfSum = '78554e6c131f57a1b2e1fe860a29b7cbf6af859c'
     certSum = 'bf1ae2642e7dacac1a8fa0d1759925b836693dc5'
     img1Sum = 'fb86e12e912c3a002daf0d8b8bf579e69578c14b'
@@ -54,7 +54,8 @@ class OvfManifestTestCase(unittest.TestCase):
         for curr in list:
             assert curr.href == files[i].href, "href do not match"
             assert isSamePath(curr.path, files[i].path), "path do not match"
-            assert curr.checksum.strip() == files[i].checksum, "checksum do not match"
+            assert( curr.checksum.strip() == files[i].checksum, 
+                "checksum do not match for " + curr.href )
             i+=1
         self.assertRaises(Exception,getReferencedFilesFromManifest,name)
 

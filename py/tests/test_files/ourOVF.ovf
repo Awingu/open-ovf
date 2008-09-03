@@ -7,8 +7,6 @@
 			ovf:size="4882023564" ovf:chunkSize="2147483648" />
 		<File ovf:id="file2" ovf:href="Ubuntu-0.vmdk"
 			ovf:size="280114671" ovf:compression="gzip" />
-		<File ovf:id="file3" ovf:href="ourOVF.mf" ovf:size="1" />
-		<File ovf:id="file4" ovf:href="ourOVF.cert" ovf:size="1" />
 	</References>
 
 	<!--Meta Data description-->

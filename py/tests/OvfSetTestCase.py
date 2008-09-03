@@ -63,7 +63,7 @@ class SimpleTestCase(unittest.TestCase):
         self.assertEqual(self.ovfSetObject.getOvfFile().document.toxml(), \
                          parse(self.path + 'ourOVF.ovf').toxml())
         refList = self.ovfSetObject.getOvfFile().files
-        testList = ["Ubuntu1.vmdk","Ubuntu-0.vmdk","ourOVF.mf","ourOVF.cert"]
+        testList = ["Ubuntu1.vmdk","Ubuntu-0.vmdk"]
         for each in refList:
             testList.remove(each.href)
         self.assertEqual(testList,[])

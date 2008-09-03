@@ -32,7 +32,7 @@ class OvfReferencedFileTestCase(unittest.TestCase):
     href = "ourOVF.ovf"
     path = TEST_FILES_DIR
 
-    checksum = "5b47e3fe7e6d727c274de9d926b085467c9d8856"
+    checksum = "992888d1f63470a51a1a552414daa396b23be641"
 
     checksumStamp = None
 
