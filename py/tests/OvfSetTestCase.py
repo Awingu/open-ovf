@@ -130,15 +130,19 @@ class WriteTestCase(unittest.TestCase):
         for ref in self.ovfSetObject.getOvfFile().files:
             objmembers.append(ref.href)
 
-        # if a .mf is present it must be second file
-        self.assertTrue((name + ".mf" not in objmembers or
-                         tarmembers[1] == name + ".mf"),
-                        "file named <name>.mf present but not second file")
+        # if a .mf is present it must be second or second to last or last
+        # (last if there is no .cert present)
+        self.assertTrue((name + ".mf" not in tarmembers or
+                         (tarmembers[1] == name + ".mf" or 
+                          tarmembers[len(tarmembers)-2] == name + ".mf" or
+                          tarmembers[len(tarmembers)-1] == name + ".mf" )),
+                        "file named <name>.mf present but in wrong order")
 
-        # if a .cert is present it must be third
-        self.assertTrue((name + ".cert" not in objmembers or
-                         tarmembers[2] == name + ".cert"),
-                        "file named <name>.mf present but not second file")
+        # if a .cert is present it must be third or last
+        self.assertTrue((name + ".cert" not in tarmembers or
+                         (tarmembers[2] == name + ".cert" or 
+                          tarmembers[len(tarmembers)-1] == name + ".cert" )),
+                        "file named <name>.cert present but in wrong order")
 
         # other entries in the tar might not be in order of getReferencedFiles
         # but the list should contain the same items (without extras)
