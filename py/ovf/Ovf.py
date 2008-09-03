@@ -18,6 +18,38 @@ import os
 import sha
 from xml.dom import Node
 
+def createTextDescriptionOfNodeList(nodeList):
+    """
+    This function will get information from a list of nodes and return a list
+    containing the information found for each node
+
+    @param nodeList: The list of nodes to create the message from.
+    @type nodeList: List of DOM nodes
+
+    @return: String containing error message.
+    """
+    i = 0
+    errMsg = ' '
+    for node in nodeList:
+        info = '\n Node '+str(i)+': '
+        try:
+            info += getNodes(node,(hasTagName, 'Info'))[0].firstChild.data
+        except IndexError:
+            try:
+                info += (getNodes(node,(hasTagName,'rasd:ElementName'))[0].
+                            firstChild.data)
+            except IndexError:
+                try:
+                    info += (getNodes(node,(hasTagName,'vssd:ElementName'))[0]
+                                .firstChild.data)
+                except IndexError:#we look for attributes to print
+                    for key in node.attributes.keys():
+                        info += key
+                        info += '=' + str(node.attributes[key].value) + ' '
+        i += 1
+        errMsg += info
+    return errMsg
+
 def rmNode(node):
     """
     This function will remove a node and all of its children.
