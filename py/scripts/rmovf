@@ -1246,6 +1246,20 @@ commands = {
    },
 }
 common = (
+    { 'flags' : [ '--node-number' ],
+     'parms' : { 'dest' : 'nodenumber', 'help': 'Define the node number to'+
+                ' remove.'}
+   },
+   { 'flags' : [ '--strict' ],
+     'parms' : { 'dest' : 'strict', 'help': 'If present show errros such as'+
+                ' an attribute not being found.',
+                'action':"store_true" }
+   },
+   { 'flags' : [ '--node' ],
+     'parms' : { 'dest' : 'node', 'help': 'Remove a specific node with a'+
+                ' given id.',
+                'action':"store_true" }
+   },
    { 'flags' : [ '--section' ],
      'parms' : { 'dest' : 'section', 'help': 'Remove entire section.',
                 'action':"store_true" }
