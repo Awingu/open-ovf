@@ -181,29 +181,8 @@ class MultipleNodeError(Exception):
         if baseMessage == None:
             baseMessage =("More than 1 Node was found please use"+
                       " --node-number flag to specify which node.")
-        i = 0
-        errMsg = baseMessage
-        for node in nodeList:
-            info = '\n Node '+str(i)+': '
-            try:
-                info += Ovf.getNodes(node, 'Info')[0].firstChild.data
-            except IndexError:
-                try:
-                    info += (Ovf.getNodes(node, 'rasd:ElementName')[0].
-                             firstChild.data)
-                except IndexError:
-                    try:
-                        info += (Ovf.getNodes(node, 'vssd:ElementName')[0]
-                                 .firstChild.data)
-                    except IndexError:#we look for attributes to print
-                        for key in node.attributes.keys():
-                           info += key
-                           info += '=' + str(node.attributes[key].value) + ' '
-            i += 1
-            errMsg += info
-
-        self.message = errMsg
-
+        self.message = (baseMessage +
+                        Ovf.createTextDescriptionOfNodeList(nodeList))
     def __str__(self):
         """
         This function will return the error message.
