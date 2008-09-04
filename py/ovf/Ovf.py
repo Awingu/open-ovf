@@ -209,7 +209,7 @@ def hasTagName(elem, value):
     else:
         return False
 
-def getChildNodes(ovfNode, tagName, *criteria):
+def getChildNodes(ovfNode, *criteria):
     """
     Returns a list of nodes from an XML DOM Document, that meet a
     variable number of criteria functions.
