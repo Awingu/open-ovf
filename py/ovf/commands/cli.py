@@ -174,7 +174,7 @@ class MultipleNodeError(Exception):
         """
         Create the objects for the class.
         """
-        Exception.__init__()
+        Exception.__init__(self)
         self.baseMessage = baseMessage
         self.nodeList = nodeList
 
