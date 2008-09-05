@@ -22,8 +22,6 @@ class CLI:
 
     def __init__(self, commands, common, usage=None, version=None):
         """
-
-
         @param commands: subcommand specification
         @type commands: dict
 
@@ -166,26 +164,28 @@ class CLI:
         options, pArgs = self._parseSubcommand(cmd, args[1:])
 
         return cmd, options, pArgs
+
 class MultipleNodeError(Exception):
     """
     This error class will be used to print information about multiple
     similar nodes being found.
     """
-    def __init__(self,nodeList,baseMessage=None):
+    def __init__(self, nodeList, baseMessage=None):
         """
         Create the objects for the class.
         """
+        Exception.__init__()
         self.baseMessage = baseMessage
         self.nodeList = nodeList
 
         if baseMessage == None:
-            baseMessage =("More than 1 Node was found please use"+
-                      " --node-number flag to specify which node.")
+            baseMessage = ("More than 1 Node was found please use" +
+                           " --node-number flag to specify which node.")
         self.message = (baseMessage +
                         Ovf.createTextDescriptionOfNodeList(nodeList))
+
     def __str__(self):
         """
         This function will return the error message.
         """
         return self.message
-
