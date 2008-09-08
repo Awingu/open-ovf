@@ -538,15 +538,6 @@ def findProdNode(ovfFile, classId=None, instance=None):
     else:
         raise
 
-def raiseException(id):
-    """
-    This is a centralized method to raise exceptions.
-
-    @param id: The id of the section
-    @type id: String
-    """
-    raise NotImplementedError, "The section with id, "+id+" not found."
-
 def validateOVF(ovfFile, options):
     """
     This method validates the ovf against the schema.
