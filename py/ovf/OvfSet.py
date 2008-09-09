@@ -28,14 +28,6 @@ class OvfSet(object):
     archive or as a directory layout
     """
 
-    name    = None  #: the package name of this object (the name of .ovf
-                    #: without extension)
-    ovfFile = None        #: The OvfFile object
-    archiveFormat = FORMAT_DIR #: The archive type of this (default save type)
-    archivePath = None    #: The write path of the archive
-    archiveSavePath = None #: The Save Path for the archive (differs from archivePath for tar)
-    __tmpdir__ = None     #: the temporary dir if tar (cleaned up in __del__)
-
     def __init__(self, path=None, mode="r"):
         """
         Initialize object from path in read/write mode
@@ -51,6 +43,15 @@ class OvfSet(object):
         @type  mode: String
         @param mode: mode for open, either 'r' or 'w'
         """
+
+        #: the package name of this object (the name of .ovf without extension)
+        self.name = None
+
+        self.ovfFile = None     #: The OvfFile object
+        self.archiveFormat = FORMAT_DIR #: The archive type of this (default save type)
+        self.archivePath = None     #: The write path of the archive
+        self.archiveSavePath = None #: The Save Path for the archive (differs from archivePath for tar)
+        self.__tmpdir__ = None      #: the temporary dir if tar (cleaned up in __del__)
 
         self.mode = mode
 
