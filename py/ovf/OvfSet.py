@@ -190,7 +190,7 @@ class OvfSet(object):
         # now, self.archivePath/self.name + ".ovf" should have the ovf file
 
         if self.name != None:
-            basepath = self.archivePath + "/" + self.name
+            basepath = os.path.join(self.archivePath, self.name)
             self.ovfFile = OvfFile.OvfFile(basepath + ".ovf")
             if os.path.isfile(basepath + ".mf"):
                 # we have a manifest
@@ -302,7 +302,7 @@ class OvfSet(object):
         """
         try:
             if path != None:
-                ovfPath = path + self.getName() + '.ovf'
+                ovfPath = os.path.join(path, self.getName() + '.ovf')
             else:
                 ovfPath = self.ovfFile.path
 
@@ -350,7 +350,7 @@ class OvfSet(object):
         """
         try:
             if path == None:
-                path = self.archivePath + self.name+".mf"
+                path = os.path.join(self.archivePath, self.name + ".mf")
 
             expected = { }
             for ref in OvfManifest.getReferencedFilesFromManifest(path):
@@ -366,7 +366,7 @@ class OvfSet(object):
             # found list.  add it if it is present in the expected
             if expected[self.name + ".ovf"]:
                 nref = OvfReferencedFile.OvfReferencedFile(
-                        self.archivePath + "/" + self.name + ".ovf",
+                        os.path.join(self.archivePath, self.name + ".ovf"),
                         self.name + ".ovf")
                 nref.doChecksum()
                 found[nref.href] = nref
