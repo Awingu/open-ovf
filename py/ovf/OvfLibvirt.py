@@ -949,9 +949,11 @@ def getOvfVcpu(virtualHardware, configId=None):
 
     return vcpu
 
-def getOvfDisks(ovf, virtualHardware, configId=None):
+def getOvfDisks(virtualHardware, dir, references, diskSection=None,
+                configId=None):
     """
-    Retrieves disk device information for the virtual machine from the Ovf file.
+    Retrieves disk device information for the virtual machine
+    from the Ovf file.
 
     @param ovf: Ovf file
     @type ovf: DOM Document
@@ -993,29 +995,19 @@ def getOvfDisks(ovf, virtualHardware, configId=None):
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            section = Ovf.getElementsByTagName(ovf, 'DiskSection')
-            if len(section) == 1:
-                diskList = Ovf.getDict(section[0], configId)['children']
+            diskList = Ovf.getDict(diskSection, configId)['children']
 
-                for child in diskList:
-                    if child['ovf:diskId'] == resourceId:
-                        hostResource = 'ovf://file/' + child['ovf:fileRef']
-                        resourceId = hostResource.rsplit('/', 1).pop()
-            else:
-                raise NotFoundErr("Invalid DiskSection, implemented " +
-                                  len(section) + " times.")
+            for child in diskList:
+                if child['ovf:diskId'] == resourceId:
+                    hostResource = 'ovf://file/' + child['ovf:fileRef']
+                    resourceId = hostResource.rsplit('/', 1).pop()
 
         if hostResource.startswith('ovf://file/'):
-            section = Ovf.getElementsByTagName(ovf, 'References')
-            if len(section) == 1:
-                refList = Ovf.getDict(section[0], configId)['children']
+            refList = Ovf.getDict(references, configId)['children']
 
-                for child in refList:
-                    if child['ovf:id'] == resourceId:
-                        source = os.path.abspath(child['ovf:href'])
-            else:
-                raise NotFoundErr("Invalid References, implemented " +
-                                  len(section) + " times.")
+            for child in refList:
+                if child['ovf:id'] == resourceId:
+                    source = os.path.join(dir, child['ovf:href'])
 
         if source == None:
             raise ValueError(hostResource)
@@ -1070,87 +1062,7 @@ def getOvfNetworks(virtualHardware, configId=None):
 #    return [networkElement('network', 'test')]
     return netList
 
-def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
-    """
-    Returns a libvirt domain object for a specific virtual system,
-    based on the id and configuration, from the ovf.
-
-    @param ovf: Ovf file
-    @type ovf: DOM Document
-
-    @param ovfId: VirtualSystem(Collection) identifier
-    @type ovfId: String
-
-    @param configId: configuration name
-    @type configId: String
-
-    @todo: needs work, very basic, assumes hypervisor type
-    """
-    # Get VirtualHardwareSection
-    virtualHardwareSection = Ovf.getElementsByTagName(virtualSys,
-                                                      'VirtualHardwareSection')
-
-    if virtualHardwareSection == []:
-        raise NotImplementedError("OvfLibvirt.getOvfDomain: No " + \
-                                  "VirtualHardwareSection in VirtualSystem.")
-    else:
-        virtualHardware = virtualHardwareSection[0]
-
-        #metadata
-        name = nameElement(ovfId)
-
-        #resources
-        memory = memoryElement(getOvfMemory(virtualHardware, configId))
-        vcpu = vcpuElement(getOvfVcpu(virtualHardware, configId))
-
-        #boot
-        bootDict = dict(type='hvm',
-                    loader='/usr/lib/xen/boot/hvmloader',
-                    devices=['hd'])
-
-        boot = bootElement(bootDict)[0]
-
-        #time
-        clock = clockElement('utc')
-
-        #features
-        features = featuresElement(acpi=True)
-
-        #life cycle
-        onPowerOff = onPowerOffElement('destroy')
-        onReboot = onRebootElement('restart')
-        onCrash = onCrashElement('destroy')
-
-        #disks
-        diskDict = getOvfDisks(ovf, virtualHardware, configId)[0]
-        disk = diskElement(diskDict)
-
-        #network
-        #networkType = 'bridge'
-        #networkSource = 'br1'
-        #network = networkElement(networkType, networkSource)
-        #devices = addDevice(deviceSection, networkSection)
-
-        #devices - graphics
-        graphics = graphicsElement('vnc', 'localhost', '-1')
-
-        #devices - console
-        console = consoleElement('pty', '0')
-
-        #devices
-        devices = devicesElement(disk, graphics, console)
-
-        #domain
-        domain = domainElement('kqemu')
-
-        #document
-        document = libvirtDocument(domain, name, memory, vcpu,
-                                   boot, clock, features, onPowerOff,
-                                   onReboot, onCrash, devices)
-
-        return Ovf.xmlString(document)
-
-def getOvfLibvirt(ovf, configId=None):
+def getOvfDomains(ovf, path, configId=None):
     """
     Returns a dictionary with all of the VirtualSystems in an ovf
     listed as keys with the libvirt domain, for the specified configuration,
@@ -1159,13 +1071,16 @@ def getOvfLibvirt(ovf, configId=None):
     @param ovf: Ovf file
     @type ovf: DOM Document
 
+    @param path: path to Ovf file
+    @type path: String
+
     @param configId: configuration name
     @type configId: String
 
-    @return: dicitonary of L{Libvirt Domains<getOvfDomain>}
-    @rtype: dictionary
+    @todo: needs work, very basic, assumes hypervisor type
     """
     domains = dict()
+    directory = os.path.abspath(path.rsplit("/", 1)[0])
 
     if configId == None:
         configId = Ovf.getDefaultConfiguration(ovf)
@@ -1173,7 +1088,82 @@ def getOvfLibvirt(ovf, configId=None):
     # For each system, create libvirt domain description
     for system in Ovf.getNodes(ovf, (Ovf.hasTagName, 'VirtualSystem')):
         ovfId = system.getAttribute('ovf:id')
-        domains[ovfId] = getOvfDomain(ovf, system, ovfId, configId)
+
+        # Get Nodes
+        references = Ovf.getElementsByTagName(ovf, 'References')
+        diskSection = Ovf.getElementsByTagName(ovf, 'DiskSection')
+        virtualHardwareSection = Ovf.getElementsByTagName(system,
+                                                          'VirtualHardwareSection')
+
+        if len(references) is not 1:
+            raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
+                                      " a single References node.")
+        elif len(diskSection) is not 1:
+            raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
+                                      " a single DiskSection node.")
+        elif len(virtualHardwareSection) is not 1:
+            raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
+                                      " a single VirtualHardwareSection node.")
+        else:
+            refs = references[0]
+            disks = diskSection[0]
+            virtualHardware = virtualHardwareSection[0]
+
+            #metadata
+            name = nameElement(ovfId)
+
+            #resources
+            memory = memoryElement(getOvfMemory(virtualHardware, configId))
+            vcpu = vcpuElement(getOvfVcpu(virtualHardware, configId))
+
+            #boot
+            bootDict = dict(type='hvm',
+                        loader='/usr/lib/xen/boot/hvmloader',
+                        devices=['hd'])
+
+            boot = bootElement(bootDict)[0]
+
+            #time
+            clock = clockElement('utc')
+
+            #features
+            features = featuresElement(acpi=True)
+
+            #life cycle
+            onPowerOff = onPowerOffElement('destroy')
+            onReboot = onRebootElement('restart')
+            onCrash = onCrashElement('destroy')
+
+            #devices - graphics
+            graphics = graphicsElement('vnc', 'localhost', '-1')
+
+            #devices - console
+            console = consoleElement('pty', '0')
+
+            #devices
+            devices = devicesElement(graphics, console)
+
+            #disks
+            diskDicts = getOvfDisks(virtualHardware, directory, refs,
+                                    disks, configId)
+            for dsk in diskDicts:
+                addDevice(devices, diskElement(dsk))
+
+            #network
+            #networkType = 'bridge'
+            #networkSource = 'br1'
+            #network = networkElement(networkType, networkSource)
+            #devices = addDevice(deviceSection, networkSection)
+
+            #domain
+            domain = domainElement('kqemu')
+
+            #document
+            document = libvirtDocument(domain, name, memory, vcpu,
+                                       boot, clock, features, onPowerOff,
+                                       onReboot, onCrash, devices)
+
+        domains[ovfId] = Ovf.xmlString(document)
 
     return domains
 
