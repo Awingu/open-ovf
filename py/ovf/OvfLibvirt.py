@@ -1087,7 +1087,7 @@ def getOvfDomain(ovf, virtualSys, ovfId, configId=None):
     @todo: needs work, very basic, assumes hypervisor type
     """
     # Get VirtualHardwareSection
-    virtualHardwareSection = Ovf.getElementsByTagName(ovfNode,
+    virtualHardwareSection = Ovf.getElementsByTagName(virtualSys,
                                                       'VirtualHardwareSection')
 
     if virtualHardwareSection == []:
