@@ -230,8 +230,11 @@ def createResources(ovfFile, options):
                               Ovf.hasTagName(elem,
                                              'ResourceAllocationSection'))
 
-    nodeList = Ovf.getNodes(ovfFile.envelope, (searchTag,),
-                            (Ovf.hasAttribute, 'ovf:id', options.id))
+    if options.id is not None:
+        nodeList = Ovf.getNodes(ovfFile.envelope, (searchTag,),
+                                (Ovf.hasAttribute, 'ovf:id', options.id))
+    else:
+        nodeList = Ovf.getNodes(ovfFile.envelope, (searchTag,))
 
     if nodeList == []:
         raise NotImplementedError("The section with id, " +
