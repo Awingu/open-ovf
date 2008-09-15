@@ -319,10 +319,9 @@ def getElementsById(ovfNode, tagName, identValue):
     @return: descendent Nodes that meet criteria
     @rtype: list of DOM Nodes
     """
-    if(tagName == "File" or
-       tagName == "Configuration"):
-        attrName = "ovf:id"
-    elif tagName == "Disk":
+    # if none of the tests below match, 'ovf:id' will be used for id
+    attrName = "ovf:id"
+    if tagName == "Disk":
         attrName = "ovf:diskId"
     elif tagName == "Property":
         attrName = "ovf:key"
