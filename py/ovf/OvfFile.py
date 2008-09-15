@@ -123,10 +123,7 @@ class OvfFile:
         Use writeFile to save changes to disk.
 
         """
-        ref = None
-        for child in self.document.getElementsByTagName('References'):
-            ref = child
-            break
+        ref = self.document.getElementsByTagName('References')[0]
 
         while ref.firstChild != None:
             ref.removeChild(ref.firstChild).unlink()
