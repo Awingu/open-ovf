@@ -238,7 +238,7 @@ def createResources(ovfFile, options):
 
     if nodeList == []:
         raise NotImplementedError("The section with id, " +
-                                  options.id + ", was not found.")
+                                  str(options.id) + ", was not found.")
 
 
     if options.comment != None:
@@ -344,7 +344,7 @@ def createIconType(ovfFile, options):
     if prodNode == None and (options.instance != None
                              or options.classDesc != None):
         errMsg = "The Product Section with class description was not found."
-        raise NotImplementedError, errMsg
+        raise NotImplementedError(errMsg)
     ovfFile.createIconType(prodNode, options.fileRef, options.height,
                            options.width, options.mimeType)
 
@@ -366,7 +366,7 @@ def createCategory(ovfFile, options):
 
     if prodNode == None and (options.instance != None
                              or options.classDesc != None):
-        raise NotImplementedError, errMsg
+        raise NotImplementedError(errMsg)
     ovfFile.createCategory(prodNode, options.category)
 
 def createProperty(ovfFile, options):
@@ -386,9 +386,9 @@ def createProperty(ovfFile, options):
 
     if prodNode == None and (options.instance != None
                              or options.classDesc!=None):
-        errMsg = "The Product Section with" + options.classDesc +\
-            " and " + options.instance + " was not found."
-        raise NotImplementedError, errMsg
+        errMsg = ("The Product Section with" + str(options.classDesc) +
+                  " and " + str(options.instance) + " was not found.")
+        raise NotImplementedError(errMsg)
 
     prop = ovfFile.createProperty(prodNode, options.key,
                                   options.type,options.value,
@@ -595,7 +595,7 @@ def main():
             raise e
 
     else:
-        raise(NotImplementedError,
+        raise NotImplementedError(
               "Please pass the path to an OVF file with the flag -f.")
 
     commands[command]['func'](ovfFile, options)
