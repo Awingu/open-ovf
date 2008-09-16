@@ -821,17 +821,18 @@ def getOvfMemory(virtualHardware, configId=None):
                 memoryUnits = memoryUnits.replace('^','**')
 
                 # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+                # Convert to kilobytes
                 memoryUnits = memoryUnits.split(' ', 1)
                 quantifier = memoryUnits[0]
                 if quantifier == 'byte':
-                    memoryUnits[0] = '1'
+                    memoryUnits[0] = '2**-10'
                 elif quantifier == 'bit':
-                    memoryUnits[0] = '0.125'
+                    memoryUnits[0] = '2**-13'
                 else:
                     raise ValueError("Incompatible PUnit quantifier for memory.")
 
                 memoryUnits = ' '.join(memoryUnits)
-                memoryFactor = eval(memoryUnits)
+                memoryFactor = int(eval(memoryUnits))
 
             else:
                 if memoryUnits.startswith('Kilo'):
@@ -893,17 +894,18 @@ def getOvfCurrentMemory(virtualHardware, configId=None):
                 memoryUnits = memoryUnits.replace('^','**')
 
                 # Determine PUnit Quantifier DMTF DSP0004, {byte, bit}
+                # Convert to kilobytes
                 memoryUnits = memoryUnits.split(' ', 1)
                 quantifier = memoryUnits[0]
                 if quantifier == 'byte':
-                    memoryUnits[0] = '1'
+                    memoryUnits[0] = '2**-10'
                 elif quantifier == 'bit':
-                    memoryUnits[0] = '0.125'
+                    memoryUnits[0] = '2**-13'
                 else:
                     raise ValueError("Incompatible PUnit quantifier for memory.")
 
                 memoryUnits = ' '.join(memoryUnits)
-                memoryFactor = eval(memoryUnits)
+                memoryFactor = int(eval(memoryUnits))
 
             else:
                 if memoryUnits.startswith('Kilo'):
