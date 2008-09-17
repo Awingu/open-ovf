@@ -2,7 +2,7 @@
 
 <!--  DMTF Document number: DSP8004 -->
 <!--  Status: Final                                   -->
-<!--  Copyright B) 2007 Distributed Management Task Force, Inc. (DMTF). All rights reserved. -->
+<!--  Copyright © 2007 Distributed Management Task Force, Inc. (DMTF). All rights reserved. -->
 
 <xs:schema targetNamespace="http://schemas.dmtf.org/wbem/wscim/1/common"
     xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common"

@@ -28,15 +28,9 @@ Modifications
 -------------
 Additionally, modifications have been made the original files, as follows:
 
-From http://www.dmtf.org/standards/cim/cim_schema_v219/cim_schema_2.19.0Experimental-XSDClasses.zip
-renamed:
-    - wbem/wscim/1/common.xsd                                 -> schemas/common.xsd
-    - wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData.xsd
-                                                              -> schemas/CIM_ResourceAllocationSettingData.xsd
-    - wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData.xsd
-                                                              -> schemas/CIM_VirtualSystemSettingData.xsd
 
-In both schema files, there were three definitions of
+In CIM_ResourceAllocationSettingData.xsd and CIM_VirtualSystemSettingData.xsd
+files, there were three definitions of
 
 	<xs:restriction base="cim:cimAnySimpleType">
 
