@@ -398,7 +398,8 @@ class OvfSet(object):
         startup = OvfLibvirt.getOvfStartup(ovf)
 
         # Get Domain definitions
-        domains = OvfLibvirt.getOvfDomains(ovf, self.ovfFile.path, configId)
+        domains = OvfLibvirt.getOvfDomains(ovf, self.ovfFile.path,
+                                           conn.getType(), configId)
 
         # queue domains with action: domains[id].create()
         schedule = OvfLibvirt.getSchedule(conn, startup, domains)

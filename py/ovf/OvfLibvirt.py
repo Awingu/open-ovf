@@ -1064,7 +1064,7 @@ def getOvfNetworks(virtualHardware, configId=None):
 #    return [networkElement('network', 'test')]
     return netList
 
-def getOvfDomains(ovf, path, configId=None):
+def getOvfDomains(ovf, path, hypervisor=None, configId=None):
     """
     Returns a dictionary with all of the VirtualSystems in an ovf
     listed as keys with the libvirt domain, for the specified configuration,
@@ -1158,7 +1158,11 @@ def getOvfDomains(ovf, path, configId=None):
             #devices = addDevice(deviceSection, networkSection)
 
             #domain
-            domain = domainElement('kqemu')
+            if hypervisor.lower() == "qemu":
+                domainType = "kqemu"
+            else:
+                domainType = hypervisor.lower()
+            domain = domainElement(domainType)
 
             #document
             document = libvirtDocument(domain, name, memory, vcpu,
