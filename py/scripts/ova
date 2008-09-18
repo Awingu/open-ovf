@@ -1,0 +1,96 @@
+#!/usr/bin/python
+# vi: ts=4 expandtab syntax=python
+##############################################################################
+# Copyright (c) 2008 IBM Corporation
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+# David Leskovec (IBM) - initial implementation
+# Eric Casler    (IBM)
+##############################################################################
+"""
+This file implements the ova command.  The functions provided so far are:
+runtime - deploy ovf using libvirt
+"""
+
+import os
+import sys
+import libvirt
+
+from ovf.commands import cli
+from ovf.commands import VERSION_STR
+from ovf.OvfSet import OvfSet
+
+
+def run(options, args):
+    """Deploy a vm"""
+
+    # Open libvirt connection
+    conn = libvirt.open(options.connect)
+
+    if os.path.isfile(options.ovfFile):
+        # Instantiate OvfSet instance for OVF file
+        ovf = OvfSet(options.ovfFile)
+
+        # Boot Virtual Machines
+        ovf.boot(conn)
+        sys.exit(0)
+
+    else:
+        raise IOError(MISSING_FILE)
+
+def main():
+    """
+    main routine for this program
+    """
+    cmdUsage = "ova command -f <file> [options]"
+    cliParser = cli.CLI(COMMANDS, COMMON_OPTS, cmdUsage, VERSION_STR)
+    command, options, args = cliParser.parseArgs()
+
+    try:
+        COMMANDS[command]['function'](options, args)
+
+    except ValueError, inst:
+        print 'Parameter error: ' + inst.__str__() + "\n"
+        #subParser.parse_args(['--help'])
+    except Exception:
+        excTuple = sys.exc_info()
+        print 'Command failed: ',  excTuple[0].__name__, '-', excTuple[1]
+
+MISSING_FILE = "Ovf file not found."
+
+COMMANDS = {
+
+    "runtime" :
+    {
+        "function" : run,
+        "help" : "Deploy the virtual systems of an OVF file as " +
+                 "libvirt domains",
+        "args" : (
+        {
+            "flags" : ["-c", "--connect"],
+            "parms" : {"dest"    : "connect",
+                       "help"    : "libvirt connection URI",
+                       "metavar" : "URI"},
+            "required": True
+        },
+        )
+    },
+}
+
+COMMON_OPTS = (
+    {
+        "flags" : [ "-f", "--file" ],
+        "parms" : { "dest"    : "ovfFile",
+                    "help"    : "path to OVF file.",
+                    "metavar" : "PATH"},
+        "required": True
+    },
+)
+
+if __name__ == "__main__":
+    main()
+
