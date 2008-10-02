@@ -8,6 +8,7 @@
 #
 # Contributors:
 # Marcos Cintron (IBM) - initial implementation
+# Dave Leskovec (IBM) - fix double inclusion of first file in writeManifest
 ##############################################################################
 import os
 
@@ -70,11 +71,6 @@ def writeManifestFromReferencedFilesList(fileName, refList):
 
         prefix = "SHA1("
         suffix = ")= "
-        #since list is a OvfReferencedFile list we don't need to create a new object
-        sum = refList[0].getChecksum()#this will get the new sum for the ovf file that was passed
-        #The line below creates the line in the correct format
-        newLine = prefix+fileName+suffix+sum
-        os.write(mfFD, newLine)
 
         for currFile in refList:
             if currFile.checksum == None:#if the file doesn't have a sum then get one
@@ -82,7 +78,7 @@ def writeManifestFromReferencedFilesList(fileName, refList):
 
             sum = currFile.checksum
             name = currFile.href
-            newLine = "\n" + prefix + name + suffix+sum
+            newLine = prefix + name + suffix+ sum + "\n"
 
             os.write(mfFD, newLine)
 

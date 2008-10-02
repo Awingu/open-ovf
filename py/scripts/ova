@@ -13,6 +13,7 @@
 ##############################################################################
 """
 This file implements the ova command.  The functions provided so far are:
+manifest - create a manifest file
 runtime - deploy ovf using libvirt
 """
 
@@ -22,8 +23,32 @@ import libvirt
 
 from ovf.commands import cli
 from ovf.commands import VERSION_STR
+from ovf.OvfFile import OvfFile
+from ovf.OvfReferencedFile import OvfReferencedFile
 from ovf.OvfSet import OvfSet
+from ovf.OvfManifest import writeManifestFromReferencedFilesList
 
+def makeManifest(options, args):
+    """
+    Handle ova command to create a manifest file
+    @type options : options object returned by parse_args
+    @param options: ovfFile is required
+    @type args    : list of positional arguments returned by parse_args
+    @param args   : manifest file name is first (and only) argument if
+                    specified.  if not, file name is formed from ovf file name
+    """
+    manifestFile = options.manifestFile
+    if manifestFile == None:
+        manifestFile = os.path.splitext(options.ovfFile)[0] + '.mf'
+
+    ovfFileObj = OvfFile(options.ovfFile)
+
+    fileList = ovfFileObj.files
+    # writeManifest expects the ovf as the first file.  insert it there
+    # create a referenced file object for the ovf
+    ovfRefFile = OvfReferencedFile(ovfFileObj.path, ovfFileObj.path)
+    fileList.insert(0, ovfRefFile)
+    writeManifestFromReferencedFilesList(manifestFile, fileList)
 
 def run(options, args):
     """Deploy a vm"""
@@ -63,6 +88,20 @@ def main():
 MISSING_FILE = "Ovf file not found."
 
 COMMANDS = {
+
+    "manifest" :
+    {
+        'function' : makeManifest,
+        'help' : "Create a manifest file with SHA-1 sum for each " +
+                 "referenced file",
+        'args' : (
+        {
+            'flags' : ['-o', '--ofile'],
+            'parms' : {'dest' : 'manifestFile',
+                       'help' : "Output manifest file"}
+        },
+        )
+    },
 
     "runtime" :
     {

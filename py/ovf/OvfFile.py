@@ -1706,7 +1706,7 @@ def getReferencedFilesFromOvf(envelope, path=None):
             else:
                 cur[key] = None
 
-        if cur["href"] and path:
+        if cur["href"] and path != None:
             cur["path"] = Ovf.href2abspath(cur["href"], path)
         else:
             cur["path"] = None
