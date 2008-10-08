@@ -10,6 +10,8 @@ Requirements
 ------------
 
 Python 2.4 (or above), python-libxml2 
+- On SLES 10, you will need to install:
+  python python-tk python-xml python-devel
 
 Install
 -------
