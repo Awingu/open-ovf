@@ -14,6 +14,8 @@
 """
 This file implements the ova command.  The functions provided so far are:
 manifest - create a manifest file
+pack - package an appliance into an ova file
+unpack - un-packages an ova file into a set of files comprising the appliance
 validate - validate the package, currently only checks the the file digests
 runtime - deploy ovf using libvirt
 """
@@ -77,6 +79,57 @@ def validateAppliance(options, args):
     # TODO: validate the certificate
 
     print 'All tests passed'
+
+def packOva(options, args):
+    """
+    Package an appliance into an archive file using tar.
+    @type options : options object returned by parse_args
+    @param options: ovfFile is required
+    @type args    : list of positional arguments returned by parse_args
+    @param args   : manifest file name is first (and only) argument if
+                    specified.  if not, file name is formed from ovf file name
+    """
+    outFile = options.output
+    if outFile == None:
+        # Base the output file name on the ovf file name
+        outFile = os.path.splitext(options.ovfFile)[0] + '.ova'
+
+    ovfSet = OvfSet(options.ovfFile)
+
+    if options.noManifest == False:
+        manifestFile = options.manifestFile
+        if manifestFile == None:
+            # Base the manifest file name on the ovf file name
+            manifestFile = os.path.splitext(options.ovfFile)[0] + '.mf'
+        elif os.path.isfile(manifestFile) == False:
+            raise ValueError('Specified manifest file does not exist')
+    else:
+        ovfSet.manifest = None
+
+    # add the certificate file if needed
+    if options.noCertificate == False:
+        certificateFile = options.certificateFile
+        if certificateFile == None:
+            # Base the manifest file name on the ovf file name
+            certificateFile = os.path.splitext(options.ovfFile)[0] + '.cert'
+        elif os.path.isfile(certificateFile) == False:
+            raise ValueError('Specified certificate file does not exist')
+    else:
+        ovfSet.certificate = None
+
+    ovfSet.writeAsTar(outFile)
+
+def unpackOva(options, args):
+    """
+    Unpackage an appliance from an archive file
+    @type options : object returned by parse_args
+    @param options: ovfFile is required
+    @type args    : list of positional arguments returned by parse_args
+    @param args   : manifest file name is first (and only) argument if
+                    specified.  if not, file name is formed from ovf file name
+    """
+    ovaSet = OvfSet(options.ovfFile, "r")
+    ovaSet.writeAsDir(options.targetDir)
 
 def run(options, args):
     """Deploy a vm"""
@@ -144,6 +197,56 @@ COMMANDS = {
             'flags' : ['-c', '--cert'],
             'parms' : {'dest' : 'certFile', 'help' : "Certificate file"}
         }
+        )
+    },
+
+    "pack" :
+    {
+        'function' : packOva,
+        'help' : "Packs a set of files comprising a virtual appliance into " +
+                 "a single file in the tar format",
+        'args' : (
+        {
+            'flags' : ['-o', '--output'],
+            'parms' : {'dest' : 'output',
+                       'help' : "Output package file (- stdout)"}
+        },
+        {
+            'flags' : ['-m', '--manifestfile'],
+            'parms' : {'dest' : 'manifestFile',
+                       'help' : "Manifest file to include in archive"}
+        },
+        {
+            'flags' : ['-c', '--certificatefile'],
+            'parms' : {'dest' : 'certificateFile',
+                       'help' : "Certificate file to include in archive"}
+        },
+        {
+            'flags' : ['-n', '--no-manifest'],
+            'parms' : {'dest' : 'noManifest', 'action' : "store_true",
+                       'default' : False,
+                       'help' : "Do not store manifest file in the archive."}
+        },
+        {
+            'flags' : ['-r', '--no-certificate'],
+            'parms' : {'dest' : 'noCertificate', 'action' : "store_true",
+                       'default' : False,
+                       'help' :
+                           "Do not store a certificate file in the archive."}
+        }
+        )
+    },
+
+    "unpack" :
+    {
+        'function' : unpackOva,
+        'help' : "Unpack an ova package",
+        'args' : (
+        {
+            'flags' : ['-d', '--directory'],
+            'parms' : {'dest' : 'targetDir', 'default' : '.',
+                       'help' : "Target directory where files will be stored"}
+        },
         )
     },
 

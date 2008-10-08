@@ -173,9 +173,9 @@ class WriteTestCase(unittest.TestCase):
             self.assertTrue(os.path.isfile(self.tmpDir + each.href), \
                 'Files referenced in the Ovf were not found in write path')
 
-        # Test if IOError raised when no save path was provided
+        # Test if IOError raised when invalid path was provided
         self.ovfSetObject.ovfFile.path = ''
-        self.assertRaises(IOError, self.ovfSetObject.writeAsDir, None)
+        self.assertRaises(IOError, self.ovfSetObject.writeAsDir, 'bogusdir/')
 
     #TODO: Unfinished
     def test_initializeFromPath(self):

@@ -8,6 +8,7 @@
 #
 # Contributors:
 # Scott Moser (IBM) - initial implementation
+# Dave Leskovec (IBM) - minor fixes to writeAsDir
 ##############################################################################
 import os
 import shutil
@@ -286,6 +287,12 @@ class OvfSet(object):
                 os.unlink(ovfName)
             raise
 
+        # add the mf and cert files if we have them
+        if self.manifest:
+            tar.add(self.manifest, (self.manifest).encode('ascii'))
+        if self.certificate:
+            tar.add(self.certificate, (self.certificate).encode('ascii'))
+
         files = self.getOvfFile().files
 
         for currFile in files:
@@ -301,24 +308,31 @@ class OvfSet(object):
         @raise IOError: file or directory does not exist
         """
         try:
-            if path != None:
-                ovfPath = os.path.join(path, self.getName() + '.ovf')
-            else:
-                ovfPath = self.ovfFile.path
+            if path == None:
+                path = self.ovfFile.path
+
+            ovfPath = os.path.join(path, self.getName() + '.ovf')
 
             #Open the file for writing, write, and close file.
             ovf = open(ovfPath, 'w')
             self.ovfFile.writeFile(ovf)
             ovf.close()
 
+            # Write mf and cert files if we have them
+            if self.manifest:
+                refFile = os.path.join(path,
+                                       os.path.basename(self.manifest))
+                shutil.copy(self.manifest, refFile)
+
+            if self.certificate:
+                refFile = os.path.join(path,
+                                       os.path.basename(self.certificate))
+                shutil.copy(self.certificate, refFile)
+
             #Write referenced files to path
             for each in self.ovfFile.files:
-                refFile = path + each.href
-                if not os.path.isfile(refFile):
-                    dirPath = refFile[:refFile.rfind('/')]
-                    if not os.path.isdir(dirPath):
-                        os.makedirs(dirPath)
-                    shutil.copy(each.path, refFile)
+                refFile = os.path.join(path, each.href)
+                shutil.copy(each.path, refFile)
         except IOError, (errno, strerror):
             raise IOError("I/O error(%s): %s" % (errno, strerror))
 
