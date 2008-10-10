@@ -17,10 +17,13 @@ pyUnit tests
 import os, unittest
 from xml.dom.minidom import parse
 
-import EnvironmentSection
-from PlatformSection import PlatformSection
+from ovf.env import EnvironmentSection
+from ovf.env import PlatformSection
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "test_files/")
+SCHEMA_FILES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..")
+OVF_ENV_XSD = os.path.join(os.path.dirname(__file__), "..", "..",
+                                           "schemas", "ovf-environment.xsd")
 
 def isSamePath(a, b):
     """ test if two paths are same. """
@@ -39,7 +42,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
     newID = "1234"
     entID = "2"
     propdata = {'fillerkey':'fillervalue', 'propkey':'propvalue' }
-    platdata = PlatformSection({'Kind': "ESX Server",
+    platdata = PlatformSection.PlatformSection({'Kind': "ESX Server",
                     'Vendor': "VMware, Inc.",
                     'Version': "3.0.1",
                     'Locale': "en_US"})
@@ -68,7 +71,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         self.ovfEnv2.createHeader(None)
         self.assertNotEqual(self.ovfEnv2.environment, None)
         self.ovfEnv2.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testCreateHeaderExisting(self):
@@ -78,7 +81,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         self.assertEqual\
         (self.ovfEnv.environment.attributes['ovfenv:id'].value, self.envID)
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testCreateSection(self):
@@ -101,7 +104,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         element = self.ovfEnv2.document.getElementsByTagName("Version")
         self.assertEquals(element[0].firstChild.data, "3.0.1")
         self.ovfEnv2.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testCreateSectionWithID(self):
@@ -146,7 +149,8 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         # Verify that a new platform section is created with given data.
         self.ovfEnv.createSection(self.newID, "Entity")
         self.ovfEnv.createSection(self.newID, "PlatformSection",
-                                  PlatformSection({'Kind': "ESX Server",
+                                  PlatformSection.PlatformSection(
+                                                   {'Kind': "ESX Server",
                                                    'Version': "3.0.1",
                                                    'Vendor': "VMware, Inc.",
                                                    'Locale': "en_US"}))
@@ -164,7 +168,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                                   "propvalue")
 #        print self.ovfEnv.document.toprettyxml()
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testCreateNewSection(self):
@@ -185,7 +189,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         self.assertEquals \
         (self.ovfEnv2.document.getElementsByTagName('Entity'), [])
         self.ovfEnv2.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testCreateNewSectionWithID(self):
@@ -235,7 +239,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                           "PlatformSection")
 
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testRemoveProperties(self):
@@ -281,7 +285,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                           self.entID, ["UserName", "IP", "Passord"])
 
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testRemovePropertiesMultiSection(self):
@@ -320,7 +324,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                           self.entID, vPropsAll)
 
         self.ovfEnv2.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testRemovePlatformProperties(self):
@@ -350,7 +354,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                           self.entID, vpropsAll)
 
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testRemovePlatformPropertiesMultiSection(self):
@@ -402,7 +406,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
                           self.entID, vpropsAll)
 
         self.ovfEnv2.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
     def testChangeID(self):
@@ -428,7 +432,7 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         self.assertRaises(ValueError, self.ovfEnv.changeID, self.newID, None)
         #: Validate the xml.
         self.ovfEnv.generateXML("out.xml")
-        rc = EnvironmentSection.validateXML("out.xml", "dsp8027.xsd")
+        rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
 

@@ -560,8 +560,6 @@ def validateXML(xmlFile, schemaFile):
     for each in msgHandler.warning_list:
         print "W: %s" % each
 
-    if ret == 0:
-        print xmlFile + " validates"
     return ret
 #    cmdStr = "xmllint --schema " + schemaFile + " " + fileName +" >/dev/null"
 

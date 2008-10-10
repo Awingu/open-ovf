@@ -18,6 +18,7 @@ import OvfFileTestCase
 import OvfReferencedFileTestCase
 import OvfManifestTestCase
 import OvfCertificateTestCase
+import OvfEnvironmentTestCase
 
 if __name__ == "__main__":
     test = []
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     test.append(unittest.TestLoader().loadTestsFromModule(OvfReferencedFileTestCase))
     test.append(unittest.TestLoader().loadTestsFromModule(OvfManifestTestCase))
     test.append(unittest.TestLoader().loadTestsFromModule(OvfCertificateTestCase))
+    test.append(unittest.TestLoader().loadTestsFromModule(OvfEnvironmentTestCase))
     runner = unittest.TextTestRunner(verbosity=2)
 
     testSuite = unittest.TestSuite()
