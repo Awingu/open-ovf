@@ -8,6 +8,7 @@
 #
 # Contributors:
 # Scott Moser (IBM) - initial implementation
+# Dave Leskovec (IBM) - getDefaultConfiguration detect ovf:default attribute
 ##############################################################################
 
 """
@@ -92,13 +93,16 @@ def getDefaultConfiguration(ovfDoc):
     """
     Returns identifier for the default configuration
     """
-    deploySection = getNodes(ovfDoc,
-                             (hasTagName, 'DeploymentOptionSection'))
+    # first check if ovf specifies a default configuration
+    defaultConfigurationNode = getNodes(ovfDoc, (hasTagName, 'Configuration'),
+                                        (hasAttribute, 'ovf:default', "true"))
+    if defaultConfigurationNode:
+        return defaultConfigurationNode[0].attributes['ovf:id'].value
 
-    if deploySection != []:
-        deployDict = getDict(deploySection[0])
-        if deployDict['children'] != []:
-            return deployDict['children'][0]['ovf:id']
+    # first check if ovf specifies a default configuration
+    defaultConfigurationNode = getNodes(ovfDoc, (hasTagName, 'Configuration'))
+    if defaultConfigurationNode:
+        return defaultConfigurationNode[0].attributes['ovf:id'].value
 
     return None
 
