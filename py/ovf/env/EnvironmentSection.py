@@ -17,7 +17,6 @@ Contains methods to generate/manipulate environment xml file.
 
 #from xml.dom.ext import PrettyPrint
 import os
-import sys
 from xml.dom.minidom import parse, Document
 from xml.dom.minidom import NodeList
 import Constants
@@ -540,27 +539,28 @@ def validateXML(xmlFile, schemaFile):
     @type schemaFile: String
     """
 
+    message = None
+    first = 1
+
     if not schemaFile:
         schemaFile = Constants.ENV_SCHEMA
 
     if not os.path.exists(schemaFile):
-        print >> sys.stderr, "ERROR: Schema file not found"
-        return 1
+        raise ValueError (Constants.MISSING_SCHEMA)
 
     if not os.path.exists(xmlFile):
-        print >> sys.stderr, "ERROR: XML file not found"
-        return 1
+        raise ValueError (Constants.MISSING_SCHEMA)
 
     msgHandler = validation.ErrorHandler()
     ret = validation.validateOVF(schemaFile, xmlFile, msgHandler)
 
     for each in msgHandler.error_list:
-        print "E: %s" % each
+        if first:
+            message = "Error: "
+            first = 0
+        message = message + each
 
-    for each in msgHandler.warning_list:
-        print "W: %s" % each
+    if message != None or ret != 0:
+        raise ValueError(message)
 
     return ret
-#    cmdStr = "xmllint --schema " + schemaFile + " " + fileName +" >/dev/null"
-
-#    return os.system(cmdStr)

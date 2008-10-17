@@ -435,6 +435,22 @@ class OvfEnvironmentTestCase (unittest.TestCase):
         rc = EnvironmentSection.validateXML("out.xml", OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
+    def testValidateXML(self):
+        """ test ValidateXML function. """
+        rc = EnvironmentSection.validateXML("test.xml", OVF_ENV_XSD)
+        self.assertEquals(rc, 0)
+
+        self.assertRaises(ValueError,
+                          EnvironmentSection.validateXML,"test.xml", None)
+        self.assertRaises(ValueError,
+                          EnvironmentSection.validateXML, "None", "test.xml")
+        self.assertRaises(ValueError,
+                           EnvironmentSection.validateXML,"tes.xml",
+                                                          OVF_ENV_XSD)
+        self.ovfEnv.createSection("12", "PlatformSection", self.propdata)
+        self.ovfEnv.generateXML("out.xml")
+        self.assertRaises(ValueError, EnvironmentSection.validateXML,
+                          "out.xml", OVF_ENV_XSD)
 
 if __name__ == "__main__":
     __runTest__ = unittest.TestLoader().loadTestsFromTestCase\
