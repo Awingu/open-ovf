@@ -17,6 +17,8 @@ manifest - create a manifest file
 pack - package an appliance into an ova file
 unpack - un-packages an ova file into a set of files comprising the appliance
 validate - validate the package, currently only checks the the file digests
+environment - extract the appliance parameters from product sections and
+              generate the ovf-env.xml
 runtime - deploy ovf using libvirt
 """
 
@@ -26,7 +28,11 @@ import libvirt
 
 from ovf.commands import cli
 from ovf.commands import VERSION_STR
+from ovf import Ovf
+from ovf.env import EnvironmentSection
 from ovf.OvfFile import OvfFile
+from ovf import OvfPlatform
+from ovf import OvfProperty
 from ovf.OvfReferencedFile import OvfReferencedFile
 from ovf.OvfSet import OvfSet
 from ovf.OvfManifest import writeManifestFromReferencedFilesList
@@ -130,6 +136,389 @@ def unpackOva(options, args):
     """
     ovaSet = OvfSet(options.ovfFile, "r")
     ovaSet.writeAsDir(options.targetDir)
+
+def promptToSelectNode(nodes):
+    """
+    Prompt the user to select a node from a list.
+    @type node: List of DOM nodes
+    @param node: List of nodes to select from
+
+    @rtype: DOM node
+    @return: node that user selected
+    """
+    if nodes == []:
+        return None
+    elif len(nodes) == 1:
+        return nodes[0]
+
+    print 'Please select a node:'
+    nodeNumber = 1
+    for node in nodes:
+        ovfId = node.getAttribute('ovf:id')
+        infoNodes = Ovf.getChildNodes(node, (Ovf.hasTagName, 'Info'))
+        infoString = ''
+        if infoNodes:
+            if len(infoNodes[0].childNodes):
+                infoString =  infoNodes[0].childNodes[0].data
+        nodeNumberString = str(nodeNumber).rjust(3, ' ')
+        nodeString = nodeNumberString + ' ' + node.tagName
+        if ovfId:
+            nodeString = nodeString + ':' + ovfId
+        if infoString:
+            nodeString = nodeString + ' (' + infoString + ')'
+        print nodeString
+        nodeNumber = nodeNumber + 1
+
+    nodeSelected = None
+    while nodeSelected == None:
+        sys.stdout.write("Enter number for node --> ")
+        response = int(raw_input())
+
+        if response > 0 and response < len(nodes) + 1:
+            nodeSelected = response
+
+    return nodes[nodeSelected - 1]
+
+def promptForValue(node, properties, defaultValue):
+    """
+    Prompt the user for a given property value.
+    @type node: DOM node
+    @param node: Property node
+    @type properties: dict
+    @param properties: Property attribute dictionary
+    @type defaultValue: String
+    @param defaultValue: Default value for property
+
+    @rtype: String
+    @return: Value for property.  User input or default
+    """
+    if defaultValue == None:
+        # user didn't specify a default, make it an empty string
+        defaultValue = ''
+
+    # Get the Description for the property
+    descriptions = Ovf.getNodes(node, (Ovf.hasTagName, 'Description'))
+    print "Enter value for property " + properties['ovf:key'] + '('\
+          + properties['ovf:type'] + ')[' + defaultValue + ']'
+    for description in descriptions:
+        for child in description.childNodes:
+            print child.data
+
+    response = ''
+    try:
+        while response == '':
+            sys.stdout.write("--> ")
+
+            response = raw_input()
+
+            if response == "":
+                # user wants the default
+                response = defaultValue
+
+    except EOFError:
+        # use CTRL-D to specify an empty value
+        response = ''
+
+    return response
+
+globalPropertyDict = {}
+
+def getAndPromptPropertiesForNode(node, options):
+    """
+    Get the properties via getPropertiesForNode and prompt for anything as
+    needed.
+    @type node: DOM node
+    @param node: Virtual System or Virtual System Collection node
+    @type options: object returned by parse_args
+    @param options: queries noPrompt and noValue
+
+    @rtype: dict
+    @return: dictionary of properties {key, value}
+    """
+    # call function to get environment information for this node
+    nodeEnvironment = OvfProperty.getPropertiesForNode(node,
+                                                       options.configuration)
+
+    # go through the properties and prompt for anything as needed
+    propertyDict = {}
+    for (propName, propNode, propValue) in nodeEnvironment:
+        if not options.noPrompt:
+            attributes = Ovf.getAttributes(propNode)
+            if propValue == None or\
+               (attributes.has_key('ovf:userConfigurable') and\
+                attributes['ovf:userConfigurable'] == 'true'):
+                propValue = promptForValue(propNode, attributes, propValue)
+        else:
+            if propValue == None:
+                if options.noValue:
+                    propValue = ''
+                else:
+                    # this is an error, or should it force a prompt?
+                    raise RuntimeError, \
+                          '--no-prompt specified but value has no default'
+
+        if propValue.startswith('${'):
+            subKey = propValue.strip('}{$ \n')
+            if globalPropertyDict.has_key(subKey):
+                propValue = globalPropertyDict[subKey]
+
+        propertyDict[propName] = propValue
+        attributes = Ovf.getAttributes(propNode)
+        globalPropertyDict[attributes['ovf:key']] = propValue
+
+    return propertyDict
+
+def createEnvSection(node, propertyDict, options, parentEnv=None):
+    """
+    Create an EnvironmentSection object for the node, property dictionary
+    and optionally parent environment
+    @type node: DOM node
+    @param node: Virtual System node
+    @type node: dict
+    @param node: Dictionary of properties for node
+    @type options: object returned by parse_args
+    @param options: Uses virtPlatform
+    @type node: dict
+    @param node: Optional dictionary of properties for parent node
+
+    @rtype: EnvironmentSection
+    @return: object containing environment for Virtual System
+    """
+    envSection = EnvironmentSection.EnvironmentSection()
+    nodeId = node.getAttribute('ovf:id')
+    envSection.createHeader(nodeId)
+    platformDict = OvfPlatform.getPlatformDict(node, options.virtPlatform)
+    envSection.createSection(None, 'PlatformSection', platformDict)
+    localPropertyDict = {}
+    if parentEnv:
+        localPropertyDict.update(parentEnv)
+    localPropertyDict.update(propertyDict)
+    envSection.createSection(None, 'PropertySection', localPropertyDict)
+
+    return envSection
+
+def createEnvSectionsWithSibs(options, vsList, siblingList, parentEnv):
+    """
+    Create an EnvironmentSection object for each virtual system passed in
+    vsList.  The entity section of each object will be populated with the
+    invormation passed in siblingList.  Each object will also get the
+    parentEnv.
+    @type options: object returned by parse_args
+    @param options: passed to functions
+    @type vsList: List of (dict, DOM node) tuples
+    @param vsList: List of tuples containing a property dictionary
+                   and virtual system node
+    @type siblingList: List of (dict, DOM node) tuples
+    @param siblingList: List of siblings for nodes in vsList.  This list may
+                        have elements common with vsList
+    @type node: dict
+    @param node: Optional dictionary of properties for parent node
+
+    @rtype: List of EnvironmentSection objects
+    @return: List of filled in Environment sections, one for each
+             node in vsList
+    """
+    returnList = []
+
+    for (propertyDict, vsNode) in vsList:
+        targetEnvObj = createEnvSection(vsNode, propertyDict, options,
+                                        parentEnv)
+        for (entityDict, entityNode) in siblingList:
+            if vsNode != entityNode:
+                subjectId = entityNode.getAttribute('ovf:id')
+                targetEnvObj.createSection(subjectId, 'Entity')
+                setDict = parentEnv
+                setDict.update(entityDict)
+                targetEnvObj.createSection(subjectId, 'PropertySection',
+                                           setDict)
+
+        returnList.append(targetEnvObj)
+
+    return returnList
+
+def getEnvSectionForVs(node, options):
+    """
+    Generate the EnvironmentSection for a single virtual system.
+    @type node: DOM node
+    @param node: Virtual System node
+    @type options: object returned by parse_args
+    @param options: passed to functions
+
+    @rtype: EnvironmentSection
+    @return: object containing environment for Virtual System
+    """
+    vsList = []
+    siblingList = []
+    returnList = []
+
+    parentEnv = None
+    parentNode = node.parentNode
+    if parentNode.tagName == 'VirtualSystemCollection':
+        parentEnv = getAndPromptPropertiesForNode(parentNode, options)
+        for child in parentNode.childNodes:
+            if Ovf.hasTagName(child, 'VirtualSystem'):
+                childDict = getAndPromptPropertiesForNode(child, options)
+                siblingList.append((childDict, child))
+            elif Ovf.hasTagName(child, 'VirtualSystemCollection'):
+                childDict = getAndPromptPropertiesForNode(child, options)
+                siblingList.append((childDict, child))
+
+    propertyDict = getAndPromptPropertiesForNode(node, options)
+    vsList.append((propertyDict, node))
+
+    returnList = createEnvSectionsWithSibs(options, vsList, siblingList,
+                                           parentEnv)
+    return returnList[0]
+
+def getEnvSectionsForVsc(node, options):
+    """
+    Take a vsc and gather the environment for each of it's virtual systems
+    @type node: DOM node
+    @param node: Virtual System node
+    @type options: object returned by parse_args
+    @param options: passed to functions
+
+    @rtype: List of EnvironmentSection objects
+    @return: objects containing environment for Virtual Systems
+    """
+    vsList = []
+    siblingList = []
+    returnList = []
+
+    # Get the environment for this node
+    parentEnv = getAndPromptPropertiesForNode(node, options)
+
+    for child in node.childNodes:
+        if Ovf.hasTagName(child, 'VirtualSystem'):
+            childDict = getAndPromptPropertiesForNode(child, options)
+            vsList.append((childDict, child))
+            siblingList.append((childDict, child))
+        elif Ovf.hasTagName(child, 'VirtualSystemCollection'):
+            childDict = getAndPromptPropertiesForNode(child, options)
+            siblingList.append((childDict, child))
+
+    returnList = createEnvSectionsWithSibs(options, vsList, siblingList,
+                                           parentEnv)
+
+    return returnList
+
+def getEnvSectionsForId(options):
+    """
+    Generate the environment file(s) for the entity with a given ovf id
+    @type options: object returned by parse_args
+    @param options: ffile is required and ovfId is used
+
+    @raise ValueError: ovf file not found, content with ovf id not found
+    @raise RuntimeError: ovf file contains no entities with ovf id
+
+    @rtype: List of EnvironmentSection objects
+    @return: objects containing environment for Virtual Systems
+    """
+    try:
+        ovfFile = OvfFile(options.ovfFile)
+    except:
+        raise ValueError, "Ovf file not found"
+
+    envList = []
+
+    # Get the virtual system collection associated with this id
+    nodes = Ovf.getContentEntities(ovfFile.envelope, options.ovfId,
+                                   True, True)
+    if nodes == []:
+        # no, error out
+        raise ValueError, "Element with ovf id " + options.ovfId + " not found"
+    elif len(nodes) > 1:
+        node = promptToSelectNode(nodes)
+    else:
+        node = nodes[0]
+
+    if Ovf.hasTagName(node, 'VirtualSystem'):
+        # handle environment for a single vs
+        vsEnv = getEnvSectionForVs(nodes[0], options)
+        envList.append(vsEnv)
+    else:
+        # handle environment for a vsc (and it's children but not grand)
+        envList.extend(getEnvSectionsForVsc(node, options))
+
+    return envList
+
+def getAllEnvSections(options):
+    """
+    Generate the environment file(s) for all virtual systems in an ovf file
+    @type options: object returned by parse_args
+    @param options: ffile is required
+
+    @raise ValueError: ovf file not found, content with ovf id not found
+    @raise RuntimeError: ovf file contains no virtual systems
+    @raise RuntimeError: ovf file contains multiple virtual systems but
+                         no virtual system collection
+
+    @rtype: List of EnvironmentSection objects
+    @return: objects containing environment for Virtual Systems
+    """
+    try:
+        ovfFile = OvfFile(options.ovfFile)
+    except:
+        raise ValueError, "Ovf file not found"
+
+    envList = []
+
+    # User wants all vs and vsc handled
+    # Get any virtual system collections in the ovf
+    nodes = Ovf.getNodes(ovfFile.envelope, (Ovf.hasTagName,
+                         'VirtualSystemCollection'))
+    if nodes != []:
+        for vsc in nodes:
+            envList.extend(getEnvSectionsForVsc(vsc, options))
+
+    else:
+        # no collections, get the single virtual system
+        vsList = Ovf.getChildNodes(ovfFile.envelope, (Ovf.hasTagName,
+                                                      'VirtualSystem'))
+        if vsList == []:
+            raise RuntimeError, "ovf contains no virtual systems"
+        elif len(vsList) > 1:
+            raise RuntimeError, "invalid, ovf multiple virtual systems " +\
+                                "without a collection"
+        else:
+            vsEnv = getEnvSectionForVs(vsList[0], options)
+            envList.append(vsEnv)
+
+    return envList
+
+def guestEnvironment(options, args):
+    """
+    Generate the environment file(s) as requested by the user
+    @type options: object returned by parse_args
+    @param options: passed through
+    @type args: List of Strings
+    @param args: positional arguments returned by parse_args
+    """
+    envList = []
+
+    if options.ovfId == None:
+        envList.extend(getAllEnvSections(options))
+
+    else:
+        envList.extend(getEnvSectionsForId(options))
+
+    if options.xmlFile:
+        targetFile = open(options.xmlFile, "a")
+        for env in envList:
+            targetFile.write(env.document.toprettyxml())
+        targetFile.close()
+    else:
+        for env in envList:
+            # write the environment information out to file
+            # If there's only one vs, the file name is ovf-env.xml
+            if len(envList) == 1:
+                targetFileName = 'ovf-env.xml'
+            else:
+                # The file name will be the vs ovf:id plus ovf-env.xml
+                targetFileName = env.environment.getAttribute('ovfenv:id')
+                targetFileName = targetFileName + '_ovf-env.xml'
+
+            env.generateXML(targetFileName)
 
 def run(options, args):
     """Deploy a vm"""
@@ -265,6 +654,51 @@ COMMANDS = {
         },
         )
     },
+
+    "environment" :
+    {
+        'function' : guestEnvironment,
+        'help' : "Generate the guest environment",
+        'args' : (
+        {
+            'flags' : ['-n', '--no-prompt'],
+            'parms' : {'dest' : 'noPrompt', 'action' : "store_true",
+                       'default' : False,
+                       'help' : "Don't prompt for values, take all defaults"}
+        },
+        {
+            'flags' : ['-z', '--no-value'],
+            'parms' : {'dest' : 'noValue', 'action' : "store_true",
+                       'default' : False,
+                       'help' : "With no-prompt, values without defaults " +\
+                                "are listed but left unset"}
+        },
+        {
+            'flags' : ['-i', '--id'],
+            'parms' : {'dest' : 'ovfId', 'help' : "Virtual System id"}
+        },
+        {
+            'flags' : ['-o', '--outfile'],
+            'parms': {'dest' : 'xmlFile', 'default' : None,
+                      'help' : "xml output file"}
+        },
+        {
+            'flags' : ['-c', '--configuration'],
+            'parms': {'dest' : 'configuration',
+                      'help' : "Configuration to use"}
+        },
+        {
+            'flags' : ['-v', '--virt'],
+            'parms': {'dest' : 'virtPlatform',
+                      'help' : "Virtualization Platform"}
+        },
+        {
+            'flags' : ['-d', '--directory'],
+            'parms' : {'dest' : 'pkgDirectory',
+                       'help' : "Directory containing the package"}
+        }
+        ),
+    }
 }
 
 COMMON_OPTS = (
