@@ -17,7 +17,7 @@ setup(name='open-ovf',
         description='OVF implementation',
         url='http://open-ovf.sourceforge.net',
         license='EPL',
-        packages=['ovf', 'ovf.commands'],
+        packages=['ovf', 'ovf.commands', 'ovf.env'],
         package_dir = {'': CODE_BASE_DIR},
         scripts=list_scripts(),
       )
