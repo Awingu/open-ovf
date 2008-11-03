@@ -19,9 +19,11 @@ unpack - un-packages an ova file into a set of files comprising the appliance
 validate - validate the package, currently only checks the the file digests
 environment - extract the appliance parameters from product sections and
               generate the ovf-env.xml
+xport - prepare the environment file for the given transport method
 runtime - deploy ovf using libvirt
 """
 
+import glob
 import os
 import sys
 import libvirt
@@ -36,6 +38,7 @@ from ovf import OvfProperty
 from ovf.OvfReferencedFile import OvfReferencedFile
 from ovf.OvfSet import OvfSet
 from ovf.OvfManifest import writeManifestFromReferencedFilesList
+from ovf import OvfTransport
 
 def makeManifest(options, args):
     """
@@ -520,6 +523,35 @@ def guestEnvironment(options, args):
 
             env.generateXML(targetFileName)
 
+def envTransport(options, args):
+    """
+    Format the environment file(s) for the given transport mechanism.  This
+    currently supports the following formats:
+    iso - creates an iso file containing the environment file
+    @type options: object returned by parse_args
+    @param options: ovfFile - input environment files
+                    outFile - optional output file name
+    @type args: List of Strings
+    @param args: positional arguments returned by parse_args
+    """
+    # Put together a list of files that we want to package.  This allows
+    # specifying multiple files such as *.xml
+    fileList = glob.glob(options.ovfFile)
+
+    # Make a list of tuples like this [(output file, [input files])]
+    # This command doesn't provide the options yet to include multiple files
+    # on an ISO however the library is setup to allow this.  The requirement
+    # is that the first file in the list is the environment file as defined
+    # in the OVF spec.
+    processList = []
+    if options.outFile:
+        processList = [(options.outFile, fileList)]
+    else:
+        for envFile in fileList:
+            processList.append((None, [envFile]))
+
+    OvfTransport.makeISOTransport(processList)
+
 def run(options, args):
     """Deploy a vm"""
 
@@ -698,6 +730,27 @@ COMMANDS = {
                        'help' : "Directory containing the package"}
         }
         ),
+    },
+
+    "xport" :
+    {
+        'function' : envTransport,
+        'help' : "Generate the guest environment",
+        'args' : (
+        {
+            'flags' : ['-t', '--format'],
+            'parms' : {'dest' : 'format', 'default' : 'iso',
+                       'help' : "Transport format.  Valid values: 'iso'." +\
+                                "Default is 'iso'."}
+        },
+        {
+            'flags' : ['-o', '--outfile'],
+            'parms': {'dest' : 'outFile', 'default' : None,
+                      'help' : "Output file.  All environment files will be" +\
+                               " put on a single iso with this name."}
+        }
+        ),
+
     }
 }
 
