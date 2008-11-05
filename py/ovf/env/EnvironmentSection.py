@@ -542,14 +542,11 @@ def validateXML(xmlFile, schemaFile):
     message = None
     first = 1
 
-    if not schemaFile:
-        schemaFile = Constants.ENV_SCHEMA
-
-    if not os.path.exists(schemaFile):
+    if not schemaFile or not os.path.exists(schemaFile):
         raise ValueError (Constants.MISSING_SCHEMA)
 
     if not os.path.exists(xmlFile):
-        raise ValueError (Constants.MISSING_SCHEMA)
+        raise ValueError(Constants.MISSING_FILE + " " + xmlFile)
 
     msgHandler = validation.ErrorHandler()
     ret = validation.validateOVF(schemaFile, xmlFile, msgHandler)

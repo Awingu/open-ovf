@@ -437,15 +437,19 @@ class OvfEnvironmentTestCase (unittest.TestCase):
 
     def testValidateXML(self):
         """ test ValidateXML function. """
-        rc = EnvironmentSection.validateXML("test.xml", OVF_ENV_XSD)
+        non_exist = "no-exist.xml"
+        self.assertFalse(os.path.isfile(non_exist),
+                         "file " + non_exist + "exists. please remove")
+        rc = EnvironmentSection.validateXML(self.fileName, OVF_ENV_XSD)
         self.assertEquals(rc, 0)
 
         self.assertRaises(ValueError,
-                          EnvironmentSection.validateXML,"test.xml", None)
+                          EnvironmentSection.validateXML,self.fileName, None)
         self.assertRaises(ValueError,
-                          EnvironmentSection.validateXML, "None", "test.xml")
+                          EnvironmentSection.validateXML,non_exist,
+                          self.fileName)
         self.assertRaises(ValueError,
-                           EnvironmentSection.validateXML,"tes.xml",
+                           EnvironmentSection.validateXML,non_exist,
                                                           OVF_ENV_XSD)
         self.ovfEnv.createSection("12", "PlatformSection", self.propdata)
         self.ovfEnv.generateXML("out.xml")
