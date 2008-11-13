@@ -8,6 +8,7 @@
 #
 # Contributors:
 # Eric Casler (IBM) - initial implementation
+# Dave Leskovec (IBM) - add environment CDROM when generating domain XML
 ##############################################################################
 """OvfLibvirt"""
 
@@ -952,7 +953,7 @@ def getOvfVcpu(virtualHardware, configId=None):
     return vcpu
 
 def getOvfDisks(virtualHardware, dir, references, diskSection=None,
-                configId=None):
+                configId=None, envFile=None):
     """
     Retrieves disk device information for the virtual machine
     from the Ovf file.
@@ -1043,6 +1044,15 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
 
         disks += (libvirtDisk,)
 
+    # add the environment iso
+    if envFile:
+        disks += (dict(diskType = 'file',
+                      targetDev = logicalNames.pop(0),
+                      sourceFile = os.path.abspath(envFile),
+                      targetBus = 'ide',
+                      diskDevice = 'cdrom',
+                      ro = True),)
+
     return disks
 
 def getOvfNetworks(virtualHardware, configId=None):
@@ -1064,7 +1074,7 @@ def getOvfNetworks(virtualHardware, configId=None):
 #    return [networkElement('network', 'test')]
     return netList
 
-def getOvfDomains(ovf, path, hypervisor=None, configId=None):
+def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
     """
     Returns a dictionary with all of the VirtualSystems in an ovf
     listed as keys with the libvirt domain, for the specified configuration,
@@ -1146,8 +1156,11 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None):
             devices = devicesElement(graphics, console)
 
             #disks
+            envFile = None
+            if envDirectory:
+                envFile = os.path.join(envDirectory, ovfId + '.iso')
             diskDicts = getOvfDisks(virtualHardware, directory, refs,
-                                    disks, configId)
+                                    disks, configId, envFile)
             for dsk in diskDicts:
                 addDevice(devices, diskElement(dsk))
 
