@@ -1070,8 +1070,25 @@ def getOvfNetworks(virtualHardware, configId=None):
 
     @todo: stubbed function, needs work
     """
-    netList = ()
-#    return [networkElement('network', 'test')]
+    netList = []
+    rasd = Ovf.getDict(virtualHardware, configId)['children']
+
+    ovfNetDeviceList = []
+    for resource in rasd:
+        if resource['name'] == 'Item':
+            if resource['rasd:ResourceType'] == '10':
+                ovfNetDeviceList.append(resource)
+
+    # create a dict for each device
+    # We currently only support the libvirt virtual network interface.  We
+    # also assume that the network currently exists.  The default network
+    # is "default".
+    for netDevice in ovfNetDeviceList:
+        netAttach = 'default'
+        if netDevice.has_key('rasd:Connection'):
+            netConnect = netDevice['rasd:Connection']
+        netList.append(dict(interfaceType = 'network', sourceName = netConnect))
+
     return netList
 
 def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
@@ -1165,10 +1182,10 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
                 addDevice(devices, diskElement(dsk))
 
             #network
-            #networkType = 'bridge'
-            #networkSource = 'br1'
-            #network = networkElement(networkType, networkSource)
-            #devices = addDevice(deviceSection, networkSection)
+            netDicts = getOvfNetworks(virtualHardware, configId)
+            for networkDict in netDicts:
+                network = networkElement(networkDict)
+                addDevice(devices, network)
 
             #domain
             if hypervisor.lower() == "qemu":
