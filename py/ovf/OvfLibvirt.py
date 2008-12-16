@@ -78,6 +78,24 @@ def libvirtDocument(domain, *sections):
     document.appendChild(domain)
     return document
 
+def addSectionsToDomain(domain, sectionList):
+    """
+    Add the sections in sectionList as children to the domain section.
+    If an element with the same tag name already exists in the domain, it
+    will be replaced with the new element.
+
+    @type domain: DOM Element
+    @param domain: <domain> element
+    @type sectionList: list
+    @param sectionList: list of sections to add to the domain
+    """
+    for section in sectionList:
+        old = domain.getElementsByTagName(section.tagName)
+        if old == []:
+            domain.appendChild(section)
+        else:
+            domain.replaceChild(section, old[0])
+
 def domainElement(domainType):
     """
     Creates a <domain> element in a L{libvirt document<libvirtDocument>}
@@ -211,7 +229,7 @@ def bootElement(bootDict):
     @rtype: DOM Element tuple
     """
     document = Document()
-    bootList = ()
+    bootList = []
 
     # Bootloader
     if bootDict.has_key('bootloader'):
@@ -221,14 +239,20 @@ def bootElement(bootDict):
             bootloader = document.createElement('bootloader')
             bootloaderText = document.createTextNode(bootDict['bootloader'])
             bootloader.appendChild(bootloaderText)
-            bootList += (bootloader,)
+            bootList.append(bootloader)
 
             if bootDict.has_key('arguments'):
                 arguments = document.createElement('bootloader_args')
                 argumentsText = \
                     document.createTextNode(bootDict['bootloader_args'])
                 arguments.appendChild(argumentsText)
-                bootList += (arguments,)
+                bootList.append(arguments)
+
+            opSys = document.createElement('os')
+            bootType = document.createElement('type')
+            bootType.appendChild(document.createTextNode('linux'))
+            opSys.appendChild(bootType)
+            bootList.append(opSys)
 
     elif(bootDict.has_key('devices') ^
          bootDict.has_key('kernel')):
@@ -272,12 +296,44 @@ def bootElement(bootDict):
                 cmdline.appendChild(cmdlineText)
                 opSys.appendChild(cmdline)
 
-        bootList += (opSys,)
+        bootList.append(opSys)
 
     else:
         raise TypeError
 
     return bootList
+
+def bootElements(domain, domainType):
+    """
+    Create the elements necessary to boot the OS based on the domain type.
+
+    @type domain: DOM Element
+    @param domain: domain element
+    @type domainType: String
+    @param domainType: String indicating type of domain being created
+
+    @rtype: list
+    @return: list of boot related elements
+    """
+    if not domainType:
+        raise RuntimeError, "domainType can not be empty"
+
+    bootDict = {}
+    if domainType == 'qemu' or domainType == 'kqemu' or \
+        domainType == 'kvm' or domain == 'xenfv':
+        bootDict = dict(type = 'hvm', devices=['hd', 'cdrom'])
+    # fix this when adding xen fv support
+    elif domainType == 'xen':
+        bootDict = dict(bootloader = '/usr/bin/pygrub',
+                         type = 'linux')
+    else:
+        raise RuntimeError, "Invalid domain type"
+
+    retElements = bootElement(bootDict)
+
+    addSectionsToDomain(domain, retElements)
+
+    return retElements
 
 def onPowerOffElement(action):
     """
@@ -1145,12 +1201,15 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
             memory = memoryElement(getOvfMemory(virtualHardware, configId))
             vcpu = vcpuElement(getOvfVcpu(virtualHardware, configId))
 
-            #boot
-            bootDict = dict(type='hvm',
-                        loader='/usr/lib/xen/boot/hvmloader',
-                        devices=['hd'])
+            #domain
+            if hypervisor:
+                domainType = hypervisor.lower()
+            else:
+                domainType = OvfPlatform.getVsSystemType(system)
+            domain = domainElement(domainType)
 
-            boot = bootElement(bootDict)[0]
+            #boot
+            bootElements(domain, domainType)
 
             #time
             clock = clockElement('utc')
@@ -1187,16 +1246,9 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
                 network = networkElement(networkDict)
                 addDevice(devices, network)
 
-            #domain
-            if hypervisor.lower() == "qemu":
-                domainType = "kqemu"
-            else:
-                domainType = hypervisor.lower()
-            domain = domainElement(domainType)
-
             #document
             document = libvirtDocument(domain, name, memory, vcpu,
-                                       boot, clock, features, onPowerOff,
+                                       clock, features, onPowerOff,
                                        onReboot, onCrash, devices)
 
         domains[ovfId] = Ovf.xmlString(document)
