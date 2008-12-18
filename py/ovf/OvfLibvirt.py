@@ -12,7 +12,8 @@
 ##############################################################################
 """OvfLibvirt"""
 
-from xml.dom.minidom import Document
+import libvirt
+from xml.dom.minidom import Document, parseString
 from xml.dom import NotFoundErr
 import warnings
 import os.path
@@ -20,6 +21,7 @@ import sched
 import time
 
 import Ovf
+import OvfPlatform
 
 def libvirtDocument(domain, *sections):
     """
@@ -95,6 +97,21 @@ def addSectionsToDomain(domain, sectionList):
             domain.appendChild(section)
         else:
             domain.replaceChild(section, old[0])
+
+def getDomainTypeForVsType(vsType):
+    """
+    Get the libvirt specific domain type for the given virtual system
+    type.  This is used to translate items like xenpv->xen.
+
+    @type vsType: String
+    @param vsType: virtual system type - xenpv, xenfv, qemu, etc.
+    @rtype: String
+    @return: domain <type> strinp for vs type
+    """
+    if vsType == 'xenpv' or vsType == 'xenfv':
+        return 'xen'
+    else:
+        return vsType
 
 def domainElement(domainType):
     """
@@ -320,10 +337,9 @@ def bootElements(domain, domainType):
 
     bootDict = {}
     if domainType == 'qemu' or domainType == 'kqemu' or \
-        domainType == 'kvm' or domain == 'xenfv':
+        domainType == 'kvm' or domainType == 'xenfv':
         bootDict = dict(type = 'hvm', devices=['hd', 'cdrom'])
-    # fix this when adding xen fv support
-    elif domainType == 'xen':
+    elif domainType == 'xenpv':
         bootDict = dict(bootloader = '/usr/bin/pygrub',
                          type = 'linux')
     else:
@@ -1202,14 +1218,15 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
             vcpu = vcpuElement(getOvfVcpu(virtualHardware, configId))
 
             #domain
-            if hypervisor:
-                domainType = hypervisor.lower()
+            if not hypervisor:
+                hypervisor = OvfPlatform.getVsSystemType(system)
             else:
-                domainType = OvfPlatform.getVsSystemType(system)
+                hypervisor = hypervisor.lower()
+            domainType = getDomainTypeForVsType(hypervisor)
             domain = domainElement(domainType)
 
             #boot
-            bootElements(domain, domainType)
+            bootElements(domain, hypervisor)
 
             #time
             clock = clockElement('utc')
@@ -1331,13 +1348,49 @@ def getOvfStartup(ovf):
 
     return startupDict
 
-def getSchedule(conn, startup, domains):
+def getConnectionStringForVirtType(virtType):
+    """
+    Get the connection string for the given virt type.
+
+    @type virtType:String
+    @param virtType: Virtual System type from Ovf
+    @rtype: string
+    @return: libvirt connection string
+    """
+    # In most cases, this is just virtType:///
+    if virtType == 'qemu' or virtType == 'kqemu' or virtType == 'kvm':
+        retString = 'qemu:///system'
+    elif virtType == 'xenpv' or virtType == 'xenfv' or virtType == 'xen':
+        retString = 'xen:///'
+    else:
+        retString = virtType + ':///'
+
+    return retString
+
+def startDomain(domainXml):
+    """
+    Starts the domain given the Xml string
+    @param domainXml: Xml string defining the domain
+    @type domains: String
+    """
+    # Get the domain type from the xml
+    document = parseString(domainXml)
+    domainElement = document.getElementsByTagName('domain')[0]
+    domainType = domainElement.getAttribute('type')
+
+    # Get the appropriate connection string for the domain type
+    connString = getConnectionStringForVirtType(domainType)
+
+    # Open the libvirt connection
+    conn = libvirt.open(connString)
+
+    # Create the domain
+    conn.createLinux(domainXml, 0)
+
+def getSchedule(startup, domains):
     """
     Returns a schedule representing the startup order for a virtual
     appliance and boots the defined domains.
-
-    @param conn: libvirt connection instance
-    @type conn: libvirt.virConnect
 
     @param startup: L{Startup dictionary<getOvfStartup>}
     @type startup: dictionary
@@ -1366,7 +1419,7 @@ def getSchedule(conn, startup, domains):
             sysIndex = index + int(system['ovf:order'])
             sysDelay = delay + int(system['ovf:startDelay'])
             schedule.enter(sysDelay, sysIndex,
-                           conn.createLinux, (domains[sysId], 0))
+                           startDomain, (domains[sysId],))
         else:
             queue.extend(system['systems'])
 

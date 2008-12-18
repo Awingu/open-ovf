@@ -555,15 +555,12 @@ def envTransport(options, args):
 def run(options, args):
     """Deploy a vm"""
 
-    # Open libvirt connection
-    conn = libvirt.open(options.connect)
-
     if os.path.isfile(options.ovfFile):
         # Instantiate OvfSet instance for OVF file
         ovf = OvfSet(options.ovfFile)
 
         # Boot Virtual Machines
-        ovf.boot(conn, None, options.envDir)
+        ovf.boot(options.virtPlatform, None, options.envDir)
         sys.exit(0)
 
     else:
@@ -678,11 +675,9 @@ COMMANDS = {
                  "libvirt domains",
         "args" : (
         {
-            "flags" : ["-c", "--connect"],
-            "parms" : {"dest"    : "connect",
-                       "help"    : "libvirt connection URI",
-                       "metavar" : "URI"},
-            "required": True
+            'flags' : ['-v', '--virt'],
+            'parms': {'dest' : 'virtPlatform',
+                      'help' : "Virtualization Platform"}
         },
         {
             "flags" : ["-e", "--environment"],

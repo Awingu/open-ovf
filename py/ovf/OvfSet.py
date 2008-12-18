@@ -394,12 +394,9 @@ class OvfSet(object):
             raise
 
 # Libvirt Interface
-    def boot(self, conn, configId=None, envDirectory=None):
+    def boot(self, virtPlatform = None, configId=None, envDirectory=None):
         """
         Boots OvfSet as libvirt domain(s).
-
-        @param conn: libvirt connection instance
-        @type conn: libvirt.virConnect
 
         @param configId: configuration identifier
         @type configId: String
@@ -413,11 +410,11 @@ class OvfSet(object):
 
         # Get Domain definitions
         domains = OvfLibvirt.getOvfDomains(ovf, self.ovfFile.path,
-                                           conn.getType(), configId,
+                                           virtPlatform, configId,
                                            envDirectory)
 
         # queue domains with action: domains[id].create()
-        schedule = OvfLibvirt.getSchedule(conn, startup, domains)
+        schedule = OvfLibvirt.getSchedule(startup, domains)
 
         schedule.run()
 
