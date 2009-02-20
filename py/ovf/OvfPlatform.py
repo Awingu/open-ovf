@@ -13,7 +13,7 @@
 This module contains functions dealing with platform information.
 """
 
-from ovf import OvfLibvirt
+import OvfLibvirt
 from locale import getlocale, getdefaultlocale
 from time import timezone
 
