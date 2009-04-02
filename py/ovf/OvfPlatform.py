@@ -78,6 +78,6 @@ def getPlatformDict(vs, virtPlatform=None):
         (langCode, encoding) = getdefaultlocale()
     retDict['Locale'] = langCode
 
-    retDict['TimeZone'] = timezone
+    retDict['Timezone'] = timezone
 
     return retDict

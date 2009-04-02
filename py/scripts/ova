@@ -39,6 +39,7 @@ from ovf.OvfReferencedFile import OvfReferencedFile
 from ovf.OvfSet import OvfSet
 from ovf.OvfManifest import writeManifestFromReferencedFilesList
 from ovf import OvfTransport
+from ovf.env import PlatformSection
 
 def makeManifest(options, args):
     """
@@ -291,7 +292,8 @@ def createEnvSection(node, propertyDict, options, parentEnv=None):
     nodeId = node.getAttribute('ovf:id')
     envSection.createHeader(nodeId)
     platformDict = OvfPlatform.getPlatformDict(node, options.virtPlatform)
-    envSection.createSection(None, 'PlatformSection', platformDict)
+    platformSec = PlatformSection.PlatformSection(platformDict)
+    envSection.createSection(None, 'PlatformSection', platformSec)
     localPropertyDict = {}
     if parentEnv:
         localPropertyDict.update(parentEnv)
@@ -330,7 +332,9 @@ def createEnvSectionsWithSibs(options, vsList, siblingList, parentEnv):
             if vsNode != entityNode:
                 subjectId = entityNode.getAttribute('ovf:id')
                 targetEnvObj.createSection(subjectId, 'Entity')
-                setDict = parentEnv
+                setDict = {}
+                if parentEnv:
+                    setDict = setDict.update(parentEnv)
                 setDict.update(entityDict)
                 targetEnvObj.createSection(subjectId, 'PropertySection',
                                            setDict)
@@ -506,10 +510,9 @@ def guestEnvironment(options, args):
         envList.extend(getEnvSectionsForId(options))
 
     if options.xmlFile:
-        targetFile = open(options.xmlFile, "a")
+        targetFileName = options.xmlFile
         for env in envList:
-            targetFile.write(env.document.toprettyxml())
-        targetFile.close()
+            env.generateXML(targetFileName, "a")
     else:
         for env in envList:
             # write the environment information out to file
@@ -521,7 +524,7 @@ def guestEnvironment(options, args):
                 targetFileName = env.environment.getAttribute('ovfenv:id')
                 targetFileName = targetFileName + '_ovf-env.xml'
 
-            env.generateXML(targetFileName)
+            env.generateXML(targetFileName, "w")
 
 def envTransport(options, args):
     """

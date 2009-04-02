@@ -21,6 +21,8 @@ from xml.dom.minidom import parse, Document
 from xml.dom.minidom import NodeList
 import Constants
 from ovf import validation
+from ovf.Ovf import remove_whitespace_nodes
+from ovf.Ovf import xwritexml
 
 class EnvironmentSection:
     """
@@ -440,11 +442,27 @@ class EnvironmentSection:
         if done == 0:
             raise  ValueError(Constants.MISSING_PROPERTY)
 
-    def generateXML(self, fileName):
-        """ Write the xml to a file. """
+    def generateXML(self, fileName, mode='w', pretty=True, encoding=None):
+        """ Write the xml to a file.
+        @param fileName: path to file to write
+        @type  fileName: String
 
-        fileHandle = open ( fileName, 'w' )
-        fileHandle.write (self.document.toprettyxml() )
+        @param mode: mode to open the file
+        @type  mode: String
+
+        @param pretty: if True format/indent (writexml) False = toxml()
+        @type  pretty: Boolean
+
+        @param encoding: The encoding used for the XML.
+        @type encoding: String
+        """
+
+        fileHandle = open ( fileName, mode )
+        if pretty:
+            remove_whitespace_nodes(self.document)
+            xwritexml(self.document, fileHandle, '', '\t', '\n', encoding)
+        else:
+            fileHandle.write(self.document.toxml())
         fileHandle.close()
 
 
