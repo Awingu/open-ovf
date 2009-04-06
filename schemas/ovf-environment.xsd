@@ -21,7 +21,7 @@
     elementFormDefault="qualified">
 
     <xs:import namespace="http://schemas.dmtf.org/wbem/wscim/1/common" 
-        schemaLocation="http://schemas.dmtf.org/wbem/wscim/1/common.xsd"/>
+        schemaLocation="common.xsd"/>
     
     <xs:element name="Environment" type="ovfenv:Environment_Type">
         <xs:annotation>
