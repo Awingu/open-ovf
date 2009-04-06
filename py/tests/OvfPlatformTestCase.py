@@ -24,9 +24,9 @@ from ovf import OvfPlatform
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "test_files/")
 
-class OvfPropertyTestCase(unittest.TestCase):
+class OvfPlatformTestCase(unittest.TestCase):
     """
-    Test OvfProperty functions
+    Test OvfPlatform functions
     """
 
     path = TEST_FILES_DIR
@@ -67,6 +67,6 @@ class OvfPropertyTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    TEST = unittest.TestLoader().loadTestsFromTestCase(OvfPropertyTestCase)
+    TEST = unittest.TestLoader().loadTestsFromTestCase(OvfPlatformTestCase)
     RUNNER = unittest.TextTestRunner(verbosity=2)
     RUNNER.run(unittest.TestSuite(TEST))
