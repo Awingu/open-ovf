@@ -15,16 +15,6 @@ import sys
 from optparse import OptionParser
 
 from ovf.OvfFile import OvfFile
-from ovf.Ovf	import Ovf
-
-def getVersion(ovfFile, options=None):
-    """
-    This returns the version used to build the OVF.
-
-    @param ovfFile: An OvfFile object.
-    @type ovfFile: OvfFile
-    """
-    return Ovf.getOvfVersion()
 
 def getEfile(ovfFile, options):
     """
@@ -431,9 +421,6 @@ def main():
             print "Failed to open " + options.ovfFile
             exit(1)
 
-    if options.ovfVersion:
-        print "OVF spec version: ", getVersion(ovfFile)
-
     if options.vv:
         options.verbose = True
     commands[command]['func'](ovfFile, options)
@@ -623,10 +610,6 @@ commands = {
 common = (
 
 
-   { 'flags' : [ '--v', '--version' ],
-     'parms' : { 'dest' : 'ovfVersion','action':"store_true",'default': False,
-                'help':'OVF specification used.'} ,
-   },
    { 'flags' : [ '-f', '--file' ],
      'parms' : { 'dest' : 'ovfFile', 'help': 'Target OVF.' }
    },
