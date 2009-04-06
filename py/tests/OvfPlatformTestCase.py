@@ -53,7 +53,7 @@ class OvfPropertyTestCase(unittest.TestCase):
         platformDict = OvfPlatform.getPlatformDict(vsNode)
         assert platformDict['Kind'] == 'vmx-4', "failed type test"
         assert platformDict['Locale'] == langCode, "failed locale test"
-        assert platformDict['TimeZone'] == timezone, "failed timezone test"
+        assert platformDict['Timezone'] == timezone, "failed timezone test"
 
 
         # Case with platform type
@@ -61,7 +61,7 @@ class OvfPropertyTestCase(unittest.TestCase):
         assert platformDict['Kind'] == 'qemu', "with type: failed type test"
         assert platformDict['Locale'] == langCode, \
                                          "with type: failed locale test"
-        assert platformDict['TimeZone'] == timezone, \
+        assert platformDict['Timezone'] == timezone, \
                                            "with type: failed timezone test"
 
 
