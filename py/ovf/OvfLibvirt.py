@@ -1311,7 +1311,8 @@ def getOvfStartup(ovf):
                 virtualSys['ovf:startDelay'] = '0'
 
             parentId = section.parentNode.getAttribute('ovf:id')
-            systems[parentId] = dict(systems=[])
+            if not systems.has_key(parentId):
+                systems[parentId] = dict(systems=[])
             systems[parentId]['systems'].append(sysId)
             systems[sysId] = virtualSys
 
@@ -1327,14 +1328,17 @@ def getOvfStartup(ovf):
         else:
             parent = each.parentNode
             parentId = parent.getAttribute('ovf:id')
-            if systems.has_key(parentId):
+            if systems.has_key(parentId) and \
+                not systems.has_key(sysId):
                 systems[parentId]['systems'].append(sysId)
                 systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
 
+            # set parent info
+            if parent.parentNode.tagName == 'Envelope':
+                startupDict['boot'] = parentId
+
             while(not systems.has_key(parentId)):
-                systems[parentId] = {'systems':[],
-                                     'ovf:order':'0',
-                                     'ovf:startDelay':'0'}
+                systems[parentId] = {'systems':[]}
                 systems[parentId]['systems'].append(sysId)
                 systems[sysId] = {'ovf:order':'0', 'ovf:startDelay':'0'}
 
@@ -1412,8 +1416,9 @@ def getSchedule(startup, domains):
         sysId = queue.pop(0)
         system = startup['entities'][sysId]
 
-        index += int(system['ovf:order'])
-        delay += int(system['ovf:startDelay'])
+        if system.has_key('ovf:order') and system.has_key('ovf:startDelay'):
+            index += int(system['ovf:order'])
+            delay += int(system['ovf:startDelay'])
 
         if not system.has_key('systems'):
             sysIndex = index + int(system['ovf:order'])
