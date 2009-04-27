@@ -19,6 +19,7 @@ import warnings
 import os.path
 import sched
 import time
+import shutil
 
 import Ovf
 import OvfPlatform
@@ -1072,58 +1073,101 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         if hostResource.startswith('ovf://disk/'):
             diskList = Ovf.getDict(diskSection, configId)['children']
 
+            hostResources = []
             for child in diskList:
+                #Create a tuple (file hostResource, diskId, referred?)
+                #flag to check if the disk is referred
+                referedDisk = 0
                 if child['ovf:diskId'] == resourceId:
-                    hostResource = 'ovf://file/' + child['ovf:fileRef']
-                    resourceId = hostResource.rsplit('/', 1).pop()
+                    #Check for disks referred as parentRef.
+                    #Add parentRef disk first, as it could be the
+                    # operating system disk image
+                    if child.has_key('ovf:parentRef'):
+                        parentref = child['ovf:parentRef']
+                        for pref in diskList:
+                            if pref['ovf:diskId'] == parentref:
+                                referedDisk = 1
+                                hostResource = 'ovf://file/' + pref['ovf:fileRef']
+                                diskResource = (hostResource, resourceId, referedDisk)
+                                hostResources.append(diskResource)
+                                break
 
-        if hostResource.startswith('ovf://file/'):
+                    # and the disk referred by the VMs HostResource
+                    #Check to see if the fileRef is referred by more than one disk
+                    referedDisk = 0
+                    hostResource = 'ovf://file/' + child['ovf:fileRef']
+                    refcnt = 0
+                    myFileRef = child['ovf:fileRef']
+                    for disk in diskList:
+                        if disk['ovf:fileRef'] == myFileRef:
+                            refcnt = refcnt + 1
+                    if refcnt > 1:
+                        referedDisk = 1
+                    diskResource = (hostResource, resourceId, referedDisk)
+                    hostResources.append(diskResource)
+
+        for resource in hostResources:
+            (hostResource, diskId, referedDisk) = resource
+            resourceId = hostResource.rsplit('/', 1).pop()
             refList = Ovf.getDict(references, configId)['children']
 
             for child in refList:
                 if child['ovf:id'] == resourceId:
                     source = os.path.join(dir, child['ovf:href'])
+                    if referedDisk == 1:
+                        simage = source
+                        diskpath = source.rsplit('/', 1)[0]
+                        diskimage = source.rsplit('/', 1)[1]
+                        diskname = diskimage.split('.')[0]
+                        disknameext = diskimage.split('.')[1]
+                        newdiskname = diskname + '-' + diskId
+                        if disknameext != None:
+                            source = os.path.join(diskpath, newdiskname + '.' + disknameext)
+                        else:
+                            source = os.path.join(diskpath, newdiskname)
+                        dimage = source
+                        shutil.copy(simage, dimage)
 
-        if source == None:
-            raise ValueError(hostResource)
+            if source == None:
+                raise ValueError(hostResource)
 
-        #target bus
-        parentId = int(ovfDisk['rasd:Parent'])
-        parentType = rasd[parentId]['rasd:ResourceType']
-        if(parentType == '5'):
-            bus = 'ide'
-        elif(parentType == '6'):
-            bus = 'scsi'
-        else:
-            raise ValueError
+            #target bus
+            parentId = int(ovfDisk['rasd:Parent'])
+            parentType = rasd[parentId]['rasd:ResourceType']
+            if(parentType == '5'):
+                bus = 'ide'
+            elif(parentType == '6'):
+                bus = 'scsi'
+            else:
+                raise ValueError
 
-        #default not read-only
-        ro = False
+            #default not read-only
+            ro = False
 
-        #target device
-        if(device == 'cdrom'):
-            ro = True
-            dev = 'hdc'
-        else:
-            dev = logicalNames.pop(0)
+            #target device
+            if(device == 'cdrom'):
+                ro = True
+                dev = 'hdc'
+            else:
+                dev = logicalNames.pop(0)
 
-        libvirtDisk = dict(diskType='file',
-                           diskDevice=device,
-                           sourceFile=source,
-                           targetBus=bus,
-                           targetDev=dev,
-                           readonly=ro)
+            libvirtDisk = dict(diskType='file',
+                               diskDevice=device,
+                               sourceFile=source,
+                               targetBus=bus,
+                               targetDev=dev,
+                               readonly=ro)
 
-        disks += (libvirtDisk,)
+            disks += (libvirtDisk,)
 
     # add the environment iso
     if envFile:
         disks += (dict(diskType = 'file',
-                      targetDev = logicalNames.pop(0),
+                      targetDev = 'hdc:cdrom',
                       sourceFile = os.path.abspath(envFile),
                       targetBus = 'ide',
                       diskDevice = 'cdrom',
-                      ro = True),)
+                      readonly = True),)
 
     return disks
 
@@ -1181,7 +1225,8 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
     @todo: needs work, very basic, assumes hypervisor type
     """
     domains = dict()
-    directory = os.path.abspath(path.rsplit("/", 1)[0])
+    #directory = os.path.abspath(path.rsplit("/", 1)[0])
+    directory = path
 
     if configId == None:
         configId = Ovf.getDefaultConfiguration(ovf)

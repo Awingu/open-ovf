@@ -562,8 +562,15 @@ def run(options, args):
         # Instantiate OvfSet instance for OVF file
         ovf = OvfSet(options.ovfFile)
 
+        installLoc = options.installLoc
+        if options.ovfFile.endswith(".ova") and installLoc == None:
+            installLoc = os.path.dirname(options.ovfFile)
+        if installLoc != None and os.path.isdir(installLoc):
+            installLoc = os.path.abspath(installLoc)
+            ovf.writeAsDir(installLoc)
+
         # Boot Virtual Machines
-        ovf.boot(options.virtPlatform, None, options.envDir)
+        ovf.boot(options.virtPlatform, None, installLoc, options.envDir)
         sys.exit(0)
 
     else:
@@ -686,6 +693,11 @@ COMMANDS = {
             "flags" : ["-e", "--environment"],
             "parms" : {"dest"    : "envDir", 'default' : None,
                        "help"    : "Path to environment files"}
+        },
+        {
+            "flags" : ["-i", "--install-to"],
+            "parms" : {"dest"    : "installLoc", 'default' : None,
+                       "help"    : "Directory location to install ova package contents"}
         },
         )
     },

@@ -133,7 +133,8 @@ class OvfSet(object):
 
         if exists == True and self.archiveFormat == FORMAT_TAR:
             # Here, for now, we make a temporary copy
-            tmpd = tempfile.mkdtemp()
+            tmpdir = os.path.dirname(os.path.abspath(path))
+            tmpd = tempfile.mkdtemp(dir=tmpdir)
             self.__tmpdir__ = tmpd
             tf = tarfile.open(path, "r")
             ti = tf.next()
@@ -394,7 +395,7 @@ class OvfSet(object):
             raise
 
 # Libvirt Interface
-    def boot(self, virtPlatform = None, configId=None, envDirectory=None):
+    def boot(self, virtPlatform = None, configId=None, installLoc=None, envDirectory=None):
         """
         Boots OvfSet as libvirt domain(s).
 
@@ -408,8 +409,13 @@ class OvfSet(object):
         # Get Startup order
         startup = OvfLibvirt.getOvfStartup(ovf)
 
+        if installLoc == None:
+            dirpath = os.path.dirname(os.path.abspath(self.ovfFile.path))
+        else:
+            dirpath = installLoc
+
         # Get Domain definitions
-        domains = OvfLibvirt.getOvfDomains(ovf, self.ovfFile.path,
+        domains = OvfLibvirt.getOvfDomains(ovf, dirpath,
                                            virtPlatform, configId,
                                            envDirectory)
 
