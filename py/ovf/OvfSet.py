@@ -134,6 +134,7 @@ class OvfSet(object):
         if exists == True and self.archiveFormat == FORMAT_TAR:
             # Here, for now, we make a temporary copy
             tmpdir = os.path.dirname(os.path.abspath(path))
+            if os.environ.has_key("TMPDIR"): tmpdir = None
             tmpd = tempfile.mkdtemp(dir=tmpdir)
             self.__tmpdir__ = tmpd
             tf = tarfile.open(path, "r")
