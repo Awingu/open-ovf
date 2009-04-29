@@ -291,9 +291,11 @@ class OvfSet(object):
 
         # add the mf and cert files if we have them
         if self.manifest:
-            tar.add(self.manifest, (self.manifest).encode('ascii'))
+            altManifestFile = os.path.basename(self.manifest)
+            tar.add(self.manifest, (altManifestFile).encode('ascii'))
         if self.certificate:
-            tar.add(self.certificate, (self.certificate).encode('ascii'))
+            altCertificateFile = os.path.basename(self.certificate)
+            tar.add(self.certificate, (altCertificateFile).encode('ascii'))
 
         files = self.getOvfFile().files
 

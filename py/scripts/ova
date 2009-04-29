@@ -111,8 +111,9 @@ def packOva(options, args):
         if manifestFile == None:
             # Base the manifest file name on the ovf file name
             manifestFile = os.path.splitext(options.ovfFile)[0] + '.mf'
-        elif os.path.isfile(manifestFile) == False:
+        if os.path.isfile(manifestFile) == False:
             raise ValueError('Specified manifest file does not exist')
+        ovfSet.manifest = manifestFile
     else:
         ovfSet.manifest = None
 
@@ -122,8 +123,9 @@ def packOva(options, args):
         if certificateFile == None:
             # Base the manifest file name on the ovf file name
             certificateFile = os.path.splitext(options.ovfFile)[0] + '.cert'
-        elif os.path.isfile(certificateFile) == False:
+        if os.path.isfile(certificateFile) == False:
             raise ValueError('Specified certificate file does not exist')
+        ovfSet.certificate = certificateFile
     else:
         ovfSet.certificate = None
 
