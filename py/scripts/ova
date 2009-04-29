@@ -135,13 +135,18 @@ def unpackOva(options, args):
     """
     Unpackage an appliance from an archive file
     @type options : object returned by parse_args
-    @param options: ovfFile is required
+    @param options: appliance archive file is required
     @type args    : list of positional arguments returned by parse_args
-    @param args   : manifest file name is first (and only) argument if
-                    specified.  if not, file name is formed from ovf file name
+    @param args   : target directory path to extract the appliance archive file
     """
-    ovaSet = OvfSet(options.ovfFile, "r")
-    ovaSet.writeAsDir(options.targetDir)
+    if options.ovfFile != None and os.path.isfile(options.ovfFile):
+        ovaSet = OvfSet(options.ovfFile, "r")
+        if not os.path.isdir(options.targetDir):
+            os.mkdir(options.targetDir)
+        ovaSet.writeAsDir(options.targetDir)
+    else:
+        raise IOError("Specified appliance archive " + options.ovfFile + \
+                      " does not exist")
 
 def promptToSelectNode(nodes):
     """
