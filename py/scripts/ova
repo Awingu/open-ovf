@@ -59,7 +59,8 @@ def makeManifest(options, args):
     fileList = ovfFileObj.files
     # writeManifest expects the ovf as the first file.  insert it there
     # create a referenced file object for the ovf
-    ovfRefFile = OvfReferencedFile(ovfFileObj.path, ovfFileObj.path)
+    ovfRefFile = OvfReferencedFile(ovfFileObj.path,
+                                   os.path.basename(ovfFileObj.path))
     fileList.insert(0, ovfRefFile)
     writeManifestFromReferencedFilesList(manifestFile, fileList)
 
