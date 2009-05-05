@@ -16,6 +16,7 @@ import libvirt
 from xml.dom.minidom import Document, parseString
 from xml.dom import NotFoundErr
 import warnings
+import os
 import os.path
 import sched
 import time
@@ -1231,28 +1232,32 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
     if configId == None:
         configId = Ovf.getDefaultConfiguration(ovf)
 
+    # Get Nodes
+    references = Ovf.getElementsByTagName(ovf, 'References')
+    diskSection = Ovf.getElementsByTagName(ovf, 'DiskSection')
+
+    if len(references) is not 1:
+        raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
+                                  " a single References node.")
+    elif len(diskSection) is not 1:
+        raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
+                                  " a single DiskSection node.")
+    else:
+        refs = references[0]
+        disks = diskSection[0]
+
     # For each system, create libvirt domain description
     for system in Ovf.getNodes(ovf, (Ovf.hasTagName, 'VirtualSystem')):
         ovfId = system.getAttribute('ovf:id')
 
-        # Get Nodes
-        references = Ovf.getElementsByTagName(ovf, 'References')
-        diskSection = Ovf.getElementsByTagName(ovf, 'DiskSection')
+        # Get VirtualHardwareSection
         virtualHardwareSection = Ovf.getElementsByTagName(system,
                                                           'VirtualHardwareSection')
 
-        if len(references) is not 1:
-            raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
-                                      " a single References node.")
-        elif len(diskSection) is not 1:
-            raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
-                                      " a single DiskSection node.")
-        elif len(virtualHardwareSection) is not 1:
+        if len(virtualHardwareSection) is not 1:
             raise NotImplementedError("OvfLibvirt.getOvfDomain: Unable to locate" +
                                       " a single VirtualHardwareSection node.")
         else:
-            refs = references[0]
-            disks = diskSection[0]
             virtualHardware = virtualHardwareSection[0]
 
             #metadata
@@ -1314,6 +1319,9 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
                                        onReboot, onCrash, devices)
 
         domains[ovfId] = Ovf.xmlString(document)
+
+    # Delete any extra copies of disk images
+    cleanupExtraDiskImages(directory, refs, disks, configId)
 
     return domains
 
@@ -1415,6 +1423,39 @@ def getConnectionStringForVirtType(virtType):
         retString = virtType + ':///'
 
     return retString
+
+def cleanupExtraDiskImages(dir, references, diskSection, configId=None):
+    """
+    Check if any image file is referred more than once, and remove extra copies
+
+    @param dir: directory path to Ovf file/disk image files
+    @type dir: String
+
+    @param configId: configuration name
+    @type configId: String
+    """
+    # Get file list from References and list of disks from DiskSection
+    refList = Ovf.getDict(references, configId)['children']
+    diskList = Ovf.getDict(diskSection, configId)['children']
+
+    # Clean up image files referred more than once
+    for file in refList:
+        fileId = file['ovf:id']
+        source = os.path.join(dir, file['ovf:href'])
+        fileRefCnt = 0
+        prefCnt = 0
+        for disk in diskList:
+            if disk.has_key('ovf:fileRef'):
+                if disk['ovf:fileRef'] == fileId:
+                    fileRefCnt = fileRefCnt + 1
+
+            if disk.has_key('ovf:parentRef'):
+                if disk['ovf:parentRef'] == fileId:
+                    prefCnt = prefCnt + 1
+
+        if fileRefCnt >= 2 or prefCnt >= 2:
+            if os.path.isfile(source):
+                os.remove(source)
 
 def startDomain(domainXml):
     """
