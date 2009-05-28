@@ -1072,7 +1072,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            diskList = Ovf.getDict(diskSection, None)['children']
+            diskList = Ovf.getDict(diskSection)['children']
 
             hostResources = []
             for child in diskList:
@@ -1110,7 +1110,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         for resource in hostResources:
             (hostResource, diskId, referedDisk) = resource
             resourceId = hostResource.rsplit('/', 1).pop()
-            refList = Ovf.getDict(references, None)['children']
+            refList = Ovf.getDict(references)['children']
 
             for child in refList:
                 if child['ovf:id'] == resourceId:
@@ -1331,7 +1331,7 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
         domains[ovfId] = Ovf.xmlString(document)
 
     # Delete any extra copies of disk images
-    cleanupExtraDiskImages(directory, refs, disks, configId)
+    cleanupExtraDiskImages(directory, refs, disks)
 
     return domains
 
@@ -1434,19 +1434,16 @@ def getConnectionStringForVirtType(virtType):
 
     return retString
 
-def cleanupExtraDiskImages(dir, references, diskSection, configId=None):
+def cleanupExtraDiskImages(dir, references, diskSection):
     """
     Check if any image file is referred more than once, and remove extra copies
 
     @param dir: directory path to Ovf file/disk image files
     @type dir: String
-
-    @param configId: configuration name
-    @type configId: String
     """
     # Get file list from References and list of disks from DiskSection
-    refList = Ovf.getDict(references, None)['children']
-    diskList = Ovf.getDict(diskSection, None)['children']
+    refList = Ovf.getDict(references)['children']
+    diskList = Ovf.getDict(diskSection)['children']
 
     # Clean up image files referred more than once
     for file in refList:
