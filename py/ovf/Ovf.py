@@ -419,9 +419,7 @@ def getDict(ovfSection, configId=None):
 
                 # Restrict by given configuration
                 if(configId == None or
-                   (isConfiguration(configId) and
-                    child.getAttribute('ovf:configuration') == configId)):
-
+                    child.getAttribute('ovf:configuration') == configId):
                     childDict = dict(node=child,
                                      name=child.tagName)
                     getAttributes(child, childDict)

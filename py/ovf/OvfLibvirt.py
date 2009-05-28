@@ -1072,7 +1072,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
         if hostResource.startswith('ovf://disk/'):
-            diskList = Ovf.getDict(diskSection, configId)['children']
+            diskList = Ovf.getDict(diskSection, None)['children']
 
             hostResources = []
             for child in diskList:
@@ -1110,7 +1110,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         for resource in hostResources:
             (hostResource, diskId, referedDisk) = resource
             resourceId = hostResource.rsplit('/', 1).pop()
-            refList = Ovf.getDict(references, configId)['children']
+            refList = Ovf.getDict(references, None)['children']
 
             for child in refList:
                 if child['ovf:id'] == resourceId:
@@ -1134,7 +1134,13 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
 
             #target bus
             parentId = int(ovfDisk['rasd:Parent'])
-            parentType = rasd[parentId]['rasd:ResourceType']
+            for presource in rasd:
+                if presource['name'] == 'Item':
+                    instId = int(presource['rasd:InstanceID'])
+                    if instId == parentId:
+                        parentType = presource['rasd:ResourceType']
+                        break
+
             if(parentType == '5'):
                 bus = 'ide'
             elif(parentType == '6'):
@@ -1231,6 +1237,10 @@ def getOvfDomains(ovf, path, hypervisor=None, configId=None, envDirectory=None):
 
     if configId == None:
         configId = Ovf.getDefaultConfiguration(ovf)
+    else:
+        if not Ovf.isConfiguration(ovf, configId):
+            raise RuntimeError("OvfLibvirt.getOvfDomains: configuration " +
+                                configId + " not found.")
 
     # Get Nodes
     references = Ovf.getElementsByTagName(ovf, 'References')
@@ -1435,8 +1445,8 @@ def cleanupExtraDiskImages(dir, references, diskSection, configId=None):
     @type configId: String
     """
     # Get file list from References and list of disks from DiskSection
-    refList = Ovf.getDict(references, configId)['children']
-    diskList = Ovf.getDict(diskSection, configId)['children']
+    refList = Ovf.getDict(references, None)['children']
+    diskList = Ovf.getDict(diskSection, None)['children']
 
     # Clean up image files referred more than once
     for file in refList:
