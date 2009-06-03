@@ -91,6 +91,7 @@ def getVS(ovfFile, options):
     This function will show a virtual system.
     """
     print 'still need to implement this'
+
 def getHW(ovfFile, options):
     """
     This function will list the virtual hardware.
@@ -102,32 +103,28 @@ def getHW(ovfFile, options):
         #find the Content node that is of type VirtualSystem. Then check it's
         #id to see if it matches the id
         #passed into the function
-        for node in ovfFile.document.getElementsByTagName('Content'):
-            if node.getAttribute('xsi:type') == 'ovf:VirtualSystem_Type':
-                if (options.id == None or
-                    options.id == node.getAttribute('ovf:id')):
-                    idFound = True
-                    for childs in node.childNodes:
-                        if childs.nodeName == 'Section':
-                            if (childs.getAttribute('xsi:type')
-                               == 'ovf:VirtualHardwareSection_Type'):
-                                print childs.getAttribute(transport),
-                            #call another method that will get the System vssd
-                                _getSystem(childs)
-                            #call another method that will get the Item rasd
-                                _getRes(ovfFile, options)
+        for node in ovfFile.document.getElementsByTagName('VirtualSystem'):
+            if (options.id == None or
+                options.id == node.getAttribute('ovf:id')):
+                idFound = True
+                for childs in node.childNodes:
+                    if childs.nodeName == 'VirtualHardwareSection':
+                        if childs.hasAttribute(transport):
+                            print childs.getAttribute(transport),
+                        #call another method that will get the System vssd
+                        _getSystem(childs)
+                        #call another method that will get the Item rasd
+                        _getRes(ovfFile, options, childs)
 
     else:
-        for node in ovfFile.document.getElementsByTagName('Content'):
-            if node.getAttribute('xsi:type') == 'ovf:VirtualSystem_Type':
-                if( options.id == None or
-                    options.id == node.getAttribute('ovf:id')):
-                    idFound = True
-                    for childs in node.childNodes:
-                        if childs.nodeName == 'Section':
-                            if( childs.getAttribute('xsi:type')
-                                == 'ovf:VirtualHardwareSection_Type'):
-                                print childs.getAttribute(transport)
+        for node in ovfFile.document.getElementsByTagName('VirtualSystem'):
+            if( options.id == None or
+                options.id == node.getAttribute('ovf:id')):
+                idFound = True
+                for childs in node.childNodes:
+                    if childs.nodeName == 'VirtualHardwareSection':
+                        if childs.hasAttribute(transport):
+                            print childs.getAttribute(transport)
 
     if not idFound:
         raise NotImplementedError, "The VirtualSystem ID provided does not\
@@ -144,63 +141,84 @@ def _getSystem(childs, options=None):
             for sysNode in node.childNodes:
                 if sysNode.localName != None:
                     presentElements.append(str(sysNode.localName))
-            if not printed:
-                for i in range(len(presentElements)-1):
-                    printed = True
-                    print (' ', node.getElementsByTagName('vssd:'+
-                                                        presentElements[i])[0]
-                                                        .firstChild.data),
 
-def _getRes(ovfFile, options):
+            if not printed:
+                for i in range(len(presentElements)):
+                    printed = True
+                    print ' ', node.getElementsByTagName('vssd:'+ \
+                                                       presentElements[i])[0]\
+                                                       .firstChild.data,
+                print
+
+def _getRes(ovfFile, options, vhNode=None):
     """
     This method will get Resources.
     """
 
-    for node in ovfFile.document.getElementsByTagName('Item'):
+    if vhNode != None:
         foundID = False
-        if options.id == None:
-            for sysNode in node.childNodes:
-                if sysNode.localName != None:
+        if vhNode.hasAttribute('ovf:id'):
+            id = vhNode.getAttribute('ovf:id')
+        elif vhNode.parentNode.hasAttribute('ovf:id'):
+            id = vhNode.parentNode.getAttribute('ovf:id')
+        for node in vhNode.getElementsByTagName('Item'):
+            for child in node.childNodes:
+                if child.localName != None:
                     if not foundID:
-                        if node.parentNode.hasAttribute('ovf:id') and printID:
-                            print node.parentNode.getAttribute('ovf:id'),
-                            foundID = True
-                        else:
-                            foundID = True
-                            print (node.parentNode.parentNode
-                                   .getAttribute('ovf:id'))
-                    print ' ', sysNode.firstChild.data,
-            print
-        elif (node.parentNode.getAttribute('ovf:id') == id or
-              node.parentNode.parentNode.getAttribute('ovf:id') == id):
-            for sysNode in node.childNodes:
-                if sysNode.localName != None:
-                    if not foundID and printID:
-                        print id,
                         foundID = True
-                    print ' ', sysNode.firstChild.data,
+                        print id
+                    print ' ', child.firstChild.data,
             print
+    else:
+        for vnode in ovfFile.document.getElementsByTagName('VirtualHardwareSection'):
+            foundID = False
+            for node in vnode.getElementsByTagName('Item'):
+                if options.id == None:
+                    for sysNode in node.childNodes:
+                        if sysNode.localName != None:
+                            if not foundID:
+                                if node.parentNode.hasAttribute('ovf:id'):
+                                    print node.parentNode.getAttribute('ovf:id')
+                                    foundID = True
+                                else:
+                                    foundID = True
+                                    print (node.parentNode.parentNode
+                                           .getAttribute('ovf:id'))
+                            print ' ', sysNode.firstChild.data,
+                    print
+                else:
+                    if node.parentNode.hasAttribute('ovf:id'):
+                        id = node.parentNode.getAttribute('ovf:id')
+                    elif node.parentNode.parentNode.hasAttribute('ovf:id'):
+                        id = node.parentNode.parentNode.getAttribute('ovf:id')
+                    if options.id == id:
+                        for sysNode in node.childNodes:
+                            if sysNode.localName != None:
+                                if not foundID:
+                                    print id
+                                    foundID = True
+                                print ' ', sysNode.firstChild.data,
+                        print
 
 def _findResAlloc(ovfFile, options):
     """
     This will find the resource.
     """
     nodeID = options.id
-    ovfRes = 'ovf:ResourceAllocationSection_Type'
     #need to figure out given a parent's id find the resources for that parent
     #the problem is where there are multiple levels of nodes
-    for node in ovfFile.document.getElementsByTagName('Section'):
-        if node.getAttribute('xsi:type') == ovfRes:
-            if nodeID != None:
-                if node.getAttribute('ovf:id') == nodeID:
-                    print id,
-                    print node.getAttribute('ovf:bound'),
-                    print node.getAttribute('ovf:configuration'),
-            else:
-                nodeID = node.parentNode.getAttribute('ovf:id'),
+    for node in ovfFile.document.getElementsByTagName('ResourceAllocationSection'):
+        if nodeID != None:
+            if node.getAttribute('ovf:id') == nodeID:
+                print id,
                 print node.getAttribute('ovf:bound'),
                 print node.getAttribute('ovf:configuration'),
+        else:
+            nodeID = node.parentNode.getAttribute('ovf:id'),
+            print node.getAttribute('ovf:bound'),
+            print node.getAttribute('ovf:configuration'),
     return nodeID
+
 def getInstall(ovfFile, options):
     """
     This function will get the install section of a virtual system.
@@ -209,53 +227,50 @@ def getInstall(ovfFile, options):
     if options.verbose:
         fields.append('ovf:initialBoot')
         fields.append('ovf:initialBootStopDelay')
-        for node in ovfFile.document.getElementsByTagName('Section'):
-            if node.getAttribute('xsi:type') == "ovf:InstallSection_Type":
-
-                if node.hasAttribute('ovf:id'):
-                    id =  node.getAttribute('ovf:id'),
-                    print id
-                else:
-                    print node.parentNode.getAttribute('ovf:id'),
-                print ' '.join(map(node.getAttribute, fields)),
+        for node in ovfFile.document.getElementsByTagName('InstallSection'):
+            if node.hasAttribute('ovf:id'):
+                id =  node.getAttribute('ovf:id'),
+                print id
+            else:
+                print node.parentNode.getAttribute('ovf:id'),
+            print ' '.join(map(node.getAttribute, fields)),
 
     else:
-        for node in ovfFile.document.getElementsByTagName('Section'):
-            if node.getAttribute('xsi:type') == "ovf:InstallSection_Type":
-                if node.getAttribute('ovf:id') == None:
-                    print node.parent.getAttribute('ovf:id')
-                else:
-                    print node.getAttribute('ovf:id')
+        for node in ovfFile.document.getElementsByTagName('InstallSection'):
+            if node.getAttribute('ovf:id') == None or \
+                node.getAttribute('ovf:id') == '':
+                print node.parentNode.getAttribute('ovf:id')
+            else:
+                print node.getAttribute('ovf:id')
 
 def getAnnotation(ovfFile, options):
     """
     This function will get the annotation of an OVF.
     """
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('AnnotationSection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == 'ovf:AnnotationSection_Type':
-                if options.id == node.getAttribute('ovf:id'):
-                    print id,
-                    for annot in node.childNodes:
-                        if annot.localName == 'Annotation':
-                            print annot.firstChild.data
-        else:
-            if node.getAttribute('xsi:type') == 'ovf:AnnotationSection_Type':
-                print node.parentNode.getAttribute('ovf:id'),
+            if (options.id == node.getAttribute("ovf:id") or
+                options.id == node.parentNode.getAttribute("ovf:id")):
+                print options.id,
                 for annot in node.childNodes:
                     if annot.localName == 'Annotation':
                         print annot.firstChild.data
+        else:
+            print node.parentNode.getAttribute('ovf:id'),
+            for annot in node.childNodes:
+                if annot.localName == 'Annotation':
+                    print annot.firstChild.data
 
 def getProdSection(ovfFile, options):
     """
     The function will get the product section in the OVF.
     """
     field = ['ovf:class', 'ovf:instance']
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('ProductSection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == 'ovf:ProductSection_Type':
-                if (options.id == node.getAttribute("ovf:id") or
-                    options.id == node.parentNode.getAttribute("ovf:id")):
+            if (options.id == node.getAttribute("ovf:id") or
+                options.id == node.parentNode.getAttribute("ovf:id")):
+                for child in node.childNodes:
                     if child.localName != None and child.firstChild != None:
                         print child.firstChild.data,
                         if child.localName == 'Icon':
@@ -271,69 +286,55 @@ def getProdSection(ovfFile, options):
                             for subChild in child.childNodes:
                                 if subChild.localName:
                                     print subChild.firstChild.data,
+                print
         else:
-            if node.getAttribute('xsi:type') == 'ovf:ProductSection_Type':
-                for child in node.childNodes:
-                    if child.localName != None and child.firstChild != None:
-                        print child.firstChild.data,
-                    if child.localName == 'Icon':
-                        print child.getAttribute('ovf:fileRef'),
-                        print child.getAttribute('ovf:height'),
-                        print child.getAttribute('ovf:mimeType'),
-                        print child.getAttribute('ovf:width'),
-                    if child.localName == 'Property':
-                        print child.getAttribute('ovf:key'),
-                        print child.getAttribute('ovf:required'),
-                        print child.getAttribute('ovf:userConfigurable'),
-                        print child.getAttribute('ovf:value'),
-                        for subChild in child.childNodes:
-                            if subChild.localName:
-                                print subChild.firstChild.data,
+            for child in node.childNodes:
+                if child.localName != None and child.firstChild != None:
+                    print child.firstChild.data,
+                if child.localName == 'Icon':
+                    print child.getAttribute('ovf:fileRef'),
+                    print child.getAttribute('ovf:height'),
+                    print child.getAttribute('ovf:mimeType'),
+                    print child.getAttribute('ovf:width'),
+                if child.localName == 'Property':
+                    print child.getAttribute('ovf:key'),
+                    print child.getAttribute('ovf:required'),
+                    print child.getAttribute('ovf:userConfigurable'),
+                    print child.getAttribute('ovf:value'),
+                    for subChild in child.childNodes:
+                        if subChild.localName:
+                            print subChild.firstChild.data,
+            print
 
 def getLicense(ovfFile, options):
     """
     This function will get the license section in an OVF.
     """
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('EulaSection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == 'ovf:EulaSection_Type':
-                if (options.id == node.getAttribute("ovf:id") or
-                    options.id == node.parentNode.getAttribute("ovf:id")):
-                    for child in node.childNodes:
-                        if child.localName == 'License':
-                            print id,
-                            print child.firstChild.data
-        else:
-            if node.getAttribute('xsi:type') == 'ovf:EulaSection_Type':
-                print node.parentNode.getAttribute("ovf:id"),
+            if (options.id == node.getAttribute("ovf:id") or
+                options.id == node.parentNode.getAttribute("ovf:id")):
                 for child in node.childNodes:
                     if child.localName == 'License':
-                        print child.firstChild.data,
-                print
+                        print options.id,
+                        print child.firstChild.data
+        else:
+            print node.parentNode.getAttribute("ovf:id"),
+            for child in node.childNodes:
+                if child.localName == 'License':
+                    print child.firstChild.data,
+            print
 
 def getStartup(ovfFile, options):
     """
     This function will get the startup section within an OVF.
     """
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('StartupSection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == 'ovf:StartupSection_Type':
-                if (options.id == node.getAttribute('ovf:id') or
-                    options.id == node.parentNode.getAttribute('ovf:id')):
-                    for child in node.childNodes:
-                        if child.localName:
-                            print child.getAttribute('ovf:id')
-                            print child.getAttribute('ovf:order'),
-                            print child.getAttribute('ovf:startAction'),
-                            print child.getAttribute('ovf:startDelay'),
-                            print child.getAttribute('ovf:stopAction'),
-                            print child.getAttribute('ovf:stopDelay'),
-                            print child.getAttribute('ovf:waitingForGuest'),
-                            print
-        else:
-            if node.getAttribute('xsi:type') == 'ovf:StartupSection_Type':
+            if (options.id == node.getAttribute('ovf:id') or
+                options.id == node.parentNode.getAttribute('ovf:id')):
                 for child in node.childNodes:
-                    if child.localName == "Item":
+                    if child.localName == 'Item':
                         print child.getAttribute('ovf:id'),
                         print child.getAttribute('ovf:order'),
                         print child.getAttribute('ovf:startAction'),
@@ -342,26 +343,27 @@ def getStartup(ovfFile, options):
                         print child.getAttribute('ovf:stopDelay'),
                         print child.getAttribute('ovf:waitingForGuest'),
                         print
+        else:
+            for child in node.childNodes:
+                if child.localName == "Item":
+                    print child.getAttribute('ovf:id'),
+                    print child.getAttribute('ovf:order'),
+                    print child.getAttribute('ovf:startAction'),
+                    print child.getAttribute('ovf:startDelay'),
+                    print child.getAttribute('ovf:stopAction'),
+                    print child.getAttribute('ovf:stopDelay'),
+                    print child.getAttribute('ovf:waitingForGuest'),
+                    print
 
 def getCompat(ovfFile, options):
     """
     This function will get the compatibility section within an OVF.
     """
     ovfComp = 'ovf:CpuCompatibilitySection_Type'
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('CpuCompatibiltySection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == ovfComp:
-                if (options.id == node.getAttribute('ovf:id') or
-                    options.id == node.parentNode.getAttribute('ovf:id')):
-                    for child in node.childNodes:
-                        if child.localName == 'Level':
-                            print child.getAttribute('ovf:eax'),
-                            print child.getAttribute('ovf:ebx'),
-                            print child.getAttribute('ovf:ecx'),
-                            print child.getAttribute('ovf:edx'),
-                            print child.getAttribute('ovf:level'),
-        else:
-            if node.getAttribute('xsi:type') == ovfComp:
+            if (options.id == node.getAttribute('ovf:id') or
+                options.id == node.parentNode.getAttribute('ovf:id')):
                 for child in node.childNodes:
                     if child.localName == 'Level':
                         print child.getAttribute('ovf:eax'),
@@ -369,25 +371,30 @@ def getCompat(ovfFile, options):
                         print child.getAttribute('ovf:ecx'),
                         print child.getAttribute('ovf:edx'),
                         print child.getAttribute('ovf:level'),
+        else:
+            for child in node.childNodes:
+                if child.localName == 'Level':
+                    print child.getAttribute('ovf:eax'),
+                    print child.getAttribute('ovf:ebx'),
+                    print child.getAttribute('ovf:ecx'),
+                    print child.getAttribute('ovf:edx'),
+                    print child.getAttribute('ovf:level'),
 
 def getOS(ovfFile, options):
     """
     This function gets the OS described within an OVF.
     """
-    ovfOS = 'ovf:OperatingSystemSection_Type'
-    for node in ovfFile.document.getElementsByTagName('Section'):
+    for node in ovfFile.document.getElementsByTagName('OperatingSystemSection'):
         if options.id != None:
-            if node.getAttribute('xsi:type') == ovfOS:
-                if( options.id == node.getAttribute('ovf:id') or
-                    options.id == node.parentNode.getAttribute('ovf:id')):
-                    for child in node.childNodes:
-                        if child.localName == 'Description':
-                            print child.firstChild.data
-        else:
-            if node.getAttribute('xsi:type') == ovfOS:
+            if( options.id == node.getAttribute('ovf:id') or
+                options.id == node.parentNode.getAttribute('ovf:id')):
                 for child in node.childNodes:
                     if child.localName == 'Description':
                         print child.firstChild.data
+        else:
+            for child in node.childNodes:
+                if child.localName == 'Description':
+                    print child.firstChild.data
 
 def main():
     usage = "usage: %prog command [options]"
@@ -421,13 +428,13 @@ def main():
             print "Failed to open " + options.ovfFile
             exit(1)
 
-    if options.vv:
-        options.verbose = True
-    commands[command]['func'](ovfFile, options)
-
-
     if command == 'lang':
         print ovfFile.envelope.getAttribute('xml:lang')
+    else:
+        if options.vv:
+            options.verbose = True
+        commands[command]['func'](ovfFile, options)
+
 
 commands = {
    "efile" : {
