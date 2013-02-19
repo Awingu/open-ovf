@@ -12,7 +12,6 @@
 ##############################################################################
 """OvfLibvirt"""
 
-import libvirt
 from xml.dom.minidom import Document, parseString
 from xml.dom import NotFoundErr
 import warnings
@@ -1059,6 +1058,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
             elif resource['rasd:ResourceType'] == '17':
                 ovfDiskList.append(('disk', resource))
 
+    hostResources = []
     for each in ovfDiskList:
 
         #resource dictionary
@@ -1071,10 +1071,9 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
         source = None
         hostResource = ovfDisk['rasd:HostResource']
         resourceId = hostResource.rsplit('/', 1).pop()
-        if hostResource.startswith('ovf://disk/'):
+        if hostResource.startswith('ovf:/disk/'):
             diskList = Ovf.getDict(diskSection)['children']
 
-            hostResources = []
             for child in diskList:
                 #Create a tuple (file hostResource, diskId, referred?)
                 #flag to check if the disk is referred
@@ -1133,6 +1132,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
                 raise ValueError(hostResource)
 
             #target bus
+            parentType = None
             parentId = int(ovfDisk['rasd:Parent'])
             for presource in rasd:
                 if presource['name'] == 'Item':
@@ -1470,6 +1470,7 @@ def startDomain(domainXml):
     @param domainXml: Xml string defining the domain
     @type domains: String
     """
+    import libvirt
     # Get the domain type from the xml
     document = parseString(domainXml)
     domainElement = document.getElementsByTagName('domain')[0]

@@ -192,7 +192,6 @@ def createVirtualHardware(ovfFile, options):
     @param options: The options from the optparser.
     @type options: Optparser object.
     """
-    
     vsNode = Ovf.getContentEntities(ovfFile.envelope, options.id, vsc=False)[0]
 
     virtualHardware = ovfFile.createVirtualHardwareSection(vsNode,
