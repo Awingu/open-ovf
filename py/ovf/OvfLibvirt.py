@@ -1044,7 +1044,7 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
     @rtype: list
     """
     disks = ()
-    logicalNames = ['hda', 'hdb', 'hdd']
+    logicalNames = ['hda', 'hdb', 'hdd', 'hde', 'hdf']
 
     rasd = Ovf.getDict(virtualHardware, configId)['children']
 
@@ -1058,8 +1058,8 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
             elif resource['rasd:ResourceType'] == '17':
                 ovfDiskList.append(('disk', resource))
 
-    hostResources = []
     for each in ovfDiskList:
+        hostResources = []
 
         #resource dictionary
         ovfDisk = each[1]
@@ -1105,7 +1105,6 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
                         referedDisk = 1
                     diskResource = (hostResource, resourceId, referedDisk)
                     hostResources.append(diskResource)
-
         for resource in hostResources:
             (hostResource, diskId, referedDisk) = resource
             resourceId = hostResource.rsplit('/', 1).pop()
@@ -1164,7 +1163,6 @@ def getOvfDisks(virtualHardware, dir, references, diskSection=None,
                                targetBus=bus,
                                targetDev=dev,
                                readonly=ro)
-
             disks += (libvirtDisk,)
 
     # add the environment iso
